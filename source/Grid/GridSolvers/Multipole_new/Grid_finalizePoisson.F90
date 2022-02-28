@@ -98,7 +98,7 @@ subroutine Grid_finalizePoisson (iSoln,                   &
   !    ...End timer.
   !
   !
-  call Timers_stop ("Multipole Solver")
+  call Timers_stop ("Multipole Solver Finalize")
 !
 !
 !    ...Check the potentials obtained. This routine is only internal
