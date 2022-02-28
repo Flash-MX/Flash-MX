@@ -31,6 +31,7 @@ subroutine gr_mpoleAllocateRadialArrays ()
 
   use gr_mpoleData,      ONLY : gr_mpoleMaxQ,      &
                                 gr_mpoleMaxLM,     &
+                                gr_mpoleMomRI,            &                            
                                 gr_mpoleMomentR,   &
                                 gr_mpoleMomentI,   &
                                 gr_mpoleQDampingR, &
@@ -52,6 +53,7 @@ subroutine gr_mpoleAllocateRadialArrays ()
 !          array!
 !
 !
+  allocate (gr_mpoleMomRI(1:gr_mpoleMaxLM,0:gr_mpoleMaxQ+1,2))
   allocate (gr_mpoleMomentR (1:gr_mpoleMaxLM,0:gr_mpoleMaxQ  ), stat = status)
 
   if (status > 0) then
@@ -64,7 +66,7 @@ subroutine gr_mpoleAllocateRadialArrays ()
       call Driver_abort ('[gr_mpoleAllocateRadialArrays] ERROR: gr_mpoleMomentI allocate failed')
   end if
 
-  allocate (gr_mpoleScratch (1:gr_mpoleMaxLM,1:gr_mpoleMaxQ  ), stat = status)
+  allocate (gr_mpoleScratch (1:gr_mpoleMaxLM,1:gr_mpoleMaxQ,2  ), stat = status)
 
   if (status > 0) then
       call Driver_abort ('[gr_mpoleAllocateRadialArrays] ERROR: gr_mpoleScratch allocate failed')
