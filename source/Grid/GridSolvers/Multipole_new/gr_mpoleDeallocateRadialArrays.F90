@@ -54,8 +54,8 @@ subroutine gr_mpoleDeallocateRadialArrays ()
   if (allocated (gr_mpoleQRadii)          ) deallocate (gr_mpoleQRadii)
   if (allocated (gr_mpoleQused)           ) deallocate (gr_mpoleQused)
   if (allocated (gr_mpoleScratch)         ) deallocate (gr_mpoleScratch)
-  nullify(gr_mpoleMomentR)
-  nullify(gr_mpoleMomentI)
+  deallocate(gr_mpoleMomentR)
+  deallocate(gr_mpoleMomentI)
 !
 !
 !       Done.

@@ -231,9 +231,9 @@ module gr_mpoleData
   real,              allocatable, save :: gr_mpoleZoneMaxRadiusFraction    (:)
   real,              allocatable, save :: gr_mpoleZoneRmax                 (:)
   real,              allocatable, save :: gr_mpoleInnerZoneDrRadii         (:)
-  real,       target,allocatable, save :: gr_mpoleMomRI                    (:,:,:)
-  real,                        pointer :: gr_mpoleMomentR                  (:,:)
-  real,                        pointer :: gr_mpoleMomentI                  (:,:)
+  real,              allocatable, save :: gr_mpoleMomRI                    (:,:,:)
+  real,              allocatable, save :: gr_mpoleMomentR                  (:,:)
+  real,              allocatable, save :: gr_mpoleMomentI                  (:,:)
   real,              allocatable, save :: gr_mpoleScratch                  (:,:,:)
 
   type (cellData1D), allocatable, save :: gr_mpoleQdataCells1D             (:,:)
