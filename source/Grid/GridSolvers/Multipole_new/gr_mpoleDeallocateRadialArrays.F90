@@ -49,13 +49,13 @@ subroutine gr_mpoleDeallocateRadialArrays ()
   if (allocated (gr_mpoleInnerZoneQupper) ) deallocate (gr_mpoleInnerZoneQupper)
   if (allocated (gr_mpoleInnerZoneQlower) ) deallocate (gr_mpoleInnerZoneQlower)
   if (allocated (gr_mpoleMomRI)         ) deallocate (gr_mpoleMomRI)  
-  if (allocated (gr_mpoleMomentR)         ) deallocate (gr_mpoleMomentR)
-  if (allocated (gr_mpoleMomentI)         ) deallocate (gr_mpoleMomentI)
   if (allocated (gr_mpoleQDampingR)       ) deallocate (gr_mpoleQDampingR)
   if (allocated (gr_mpoleQDampingI)       ) deallocate (gr_mpoleQDampingI)
   if (allocated (gr_mpoleQRadii)          ) deallocate (gr_mpoleQRadii)
   if (allocated (gr_mpoleQused)           ) deallocate (gr_mpoleQused)
   if (allocated (gr_mpoleScratch)         ) deallocate (gr_mpoleScratch)
+  nullify(gr_mpoleMomentR)
+  nullify(gr_mpoleMomentI)
 !
 !
 !       Done.
