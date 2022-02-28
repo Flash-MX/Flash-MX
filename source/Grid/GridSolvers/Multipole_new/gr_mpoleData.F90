@@ -143,6 +143,7 @@ module gr_mpoleData
   integer, save :: gr_mpoleMinRadialZone
   integer, save :: gr_mpoleOuterZoneQshift
   integer, save :: gr_mpoleTotalNrCosineMoments
+  integer, save :: gr_mpoleRequest  
 
   real,    save :: gr_mpoleDr
   real,    save :: gr_mpoleDrInv
