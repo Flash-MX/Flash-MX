@@ -26,8 +26,7 @@ subroutine Multiphase_setThermalProps()
   use Stencils_interface, ONLY : Stencils_lsCenterProps
   use Timers_interface,   ONLY : Timers_start,Timers_stop
   use Driver_interface,   ONLY : Driver_getNStep
-  use Grid_interface,     ONLY : Grid_getTileIterator,Grid_releaseTileIterator,&
-                                 Grid_fillGuardCells
+  use Grid_interface,     ONLY : Grid_getTileIterator,Grid_releaseTileIterator
   use Grid_tile,          ONLY : Grid_tile_t
   use Grid_iterator,      ONLY : Grid_iterator_t
 
@@ -36,20 +35,17 @@ subroutine Multiphase_setThermalProps()
   implicit none
   include "Flashx_mpi.h"
   integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
-  logical :: gcMask(NUNK_VARS+NDIM*NFACE_VARS)
   real, pointer, dimension(:,:,:,:) :: solnData
   integer :: ierr,i,j,k
   real del(MDIM)
   type(Grid_tile_t) :: tileDesc
   type(Grid_iterator_t) :: itor
-  integer TA(2),count_rate
-  real*8  ET
   real minCellDiag
 
 !------------------------------------------------------------------------------------------
-  CALL SYSTEM_CLOCK(TA(1),count_rate)
-
   nullify(solnData)
+
+  call Timers_start("Multiphase_setThermalProps")
 
   call Grid_getTileIterator(itor, nodetype=LEAF)
   do while(itor%isValid())
@@ -72,9 +68,7 @@ subroutine Multiphase_setThermalProps()
    end do
    call Grid_releaseTileIterator(itor)  
 
-   CALL SYSTEM_CLOCK(TA(2),count_rate)
-   ET=REAL(TA(2)-TA(1))/count_rate
-   if (mph_meshMe .eq. MASTER_PE)  write(*,*) 'Multiphase setThermalProps Time =',ET
+   call Timers_stop("Multiphase_setThermalProps")
 
    return
 
