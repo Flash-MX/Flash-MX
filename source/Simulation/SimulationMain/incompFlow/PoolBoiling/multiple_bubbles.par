@@ -36,8 +36,8 @@ sim_heaterName    = "multiple_bubbles"
 sim_heaterShowInfo = .FALSE.
 
 # Outflow parameters
-sim_lsSink        =  2.0 # Level set sink strength
-sim_outflowRegion = 10.0 # Outflow region 
+sim_outflowSink   =  2.0 # Outflow sink strength
+
 #       Grid dimensionality and geometry
 geometry	= "cartesian"
 
@@ -61,9 +61,9 @@ zr_boundary_type = "slip_ins"
 run_comment	= "Pool Boiling problem"
 log_file	= "INS_Pool_Boiling.log"
 basenm		= "INS_Pool_Boiling_"
-restart         = .true.
+restart         = .false.
 nend            = 10000000
-tmax            = 60.
+tmax            = 40.
 ins_cflFlg      = 1
 ins_cfl         = 0.05
 ins_sigma	= 0.05
@@ -82,7 +82,7 @@ plot_var_4      = "dfun"
 plot_var_5      = "temp"  
 plot_var_6      = "omgm"
 
-checkpointFileNumber = 100
+checkpointFileNumber = 0
 checkpointFileIntervalTime = 0.5
 checkpointFileIntervalStep = 5000
 

@@ -30,8 +30,12 @@ module sim_outflowData
    implicit none
 
    real, save :: sim_outflowVel(LOW:HIGH, MDIM)
-   real, save :: sim_lsSink
-   real, save :: sim_outflowRegion
+
+   real, save :: sim_outflowSink
+
+   real, save :: sim_outflowBuffer
    real, save :: sim_outflowGrowthRate
+
+   integer, save :: sim_domainBC(LOW:HIGH, MDIM)
 
 end module sim_outflowData
