@@ -29,13 +29,11 @@ module sim_outletData
 
    implicit none
 
-   real, save :: sim_outletVel(LOW:HIGH, MDIM)
-
    real, save :: sim_outletSink
-
    real, save :: sim_outletBuffer
    real, save :: sim_outletGrowthRate
 
-   integer, save :: sim_domainBC(LOW:HIGH, MDIM)
+   integer, save :: sim_outletFlag(LOW:HIGH, MDIM)
+   real, save    :: sim_outletVel(LOW:HIGH, MDIM)
 
 end module sim_outletData
