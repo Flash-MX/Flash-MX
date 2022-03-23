@@ -82,6 +82,8 @@ subroutine sim_outletSetForcing(tileDesc, dt)
 
    if (NDIM == MDIM) call Grid_getCellCoords(KAXIS, CENTER, tileDesc%level, lo, hi, zCenter)
 
+#if NDIM < MDIM
+
 #ifdef MULTIPHASE_MAIN
    call sim_outletLSDampingBlk2d(solnData(DFRC_VAR, :, :, :), &
                                  solnData(DFUN_VAR, :, :, :), &
@@ -108,7 +110,7 @@ subroutine sim_outletSetForcing(tileDesc, dt)
                            sim_xMin, sim_xMax, sim_yMin, sim_yMax, &
                            ins_gravX, ins_gravY)
 
-#if NDIM == MDIM
+#else
    call tileDesc%getDataPtr(facezData, FACEZ)
 
 #ifdef MULTIPHASE_MAIN
