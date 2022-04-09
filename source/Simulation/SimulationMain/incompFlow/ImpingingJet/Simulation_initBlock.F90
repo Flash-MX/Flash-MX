@@ -96,7 +96,8 @@ subroutine Simulation_initBlock(solnData, tileDesc)
             yi = yCenter(j)
             zi = zCenter(k)
 
-            Rcell = 0.6*sim_jetRadius + 0.4*sim_jetRadius*(sim_freeSurface - yi)/sim_freeSurface
+            !Rcell = 0.6*sim_jetRadius + 0.4*sim_jetRadius*(sim_freeSurface - yi)/sim_freeSurface
+            Rcell = sim_jetRadius
 
             jetProfile = sqrt((xi - sim_jetCoords(IAXIS))**2 + (zi - sim_jetCoords(KAXIS))**2) - Rcell
 
