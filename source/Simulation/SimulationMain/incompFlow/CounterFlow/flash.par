@@ -22,7 +22,7 @@ mph_invWeber = 0.004
 geometry	= "cartesian"
 
 # Simulation parameters
-sim_outletBuffer = 1.0
+sim_outletBuffer = 0.1
 sim_channelDepth = 1.0
 
 #       Size of computational volume
