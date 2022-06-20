@@ -31,7 +31,12 @@ subroutine MoL_init()
     use ml_interface, only: ml_init
     use MoL_data
 
+    use RuntimeParameters_interface, only: RuntimeParameters_get
+
     implicit none
+
+    call RuntimeParameters_get("MoL_verbosity", MoL_verbosity)
+    call RuntimeParameters_get("MoL_abortOnWarn", MoL_abortOnWarn)
 
     MoL_nscratch = 0
     MoL_nvars    = 0
