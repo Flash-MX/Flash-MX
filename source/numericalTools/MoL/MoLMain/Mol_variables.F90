@@ -37,4 +37,7 @@ module MoL_variables
     type(MoL_variable_t), allocatable, save :: MoL_vars(:)
     integer, save :: MoL_nvars = 0
 
+    ! For convenience
+    integer, allocatable, save :: MoL_unk_mask(:), MoL_scratch_mask(:)
+
 end module MoL_variables
