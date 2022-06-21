@@ -31,6 +31,9 @@ subroutine MoL_init()
     use ml_interface, only: ml_init
     use MoL_data
 
+    use erk_tableau,  only: erk_tableau_init
+    use imex_tableau, only: imex_tableau_init
+
     use RuntimeParameters_interface, only: RuntimeParameters_get
 
     implicit none
@@ -41,6 +44,7 @@ subroutine MoL_init()
     MoL_nscratch = 0
     MoL_nvars    = 0
 
+    ! Specific integrator setup
     call ml_init()
 
     ! +2 for MOL_INITIAL & MOL_RHS
