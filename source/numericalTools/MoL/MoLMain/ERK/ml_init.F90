@@ -54,5 +54,5 @@ subroutine ml_init()
 
     erk_K = (/ (MOL_RHS + i, i = 0,erk_stages-1) /)
 
-    MoL_nscratch = erk_stages
+    MoL_nscratch = erk_stages - 1
 end subroutine ml_init

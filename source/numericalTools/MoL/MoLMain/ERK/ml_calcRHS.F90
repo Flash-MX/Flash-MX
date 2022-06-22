@@ -28,8 +28,6 @@
 !!  ARGUMENTS
 !!
 !!      rhsType   : The type of RHS, one of:
-!!                  - MOL_RHS_ALL
-!!                  - MOL_RHS_SLOW
 !!                  - MOL_RHS_EXPLICIT
 !!                  - MOL_RHS_IMPLICIT
 !!                  - MOL_RHS_FAST
