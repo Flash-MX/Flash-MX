@@ -30,9 +30,7 @@
 subroutine MoL_init()
     use ml_interface, only: ml_init
     use MoL_data
-
-    use erk_tableau,  only: erk_tableau_init
-    use imex_tableau, only: imex_tableau_init
+    use MoL_variables
 
     use RuntimeParameters_interface, only: RuntimeParameters_get
 
