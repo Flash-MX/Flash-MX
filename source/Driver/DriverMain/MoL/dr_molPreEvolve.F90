@@ -32,7 +32,7 @@
 !!***
 subroutine dr_molPreEvolve(t)
     ! use Spacetime_interface,  only: Spacetime_molPreEvolve
-    ! use Hydro_interface,      only: Hydro_molPreEvolve
+    use Hydro_interface,      only: Hydro_molPreEvolve
     use RadTrans_interface,   only: RadTrans_molPreEvolve
     use Simulation_interface, only: Simulation_molPreEvolve
 
@@ -41,7 +41,7 @@ subroutine dr_molPreEvolve(t)
     real, intent(in) :: t
 
     ! call Spacetime_molPreEvolve  (t)
-    ! call Hydro_molPreEvolve      (t)
+    call Hydro_molPreEvolve      (t)
     call RadTrans_molPreEvolve   (t)
     call Simulation_molPreEvolve (t)
 end subroutine dr_molPreEvolve
