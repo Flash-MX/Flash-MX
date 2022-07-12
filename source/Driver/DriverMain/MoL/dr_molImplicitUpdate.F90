@@ -32,13 +32,13 @@
 !!
 !!***
 subroutine dr_molImplicitUpdate(t, dt)
-    ! use RadTrans_interface,   only: RadTrans_molImplicitUpdate
+    use RadTrans_interface,   only: RadTrans_molImplicitUpdate
     use Simulation_interface, only: Simulation_molImplicitUpdate
 
     implicit none
 
     real, intent(in) :: t, dt
 
-    ! call RadTrans_molImplicitUpdate   (t, dt)
+    call RadTrans_molImplicitUpdate   (t, dt)
     call Simulation_molImplicitUpdate (t, dt)
 end subroutine dr_molImplicitUpdate
