@@ -2,9 +2,6 @@
 @internal
 @defgroup MyUnitPrivate MyUnit's localAPI
 
-If multiple interfaces are included in localAPI, then please provide a brief
-description of each.
-
 @copyright Copyright 2022 UChicago Argonne, LLC and contributors
 
 \par License

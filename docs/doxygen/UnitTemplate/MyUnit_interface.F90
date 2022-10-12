@@ -13,17 +13,14 @@
 !!
 !! @file
 
-The file documentation header should be at the top of the file and should need
-no modification.  C-preprocessor macros can go here if so desired.  The next
-documentation block should be placed as close to the module as possible.
-
-Since a unit's public interface is defined by the stubs, this module, whose
-existence is motivated by Flash-X's internal design rules, does not need much
-documentation.  In particular, do *not* use doxygen to document the different
-interfaces.
-
-@ingroup should refer to the group name for this unit's stub name.  This is
-declared as the first item in the @defgroup statement in MyUnit.dox.
+! FORMATTING RULES
+!
+! The file documentation header should be at the top of the file and should need
+! no modification.  C-preprocessor macros can go here if so desired.  The next
+! documentation block should be placed as close to the module as possible.
+! 
+! @ingroup should refer to the group name for this unit's stub group.  This is
+! declared as the first item in the @defgroup statement in MyUnit.dox.
 
 !> @ingroup MyUnit
 !!
@@ -37,6 +34,10 @@ module MyUnit_interface
 
     implicit none
 
+    ! Since a unit's public interface is defined by the stubs, this module, whose
+    ! existence is motivated by Flash-X's internal design rules, does not need
+    ! much documentation.  In particular, do *not* use doxygen to document the
+    ! different interfaces below.
     interface
         subroutine MyUnit_myRoutine(a, b, c)
             implicit none
