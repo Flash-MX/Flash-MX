@@ -91,8 +91,6 @@ subroutine sim_verifySolution(t, valid, maxError)
                u_err = abs(vars(U_VAR, i, j, k) - u_actual)
                v_err = abs(vars(V_VAR, i, j, k) - v_actual)
 
-               print *, i, j, k, u_err, v_err
-
                maxError = max(maxError, u_err)
                maxError = max(maxError, v_err)
             end do ! i
