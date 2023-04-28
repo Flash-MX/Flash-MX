@@ -1,6 +1,6 @@
 !!****if* source/Grid/GridSolvers/Multipole_new/gr_mpolePot3Dcartesian
 !! NOTICE
-!!  Copyright 2022 UChicago Argonne, LLC and contributors
+!!  Copyright 2023 UChicago Argonne, LLC and contributors
 !!
 !!  Licensed under the Apache License, Version 2.0 (the "License");
 !!  you may not use this file except in compliance with the License.
@@ -66,7 +66,8 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
        gr_mpoleInnerZoneResolution,    &
        gr_mpoleInnerZoneResolutionInv, &
        gr_mpoleOuterZoneQshift,        &
-       gr_mpoleMultiThreading
+       gr_mpoleMultiThreading,         &
+       gr_mpoleThreadTileList
 
   use gr_mpoleData,      ONLY : gr_mpoleXcenter,                &
        gr_mpoleYcenter,                &
@@ -139,7 +140,7 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
   !
   !
 
-  !$omp parallel if (gr_mpoleMultiThreading) &
+  !$omp parallel if (gr_mpoleMultiThreading .AND. gr_mpoleThreadTileList) &
   !$omp default(none) &
   !$omp private(z,kC,k2,jB,jS,y,jC,j2,iB,x,iC,i2,r,&
   !$omp         innerZonePotential,rinDrs,drUnit,qlower,qupper,qfracR,qfracI,&
@@ -625,25 +626,18 @@ subroutine gr_mpolePot3Dcartesian (ipotvar)
               !
               !
               if (i2) then
-                 !$omp atomic
                  solnData (ipotvar,iC-1,jC,kC) = solnData (ipotvar,iC-1,jC,kC) + facePotential
-                 !$omp atomic
                  solnData (ipotvar,iC  ,jC,kC) = solnData (ipotvar,iC  ,jC,kC) + facePotential
 
               else if (j2) then
-                 !$omp atomic
                  solnData (ipotvar,iC,jC-1,kC) = solnData (ipotvar,iC,jC-1,kC) + facePotential
-                 !$omp atomic
                  solnData (ipotvar,iC,jC  ,kC) = solnData (ipotvar,iC,jC  ,kC) + facePotential
 
               else if (k2) then
-                 !$omp atomic
                  solnData (ipotvar,iC,jC,kC-1) = solnData (ipotvar,iC,jC,kC-1) + facePotential
-                 !$omp atomic
                  solnData (ipotvar,iC,jC,kC  ) = solnData (ipotvar,iC,jC,kC  ) + facePotential
 
               else
-                 !$omp atomic
                  solnData (ipotvar,iC,jC,kC) = solnData (ipotvar,iC,jC,kC) + facePotential
 
               end if
