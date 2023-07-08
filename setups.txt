@@ -1,0 +1,4 @@
+./setup Sedov -auto -nxb 12 -nyb 12
+./setup Sedov -auto -nxb 12 -nyb 12 +spark
+
+./setup Stir -objdir=objStir -auto -3d -nxb 32 -nyb 32 -nzb 32
