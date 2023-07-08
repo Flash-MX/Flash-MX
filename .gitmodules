@@ -10,4 +10,4 @@
 	url = https://github.com/Flash-X/PARAMESH-for-Flash-X.git
 [submodule "source/physics/sourceTerms/Stir/StirMain/turbulence_generator"]
         path = source/physics/sourceTerms/Stir/StirMain/turbulence_generator
-        url = git@bitbucket.org:chfeder/turbulence_generator.git
+        url = https://github.com/chfeder/turbulence_generator.git
