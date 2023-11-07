@@ -1,4 +1,4 @@
-!!****if* source/monitors/Profiler/ProfilerMain/Profiler_data
+!!****f* source/physics/ImBound/ImBound_reInitGridVars
 !! NOTICE
 !!  Copyright 2022 UChicago Argonne, LLC and contributors
 !!
@@ -11,21 +11,20 @@
 !!  See the License for the specific language governing permissions and
 !!  limitations under the License.
 !!
-!! NAME
-!!  Profiler_data
+!!
+!!
+!!
+!! ImBound_reInitGridVars
+!!
 !!
 !! SYNOPSIS
 !!
-!!  use Profiler_data
 !!
 !! DESCRIPTION
 !!
-!!  Holds the data needed by the Profiler unit
-!!
 !!***
-
-module Profiler_data
-  implicit none
-  character (len=*), parameter :: prf_evolutionName = 'FLASH_evolution'
-  logical, save :: prf_evolutionOnly
-end module Profiler_data
+subroutine ImBound_reInitGridVars(tileDesc)
+   use Grid_tile, ONLY: Grid_tile_t
+   implicit none
+   type(Grid_tile_t), intent(in) :: tileDesc
+end subroutine ImBound_reInitGridVars
