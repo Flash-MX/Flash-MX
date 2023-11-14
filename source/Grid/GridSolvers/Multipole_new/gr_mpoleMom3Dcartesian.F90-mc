@@ -32,7 +32,7 @@
 !!  idensvar : the index of the density variable
 !!
 !!***
-!!Novariants
+!!NOVARIANTS
 !!REORDER(4): Uin
 
 subroutine gr_mpoleMom3Dcartesian (idensvar)
@@ -83,7 +83,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
 
   real    :: bndBox (LOW:HIGH,1:MDIM)
 
-  @M iter_declare(tileLimits,tileLimitsGC)
+  @M iter_declare(tileLimits,tileLimitsGC,grownLimits)
 !
 !
 !     ...The first pass over all tiles on the current processor will get us information
@@ -95,7 +95,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   gr_mpoleQused (:) = 0 
 
   NULLIFY(Uin)
-  @M iter_all_begin(LEAF,.false.,tileLimits,tileLimitsGC)     
+  @M iter_all_begin(LEAF,.false.,tileLimits,tileLimitsGC,deltas)     
 
      call tileDesc%boundBox(bndBox)
      imin       = tileLimits (LOW, IAXIS)
@@ -157,7 +157,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
 
   nQ = 0
 
-   @M iter_all_begin(LEAF,.FALSE.,tileLimits,tileLimitsGC)  
+   @M iter_all_begin(LEAF,.FALSE.,tileLimits,tileLimitsGC,deltas)  
 
       call tileDesc%boundBox(bndBox)
 

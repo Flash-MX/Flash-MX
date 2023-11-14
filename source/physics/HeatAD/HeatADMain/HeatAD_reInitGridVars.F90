@@ -1,4 +1,5 @@
 !!****if* source/physics/HeatAD/HeatADMain/HeatAD_reInitGridVars
+!!
 !! NOTICE
 !!  Copyright 2022 UChicago Argonne, LLC and contributors
 !!
@@ -21,43 +22,49 @@
 #include "HeatAD.h"
 #include "Simulation.h"
 
-subroutine HeatAD_reInitGridVars()
+subroutine HeatAD_reInitGridVars(tileDesc)
 
-  use Grid_interface,   ONLY : Grid_getTileIterator,Grid_releaseTileIterator
-  use Grid_tile,        ONLY : Grid_tile_t
-  use Grid_iterator,    ONLY : Grid_iterator_t
-  use Timers_interface, ONLY : Timers_start, Timers_stop
-  use Driver_interface, ONLY : Driver_getNStep
-  use HeatAD_data
+   use Grid_tile, ONLY: Grid_tile_t
+   use Timers_interface, ONLY: Timers_start, Timers_stop
+   use Driver_interface, ONLY: Driver_getNStep
+   use HeatAD_data
 
-!------------------------------------------------------------------------------------------
-  implicit none
-  include "Flashx_mpi.h"
-  integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
-  real, pointer, dimension(:,:,:,:) :: solnData
-  integer TA(2),count_rate
-  real*8  ET
-  type(Grid_tile_t) :: tileDesc
-  type(Grid_iterator_t) :: itor
+   !------------------------------------------------------------------------------------------
+   implicit none
+   include "Flashx_mpi.h"
+   type(Grid_tile_t), intent(in) :: tileDesc
 
-!------------------------------------------------------------------------------------------
-  nullify(solnData)
-  CALL SYSTEM_CLOCK(TA(1),count_rate)
-  call Grid_getTileIterator(itor, nodetype=LEAF)
-  do while(itor%isValid())
-     call itor%currentTile(tileDesc)
-     call tileDesc%getDataPtr(solnData,  CENTER)
-     solnData(RHST_VAR,:,:,:) = 0.
-     solnData(TFRC_VAR,:,:,:) = 0.
-     ! Release pointers:
-     call tileDesc%releaseDataPtr(solnData,  CENTER)
-     call itor%next()
-  end do
-  call Grid_releaseTileIterator(itor)  
+   real, pointer, dimension(:, :, :, :) :: solnData
+   integer :: i, j, k
+   !------------------------------------------------------------------------------------------
 
-  CALL SYSTEM_CLOCK(TA(2),count_rate)
-  ET=REAL(TA(2)-TA(1))/count_rate
-  if (ht_meshMe .eq. MASTER_PE)  write(*,*) 'Total HeatAD reInit Grid Vars Time =',ET
+   nullify (solnData)
 
-  return
+   call Timers_start("HeatAD_reInitGridVars")
+
+   call tileDesc%getDataPtr(solnData, CENTER)
+
+   do k = tileDesc%blkLimitsGC(LOW, KAXIS), tileDesc%blkLimitsGC(HIGH, KAXIS)
+      do j = tileDesc%blkLimitsGC(LOW, JAXIS), tileDesc%blkLimitsGC(HIGH, JAXIS)
+         do i = tileDesc%blkLimitsGC(LOW, IAXIS), tileDesc%blkLimitsGC(HIGH, IAXIS)
+
+            ! DEVNOTE (10/24/2023):
+            ! See accompanying changes in reInitGridVars routines
+            ! in other physics units. Only including initialzation
+            ! that are necessary.
+#ifdef HEATAD_VARDIFFUSION
+            solnData(ALPH_VAR, i, j, k) = 1.
+#endif
+            solnData(HTN0_VAR, i, j, k) = 0.
+            solnData(TFRC_VAR, i, j, k) = 0.
+
+         end do
+      end do
+   end do
+   ! Release pointers:
+   call tileDesc%releaseDataPtr(solnData, CENTER)
+
+   call Timers_stop("HeatAD_reInitGridVars")
+
+   return
 end subroutine HeatAD_reInitGridVars

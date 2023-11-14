@@ -263,12 +263,6 @@ module gr_interface
   end interface
 
   interface
-     subroutine gr_setBlockType(blockID,type)
-       integer, intent(IN) :: blockID, type
-     end subroutine gr_setBlockType
-  end interface
-
-  interface
      subroutine gr_xyzToBlockLevel(lev, xyz, ijk)
        integer, intent(in) :: lev
        real, intent(in) :: xyz(NDIM)
@@ -303,6 +297,13 @@ module gr_interface
                                           regionSize(THIRD_DIR),  &
                                           1:MDIM)
     end subroutine gr_getRegionDataCoordinates
+  end interface
+
+  interface
+     subroutine gr_enforceMaxRefine(lrefineUserMax)
+        implicit none
+        integer, intent(in) :: lrefineUserMax
+     end subroutine gr_enforceMaxRefine
   end interface
 
 end module gr_interface

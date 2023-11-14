@@ -255,29 +255,19 @@ class UnitList:
         self.addUnits(ans)
 
     def recursiveGetDir(self,path):
-
-      def vfunc(ans,dname,fnames):
-          GVars.out.put('...while walking, ans=%s, dname="%s", fnames=%s ...'%(ans,dname,fnames),globals.DEBUG)
-          fnames.sort()
-          dontDescend = []
-          # remove all (a) ".files" and (b) non-directories from fnames 
-          for x in fnames:
-              if x[0] == ".": # names starting with . to be ignored
-                  dontDescend.append(x)
-                  continue
-              jname = os.path.join(dname,x)
-              if not os.path.isdir(jname): # not a directory, also ignored
-                  dontDescend.append(x)
-                  continue
-          # removal in place so recursion does not go there
-          for x in dontDescend:
-              fnames.remove(x)
-          # if we descended into this dname directory, append it to answer list
-          ans.append(dname)
-
-      ans = []
       GVars.out.put('Will walk %s ...'%path,globals.DEBUG)
-      os.path.walk(path,vfunc,ans) 
+      
+      ans = []
+      for root, dirs, files in os.walk(path):
+          # Unfortunately these are not skipped automatically
+          # but we can modify dirs in place for top-down traversal
+          # of the directory structure to make sure that `os.walk`
+          # properly excludes everything in `.*` directories
+          for dir in dirs:
+              if(dir[0] == '.'):
+                  dirs.remove(dir)
+          ans.append(root)
+          
       # now ans contains the list of all directories inside path 
       # except "." directories and their children
       GVars.out.put('...and found %s by walking.'%ans,globals.DEBUG)
@@ -398,7 +388,7 @@ class UnitList:
       # split unitnames into list describing path
       pathlist = [unitname.split("/") for unitname in list(self.units.keys())]
       # First do a lexicographic sort as that should get most of elements in place
-      # since this is optimized in python, we have done most of the work without using
+      # since this is optimized in python3, we have done most of the work without using
       # our fancy ordering
       pathlist.sort() 
       # now use our fancy sorting routine, so hopefully there are few calls to our 
@@ -417,13 +407,62 @@ class UnitList:
         cInfo.unitNames = self.getList()
         return cInfo
 
-    def getVariants(self,unitName):
+    def getAllVariants(self,unitName):
+      varList = []
+      for var in self.units[unitName]['VARIANTS']:
+        varUnit = unitName + "/" + var
+        varList.append(varUnit)
+      return varList
+
+    def getRequestedVariants(self,unitName):
       varList = []
       for var in self.units[unitName]['VARIANTS']:
         varUnit = unitName + "/" + var
         if self.hasUnit(varUnit):
           varList.append(var)
+      isNull = [ var.lower() == 'null' for var in self.units[unitName]['VARIANTS'] ]
+      if (len(varList)==0 and any(isNull) ):
+        varList.append('Null')
       return varList
+
+    def recursiveGetDefs(self,sourceDir,targetUnit):
+        defsList = []
+        # Since this list has been sorted, the children should be
+        # checked in the proper order
+        for unit in self.getLinkOrder():
+            if(targetUnit.startswith(unit) or unit.startswith(targetUnit)):
+                isVariant = False
+                for varUnit in self.getAllVariants(targetUnit):
+                    if(unit.startswith(varUnit)):
+                        isVariant = True
+
+                if(not isVariant):
+                    unitDir = os.path.join(sourceDir,unit)
+                    defsList += getDefs(unitDir)
+        return defsList
+
+    # A unit needs definitions from itself as well as any unit it REQUIRES.
+    # Units that are either direct parents or direct children of a target Unit
+    # should be crawled (unless they are a variant).
+    def collectDefs(self,sourceDir,unitName,binDir,simDir):
+        defsList = [[],[]] # two lists, variant-specific definitions should be inbetween
+
+        # get common defs from bin dir
+        defsList[0] += getDefs(binDir)
+
+        # get all defs from required units
+        requiredList = self.units[unitName]["REQUIRES"]
+        for requiredSet in requiredList:
+            for requiredUnit in requiredSet:
+                defsList[0] += self.recursiveGetDefs(sourceDir,requiredUnit)
+
+        # get defs for the unit itself
+        defsList[0] += self.recursiveGetDefs(sourceDir,unitName)
+
+        # defs in simulation directory should overwrite others
+        defsList[1] += getDefs(simDir)
+
+        return defsList
 
     def generateUnitsfile(self):
       # called only when '-auto' flag is passed
@@ -747,3 +786,10 @@ def getLowestBase(base):
     except IndexError:
        return base
 
+def getDefs(dirName):
+    defsList = []
+    for f in os.listdir(dirName):
+        fpath = os.path.join(dirName,f)
+        if os.path.isfile(fpath) and os.path.splitext(fpath)[-1]==".ini":
+            defsList.append(fpath )
+    return defsList

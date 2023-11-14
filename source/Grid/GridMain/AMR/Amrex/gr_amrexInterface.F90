@@ -27,6 +27,11 @@
 !!***
 
 #include "AMReX_Config.H"
+
+#ifndef AMREX_GIT_VERSION
+#include "AMReX_Version.H"
+#endif
+
 #if N_DIM != AMREX_SPACEDIM
 # error AMREX_SPACEDIM of the AMReX library does not match the NDIM of FLASH!
 #endif
@@ -266,11 +271,12 @@ module gr_amrexInterface
   end interface
 
   interface
-    subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP)
+    subroutine gr_restrictAllLevels(gridDataStruct, convertPtoC, convertCtoP, chunksCC, chunksFC)
       implicit none
       integer, intent(IN) :: gridDataStruct
       logical, intent(IN) :: convertPtoC
       logical, intent(IN) :: convertCtoP
+      integer, intent(IN), dimension(:,:), optional :: chunksCC, chunksFC
     end subroutine gr_restrictAllLevels
   end interface
  

@@ -125,7 +125,7 @@ class LibUnion(dict):
      # does ...lib/libname/libinfo.py exist?
      if os.path.isfile(os.path.join(libDir,'libinfo.py')):
        # use the new method of getting info
-       sys.path.insert(1,libDir) # ask python to search here
+       sys.path.insert(1,libDir) # ask python3 to search here
        # call the libinfo function in libinfo.py and store its result
        libFlags = __import__("libinfo").libinfo(absLibDir=libDir,
                               relLibDir=relLibDir,
@@ -134,6 +134,7 @@ class LibUnion(dict):
                               macros=self.macros)
        sys.path.remove(libDir)
        del sys.modules["libinfo"]
+       libinfoRebuildFlag = libFlags.get("REBUILD",None)
        # if we are an internal library and need to rebuild
        if libFlags == None: # programming error
           raise SetupError("libinfo for %s returned nothing. Programming error" % base)
@@ -141,7 +142,7 @@ class LibUnion(dict):
           libFlags = self.intLibFlags(base,subdir=libFlags["INTERNAL"],absLibDir=libDir,relLibDir=relLibDir)
        if "EXTERNAL" in libFlags: # pick up default flag info for external
           libFlags = self.extLibFlags(libFlags["EXTERNAL"],buildFlag)
-       if self[lib]["TYPE"]=="INTERNAL" and libFlags.get("REBUILD",None):
+       if self[lib]["TYPE"]=="INTERNAL" and libFlags.get("REBUILD",libinfoRebuildFlag):
           self.makeBinary(libDir,base,makefilename)
        return libFlags
 
@@ -176,7 +177,8 @@ class LibUnion(dict):
         includeMacro = ''
     ans["CFLAGS"] = includeMacro
     ans["FFLAGS"] = includeMacro
-    if not os.path.isfile(os.path.join(absLibDir,"lib%s.a"%libname)):
+    absLibObjDir = os.path.join(absLibDir, 'object')
+    if not os.path.isfile(os.path.join(absLibObjDir,"lib%s.a"%libname)):
        ans["REBUILD"]=1
     return ans
 

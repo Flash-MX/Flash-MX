@@ -24,6 +24,7 @@ class preProcess:
    relse  = re.compile(r"^\s*ELSE\s*(?:#.*)?$")
    rendif = re.compile(r"^\s*END\s*IF\s*(?:#.*)?$")
    ruse   = re.compile(r"^\s*USESETUPVARS\s+(?P<vars>.*)(?:#.*)?$")
+   runoff = re.compile(r"^\s*UNOFFICIAL\s*(?P<msg>.*)?\s*$")
 
    rD     = re.compile(r"^\s*D\s+")
    rParam = re.compile(r"^\s*PARAMETER\s+")
@@ -37,15 +38,16 @@ class preProcess:
       self.initvalues.update(values)
       self.values = {}
       self.filename = ""
+      self.name = ""
       self.lineno = 0
       self.ignorePP = ignorePP
    
    def processFile(self,filename):
       fd = open(filename,"r")
       self.filename = filename
-      # if the first line of the file starts with ##python, then we compile it as python and run its genLines method to get the lines
-      if fd.readline().startswith("##python:genLines"):
-          # read the rest of the file (doesnt include ##python:genLines line) and compile it into code
+      # if the first line of the file starts with ##python3, then we compile it as python3 and run its genLines method to get the lines
+      if fd.readline().startswith("##python3:genLines"):
+          # read the rest of the file (doesnt include ##python3:genLines line) and compile it into code
           code = compile(fd.read(), filename, "exec")
           fd.close()
           # initialize a namespace with the prelude code
@@ -114,6 +116,8 @@ class preProcess:
          return "USESETUPVARS"
       elif self.rerr.match(line):
          return "SETUPERROR"
+      elif self.runoff.match(line):
+         return "UNOFFICIAL"
       else: return None
 
    def docKeyword(self, line):
@@ -254,6 +258,13 @@ class preProcess:
                raise SetupError("\n".join(msg))
          elif m=="USESETUPVARS": # found a use line
             self.checkUse(line)
+         elif m=="UNOFFICIAL":
+            if(not self.name.startswith(tuple(GVars.withUnofficial))):
+                mobj = self.runoff.match(line)
+                if(mobj.group('msg') != ''):
+                    print(mobj.group('msg'))
+                msg = 'ERROR: Cannot setup with Unofficial unit: %s'%(self.name)
+                raise SetupError(msg)
          else: # regular line
             raise SetupError("Programming Error")
       # finished processing all lines

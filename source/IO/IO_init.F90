@@ -62,7 +62,7 @@
 !!        Initial checkpoint file number (used for restarts as well)
 !!    memory_stat_freq [INTEGER]
 !!        Specify the number of timesteps between memory statistic dumps to
-!!        flash.log
+!!        flashx.log
 !!    outputSplitNum [INTEGER]
 !!        Split checkpoint, plotfiles, particle plots into this many files per
 !!        dump
@@ -112,6 +112,8 @@
 !!
 !!    plot_grid_var_12 [STRING]
 !!
+!!    plot_grid_var_13 [STRING]
+!!
 !!    plot_grid_var_2 [STRING]
 !!
 !!    plot_grid_var_3 [STRING]
@@ -139,7 +141,7 @@
 !!        Checkpoint after XX seconds (wallclock time) This is useful to ensure
 !!        that the job outputs a restart file before a queue window closes.
 !!    wr_integrals_freq [INTEGER]
-!!        Number of timesteps between writing to flash.dat
+!!        Number of timesteps between writing to flashx.dat
 !!
 !!
 !!***

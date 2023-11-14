@@ -63,6 +63,10 @@ Module Grid_data
   integer, target, save :: lo_bc_amrex(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
   integer, target, save :: hi_bc_amrex(NDIM, UNK_VARS_BEGIN:UNK_VARS_END)
 
+  ! BC information for face variables
+  integer, target, save :: lo_bc_amrexFace(NDIM, NFACE_VARS, NDIM)
+  integer, target, save :: hi_bc_amrexFace(NDIM, NFACE_VARS, NDIM)
+
   ! These are historical.
   ! Within the AMReX implementation, the number of guardcells
   ! is set to NGUARD for all directions.  Code in the Amrex 
@@ -78,7 +82,6 @@ Module Grid_data
   logical, save :: gr_amrexDidRefinement = .FALSE.
 
 !  integer,save,dimension(MDIM)::gr_bndOrder
-!  integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars
   integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vartypes
   logical, save :: gr_justExchangedGC
 !  logical, save :: gr_isolatedBoundaries
@@ -107,7 +110,7 @@ Module Grid_data
   integer, save :: gr_domainBC(2, MDIM)
 !  integer,save,dimension(2,MDIM) :: gr_blkBC
   logical, save :: gr_dirIsAngular(MDIM)
-!  logical, save :: gr_geometryOverride
+  logical, save :: gr_geometryOverride = .FALSE.
   character(len=MAX_STRING_LENGTH) :: gr_str_geometry
   integer, save :: gr_refine_var(MAXREFVARS)
   real,    save :: gr_refine_cutoff(MAXREFVARS)
@@ -118,11 +121,14 @@ Module Grid_data
   logical, save :: gr_doFluxCorrection
 
   logical, save :: gr_enableMaskedGCFill
+  logical, save :: gr_gcFillSingleVarRange
 
-  integer, save :: gr_interpolator
+  integer, save :: gr_interpolator, gr_interpolatorFace
 
   logical, save :: gr_enableTiling, gr_useTiling
   integer, save :: gr_tileSize(1:MDIM)
+
+  logical, save :: gr_amrexUseBittree
 
 #ifdef GRID_WITH_MONOTONIC
   integer, save :: gr_intpolStencilWidth
@@ -169,4 +175,5 @@ Module Grid_data
 !  real,allocatable,dimension(:) :: gr_error
 
   integer, save :: gr_envOmpNumThreads
+
 end Module Grid_data

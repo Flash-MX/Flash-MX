@@ -32,7 +32,7 @@
 !!  idensvar : the index of the density variable
 !!
 !!***
-!!Novariants
+!!NOVARIANTS
 !!REORDER(4): Uin
 
 subroutine gr_mpoleMom2Dcylindrical (idensvar)
@@ -82,7 +82,7 @@ subroutine gr_mpoleMom2Dcylindrical (idensvar)
   real    :: z
   real    :: bndBox (LOW:HIGH,1:MDIM)
 
-   @M iter_declare(tileLimits   ,tileLimitsGC)
+   @M iter_declare(tileLimits   ,tileLimitsGC, grownLimits)
 
 !
 !
@@ -95,7 +95,7 @@ subroutine gr_mpoleMom2Dcylindrical (idensvar)
   gr_mpoleQused (:) = 0 
   nullify(Uin)
 
-   @M iter_all_begin(LEAF,.FALSE.,tileLimits,tileLimitsGC)
+   @M iter_all_begin(LEAF,.FALSE.,tileLimits,tileLimitsGC,deltas)
      call tileDesc%boundBox(bndBox)
      imin       = tileLimits (LOW, IAXIS)
      jmin       = tileLimits (LOW, JAXIS)
@@ -172,7 +172,7 @@ subroutine gr_mpoleMom2Dcylindrical (idensvar)
   gr_mpoleQused (:) = 0 
 
   nQ = 0
-   @M iter_all_begin(LEAF,.FALSE.,tileLimits,tileLimitsGC)
+   @M iter_all_begin(LEAF,.FALSE.,tileLimits,tileLimitsGC,deltas)
      
      call tileDesc%boundBox(bndBox)
 

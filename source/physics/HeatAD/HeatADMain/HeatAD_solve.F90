@@ -18,66 +18,66 @@
 
 #include "constants.h"
 #include "HeatAD.h"
-#include "Simulation.h"   
+#include "Simulation.h"
 
-subroutine HeatAD_solve(dt)
+subroutine HeatAD_solve(tileDesc, dt)
 
    use HeatAD_data
-   use Timers_interface,    ONLY : Timers_start, Timers_stop
-   use Driver_interface,    ONLY : Driver_getNStep
-   use Grid_interface,      ONLY : Grid_fillGuardCells,Grid_getTileIterator,Grid_releaseTileIterator
-   use Grid_tile,           ONLY : Grid_tile_t
-   use Grid_iterator,       ONLY : Grid_iterator_t
-   use Stencils_interface,  ONLY : Stencils_integrateEuler
+   use Timers_interface, ONLY: Timers_start, Timers_stop
+   use Driver_interface, ONLY: Driver_getNStep, Driver_abort
+   use Grid_tile, ONLY: Grid_tile_t
+   use Stencils_interface, ONLY: Stencils_integrateEuler, Stencils_integrateAB2
 
    implicit none
    include"Flashx_mpi.h"
-   real,    INTENT(IN) :: dt
+   real, INTENT(IN) :: dt
+   type(Grid_tile_t), INTENT(IN) :: tileDesc
 
 !--------------------------------------------------------------------------------------------
    real ::  del(MDIM)
-   integer, dimension(2,MDIM) :: blkLimits, blkLimitsGC
-   logical :: gcMask(NUNK_VARS+NDIM*NFACE_VARS)
-   real, pointer, dimension(:,:,:,:) :: solnData
-   integer TA(2),count_rate,ierr
-   real*8  ET
-   type(Grid_tile_t) :: tileDesc
-   type(Grid_iterator_t) :: itor
+   integer, dimension(2, MDIM) :: blkLimits, blkLimitsGC
+   real, pointer, dimension(:, :, :, :) :: solnData
    real :: diffusion_coeff
 
 !---------------------------------------------------------------------------------------------
-   CALL SYSTEM_CLOCK(TA(1),count_rate)
+   call Timers_start("HeatAD_solve")
 
-   nullify(solnData)
+   nullify (solnData)
+
+   if (ht_intSchm /= 1 .and. ht_intSchm /= 2) then
+      call Driver_abort("[HeatAD_solve] ht_intSchm should be 1 or 2")
+   end if
 
    diffusion_coeff = ht_invReynolds/ht_Prandtl
 
-   call Grid_getTileIterator(itor, nodetype=LEAF)
-   do while(itor%isValid())
-     call itor%currentTile(tileDesc)
-     call tileDesc%getDataPtr(solnData,  CENTER)
-     call tileDesc%deltas(del)
+   call tileDesc%getDataPtr(solnData, CENTER)
+   call tileDesc%deltas(del)
 
-     call Stencils_integrateEuler(solnData(TEMP_VAR,:,:,:),&
-                                  solnData(RHST_VAR,:,:,:),&
-                                  dt,&
-                                  GRID_ILO,GRID_IHI,&
-                                  GRID_JLO,GRID_JHI,&
-                                  GRID_KLO,GRID_KHI,&
-                                  iSource=solnData(TFRC_VAR,:,:,:))
+   if (ht_intSchm == 1) then
+      call Stencils_integrateEuler(solnData(TEMP_VAR, :, :, :), &
+                                   solnData(HTN0_VAR, :, :, :), &
+                                   dt, &
+                                   GRID_ILO, GRID_IHI, &
+                                   GRID_JLO, GRID_JHI, &
+                                   GRID_KLO, GRID_KHI, &
+                                   iSource=solnData(TFRC_VAR, :, :, :))
 
-     call tileDesc%releaseDataPtr(solnData, CENTER)
-     call itor%next()
-  end do
-  call Grid_releaseTileIterator(itor)  
+   else if (ht_intSchm == 2) then
+      call Stencils_integrateAB2(solnData(TEMP_VAR, :, :, :), &
+                                 solnData(HTN0_VAR, :, :, :), &
+                                 solnData(HTN1_VAR, :, :, :), &
+                                 dt, &
+                                 GRID_ILO, GRID_IHI, &
+                                 GRID_JLO, GRID_JHI, &
+                                 GRID_KLO, GRID_KHI, &
+                                 iSource=solnData(TFRC_VAR, :, :, :))
 
-  gcMask = .FALSE.
-  gcMask(TEMP_VAR)=.TRUE.
-  call Grid_fillGuardCells(CENTER,ALLDIR,&
-       maskSize=NUNK_VARS+NDIM*NFACE_VARS,mask=gcMask)
+      solnData(HTN1_VAR, :, :, :) = solnData(HTN0_VAR, :, :, :)
 
-  CALL SYSTEM_CLOCK(TA(2),count_rate)
-  ET=REAL(TA(2)-TA(1))/count_rate
-  if (ht_meshMe .eq. MASTER_PE)  write(*,*) 'Total Heat AD Solve Time =',ET
+   end if
+
+   call tileDesc%releaseDataPtr(solnData, CENTER)
+
+   call Timers_stop("HeatAD_solve")
 
 end subroutine HeatAD_solve

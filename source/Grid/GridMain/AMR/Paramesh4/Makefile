@@ -7,7 +7,7 @@ Grid += gr_updateData.o gr_createDomain.o gr_recreateDomain.o \
         Paramesh_finalize.o  gr_initParameshArrays.o \
 	gr_restrictTree.o \
 	gr_markVarThreshold.o gr_markInRadius.o gr_markWithRadius.o \
-        gr_markInRectangle.o gr_markEllipsoid.o \
+        gr_markInRectangle.o gr_markEllipsoid.o gr_markVarBounds.o \
         gr_updateRefinement.o gr_findWhichChild.o gr_getBlkHandle.o \
 	gr_findWhichChildren.o \
 	gr_unmarkRefineByLogRadius.o gr_markDerefineByLogRadius.o gr_markDerefineByTime.o gr_enforceMaxRefine.o \
@@ -19,7 +19,7 @@ Grid += gr_freeCommRecvBuffer.o gr_checkGridConsistency.o gr_initParameshDomainB
 
 Grid += prolong_arrays.o  \
         mpi_amr_1blk_guardcell.o mpi_amr_1blk_guardcell_c_to_f.o \
-        mpi_amr_1blk_restrict.o mpi_amr_checkpoint_wr.o mpi_amr_checkpoint_re.o	\
+        mpi_amr_1blk_restrict.o	\
         mpi_amr_comm_setup.o mpi_amr_derefine_blocks.o mpi_amr_check_derefine.o mpi_amr_edge_average.o \
         mpi_amr_edge_average_udt.o mpi_amr_edge_average_vdt.o	\
         mpi_amr_edge_diagonal_check.o mpi_amr_flux_conserve.o	\
@@ -58,10 +58,12 @@ Grid += prolong_arrays.o  \
         amr_prolong_cc_fun_init.o amr_prolong_face_fun_init.o	\
         amr_prolong_fun_init.o amr_restrict_ec_fun.o amr_restrict_edge.o \
         amr_restrict_fc_fun.o amr_restrict_red.o amr_restrict_unk_fun.o	\
+	amr_restrict_unk_dg.o \
         amr_restrict_work_fun.o	\
         amr_restrict_work_fun_recip.o amr_q_sort_real.o amr_q_sort.o \
         amr_system_calls.o amr_1blk_cc_prol_genorder.o	\
         amr_1blk_cc_prol_inject.o amr_1blk_cc_prol_linear.o	\
+        amr_1blk_cc_prol_dg.o \
         amr_1blk_cc_prol_work_genorder.o \
         amr_1blk_cc_prol_work_mg.o \
         amr_1blk_cc_prol_work_inject.o amr_1blk_cc_prol_work_linear.o	\
@@ -76,13 +78,6 @@ Grid += prolong_arrays.o  \
         mpi_amr_boundary_block_info.o  \
         amr_set_runtime_parameters.o      \
         amr_1blk_fc_clean_divb.o physicaldata.o \
-        mpi_amr_checkpoint_wr_default.o \
-        mpi_amr_checkpoint_wr_hdf5.o \
-        mpi_amr_checkpoint_wr_mpiio.o \
-        mpi_amr_checkpoint_re_default.o \
-        mpi_amr_checkpoint_re_hdf5.o \
-        mpi_amr_checkpoint_re_mpiio.o \
-        mpi_amr_plotfile_chombo.o \
         mpi_amr_singular_line.o \
         mpi_put_edge_buffer_1blk.o \
         amr_1blk_cc_prol_user.o \
@@ -119,6 +114,7 @@ mpi_amr_1blk_guardcell_c_to_f.o \
 	mpi_amr_morton.o \
 	mpi_amr_prolong.o \
 	mpi_amr_prolong_fc_divbconsist.o \
+        amr_1blk_cc_prol_gen_unk_fun.o \
 	mpi_amr_redist_blk.o \
 	mpi_amr_refine_blocks.o \
 	mpi_amr_refine_derefine.o \

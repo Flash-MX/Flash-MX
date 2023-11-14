@@ -1,0 +1,4 @@
+PPDEFINE HEATAD_VARDIFFUSION
+
+D alph_variable Thermal diffusivity
+VARIABLE alph TYPE: GENERIC

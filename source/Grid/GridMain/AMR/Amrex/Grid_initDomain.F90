@@ -63,7 +63,7 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   use Grid_data,            ONLY : gr_doFluxCorrection
   use gr_physicalMultifabs, ONLY : unk, &
                                    gr_scratchCtr, &
-                                   facevarx, facevary, facevarz, &
+                                   facevars, &
                                    fluxes, &
                                    flux_registers
   use Grid_data, ONLY : gr_globalNumBlocks, gr_globalDomain, gr_interpolator, &
@@ -93,17 +93,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   ! AMReX instead of the 1-based level indexing scheme of FLASH.
   !   => all code dealing with multifabs arrays must consider the need for 
   !      index translation
-#if NFACE_VARS > 0
-  !call Driver_abort("[Grid_initDomain] Face-centered variables not yet supported with AMReX Grid implementation")
-  allocate(facevarx(0:amrex_max_level))
-#if NDIM >= 2
-  allocate(facevary(0:amrex_max_level))
-#endif
-#if NDIM == 3
-  allocate(facevarz(0:amrex_max_level))
-#endif
-#endif
-
 
   ! DEV: TODO Implement parameters
   if (.NOT. restart) then
@@ -130,9 +119,16 @@ subroutine Grid_initDomain(restart,particlesInitialized)
     !  runs EoS on interiors, fills GCs, and runs EoS on GCs.
     !  All this is done through the callback functions.
     allocate(unk     (0:amrex_max_level))
-    ! DEV: T_INT is set to zero now as AMReX does not care about this value.
-    ! It might be useful to pass non-zero T_INT for time-dependent refinement criteria;
-    ! this might be time a part of \FlashOfTheFuture with simulated time passed as T_INT
+
+#if NFACE_VARS > 0
+    ! Use NDIM multifab for face variables
+    ! TODO: Check how indexing affects peformance
+    allocate(facevars(1:NDIM, 0:amrex_max_level))
+#endif
+
+    ! DEV: T_INIT is set to zero now as AMReX does not care about this value.
+    ! It might be useful to pass non-zero T_INIT for time-dependent refinement criteria;
+    ! this might be time a part of \FlashOfTheFuture with simulated time passed as T_INIT
     ! that is read from checkpoint file. Useful with user-defined callbacks
     call amrex_init_from_scratch(T_INIT)
   else ! this is a restart 

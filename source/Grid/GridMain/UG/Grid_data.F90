@@ -54,7 +54,6 @@ Module Grid_data
 
   !stores lower left hand global cell index for each local block in each dim
   integer, save, dimension(MDIM) :: gr_blkCornerID
-  integer, save :: gr_blockType
 
   integer, save :: gr_meshComm, gr_meshMe, gr_meshNumProcs
   integer, save ::  gr_meshAcrossComm, gr_meshAcrossMe, gr_meshAcrossNumProcs
@@ -83,9 +82,6 @@ Module Grid_data
 
   logical, save :: gr_useEnergyDeposition
 
-  !mostly not used, but convienent for debugging with Grid_dump tool
-  integer,save,dimension(UNK_VARS_BEGIN:UNK_VARS_END) :: gr_vars 
- 
   real, save, dimension(MDIM,1) :: gr_delta
   real, save, dimension(LOW:HIGH,MDIM) :: gr_globalDomain
 
@@ -118,4 +114,5 @@ Module Grid_data
   logical, save :: gr_enableTiling
   logical, save :: gr_useTiling
   integer, save :: gr_tileSize(1:MDIM)
+  integer, save :: gr_maxCells
 end Module Grid_data
