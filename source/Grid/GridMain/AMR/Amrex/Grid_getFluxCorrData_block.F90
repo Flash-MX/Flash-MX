@@ -124,7 +124,7 @@ subroutine Grid_getFluxCorrData_block(blockDesc,fluxBufX,fluxBufY,fluxBufZ, lo, 
 
   coarseLev = blockDesc % level
   ilev = coarseLev
-  if (ilev > size(flux_registers,1)) then
+  if (ilev >= size(unk,1)) then
      ! There are no corrections available for this level.
      ! The caller could have avoided calling us, but we shall be reasonable.
      fluxBufX(:,:,:,:) = 0.0
