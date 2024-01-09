@@ -17,14 +17,12 @@
 !! @stubref{Orchestration_pushTileToPipeline}
 !!
 !! @brief Concrete implementation of Orchestration_pushTileToPipeline
-subroutine Orchestration_pushTileToPipeline(MH_taskFunction, &
-                                            prototype_Cptr, nThreads, &
+subroutine Orchestration_pushTileToPipeline(prototype_Cptr, nThreads, &
                                             tileCInfo)
     use iso_c_binding, ONLY : C_PTR, c_loc
 
     use milhoja_types_mod,   ONLY : MILHOJA_INT
-    use milhoja_runtime_mod, ONLY : milhoja_runtime_taskFunction, &
-                                    milhoja_runtime_pushTileToPipeline
+    use milhoja_runtime_mod, ONLY : milhoja_runtime_pushTileToPipeline
 
 !!$    use Milhoja_tileCInfo_mod, ONLY: Milhoja_tileCInfo_t
     use Orchestration_interfaceTypeDecl, ONLY: Orchestration_tileCInfo_t
@@ -32,7 +30,6 @@ subroutine Orchestration_pushTileToPipeline(MH_taskFunction, &
 
     implicit none
 
-    procedure(milhoja_runtime_taskFunction)            :: MH_taskFunction
     type(C_PTR),                            intent(IN) :: prototype_Cptr
     integer,                                intent(IN) :: nThreads
     type(Orchestration_tileCInfo_t),intent(IN),target :: tileCInfo
@@ -46,7 +43,7 @@ subroutine Orchestration_pushTileToPipeline(MH_taskFunction, &
 !!$    MH_tileCInfo = Milhoja_tileCInfo_t(tileCInfo)
     MH_tileCInfo_Cp = c_loc(tileCInfo)
 
-    CALL milhoja_runtime_pushTileToPipeline(MH_taskFunction, prototype_Cptr, &
+    CALL milhoja_runtime_pushTileToPipeline(prototype_Cptr, &
                                           MH_nThreads, MH_tileCInfo_Cp, MH_ierr)
     CALL Orchestration_checkInternalError("Orchestration_pushTileToPipeline", MH_ierr)
 end subroutine Orchestration_pushTileToPipeline
