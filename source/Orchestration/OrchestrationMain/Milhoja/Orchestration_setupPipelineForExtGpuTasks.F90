@@ -22,7 +22,8 @@ subroutine Orchestration_setupPipelineForExtGpuTasks(MH_taskFunction, &
                                           MH_postTaskFunction,     &
                                           nThreads,            &
                                           nTilesPerPacket,     &
-                                          MH_packet_Cptr)
+                                          MH_packet_Cptr,     &
+                                          MH_postProto_Cptr)
     use iso_c_binding, ONLY : C_PTR
 
     use milhoja_types_mod,   ONLY : MILHOJA_INT
@@ -41,6 +42,7 @@ subroutine Orchestration_setupPipelineForExtGpuTasks(MH_taskFunction, &
     integer,                                intent(IN) :: nThreads
     integer,                                intent(IN) :: nTilesPerPacket
     type(C_PTR),                            intent(IN) :: MH_packet_CPtr
+    type(C_PTR),                            intent(IN) :: MH_postProto_CPtr
 
     integer(MILHOJA_INT) :: MH_nThreads
     integer(MILHOJA_INT) :: MH_nTilesPerPacket
@@ -55,6 +57,7 @@ subroutine Orchestration_setupPipelineForExtGpuTasks(MH_taskFunction, &
                                           MH_nThreads,            &
                                           MH_nTilesPerPacket,     &
                                           MH_packet_Cptr,         &
+                                          MH_postProto_Cptr,      &
                                           MH_ierr)
     CALL Orchestration_checkInternalError("Orchestration_setupPipelineForExtGpuTasks", MH_ierr)
 #else
