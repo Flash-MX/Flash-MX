@@ -17,7 +17,7 @@
 !! @stubref{Orchestration_pushTileToExtGpuPipeline}
 !!
 !! @brief Stub implementation of Orchestration_pushTileToExtGpuPipeline
-#include "Milhoja.h"
+
 subroutine Orchestration_pushTileToExtGpuPipeline(prototype_Cptr, nThreads, &
                                             tileCInfo)
     use iso_c_binding, ONLY : C_PTR
