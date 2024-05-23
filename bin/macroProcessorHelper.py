@@ -18,20 +18,20 @@ def formatOutput(outpath):
     if ext in fortran_exts:
         if hasattr(shutil, "which"):
             if shutil.which("fprettify"):
-                subprocess.run("fprettify {}".format(outpath), shell=True, check=True)
+                subprocess.run("fprettify -w1 {}".format(outpath), shell=True, check=True)
 
 
 # unitDir: path to unit directory with mc files
 # objDir: path to object directory
 # defsList: list of common defs and unit defs
 # varList: list of variant names (unit has variants/varName.ini files)
-def generateVariants(unitDir, objDir, defsList, varList):
+def generateVariants(unitDir, objDir, defsList, varList, macroOnly=False):
     print("Generating variants {} for unit: {}".format(varList, unitDir))
     mcList = []
     mcListNoVariants = []
     baseList = []
     for f in os.listdir(unitDir):
-        if "-mc" in os.path.splitext(f)[-1]:
+        if os.path.splitext(f)[-1][-3:] == "-mc":
             mcPath = os.path.join(unitDir, f)
             with open(mcPath) as mcFile:
                 lines = mcFile.read()
@@ -60,11 +60,7 @@ def generateVariants(unitDir, objDir, defsList, varList):
             filebase, ext = os.path.splitext(os.path.basename(f))
             outfile = makeVariantName(filebase, var, removeSuffix(ext, "-mc"))
             outpath = os.path.join(objDir, outfile)
-            if os.path.islink(outpath):
-                os.unlink(outpath)
-
-            m.convertFile(f, outpath)
-            formatOutput(outpath)
+            processMcFile(m, f, outpath, macroOnly)
 
     # convert files with no variants
     m = macroProcessor()
@@ -73,15 +69,31 @@ def generateVariants(unitDir, objDir, defsList, varList):
         filebase, ext = os.path.splitext(os.path.basename(f))
         outfile = makeVariantName(filebase, "", removeSuffix(ext, "-mc"))
         outpath = os.path.join(objDir, outfile)
-        if os.path.islink(outpath):
-            os.unlink(outpath)
-
-        m.convertFile(f, outpath)
-        formatOutput(outpath)
+        processMcFile(m, f, outpath, macroOnly)
 
     if "null" in [v.lower() for v in varList]:
         baseList = []
     return baseList
+
+
+# Checks specific conditions for processing a file.
+# mp: Macroprocessor
+# mc: file containing macros to process
+# out: Output file
+# macroOnly: flag for only processing files containing macros. 
+def processMcFile(mp, mc, out, macroOnly):
+    if os.path.islink(out):
+        os.unlink(out)
+
+    # mcIsNewer = not os.path.isfile(out) #or \
+        #(os.path.isfile(out) and os.path.getmtime(mc) > os.path.getmtime(out))
+    # macro file is newer or the flag is not set.
+    # shouldProcess = (not macroOnly) or (macroOnly and mcIsNewer)
+
+    # if shouldProcess:
+    # print(f"Updating {mc} file")
+    mp.convertFile(mc, out)
+    formatOutput(out)
 
 
 # unitDir: path to unit directory with mc files
@@ -90,7 +102,7 @@ def modifyMakefile(unitDir, makefile, varList):
     mcList = []
     mcListNoVariants = []
     for f in os.listdir(unitDir):
-        if "-mc" in os.path.splitext(f)[-1]:
+        if os.path.splitext(f)[-1][-3:] == "-mc":
             mcPath = os.path.join(unitDir, f)
             with open(mcPath) as mcFile:
                 lines = mcFile.read()
