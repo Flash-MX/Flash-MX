@@ -83,7 +83,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
 
   real    :: bndBox (LOW:HIGH,1:MDIM)
 
-  @M iter_declare(tileLimits,tileLimitsGC,grownLimits)
+  @M iter_declare(tileLimits,tileLimitsGC,grownLimits,Uin)
 !
 !
 !     ...The first pass over all tiles on the current processor will get us information
@@ -95,7 +95,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   gr_mpoleQused (:) = 0 
 
   NULLIFY(Uin)
-  @M iter_all_begin(LEAF,.false.,tileLimits,tileLimitsGC,deltas)     
+  @M iter_all_begin(LEAF,.false.,tileLimits,tileLimitsGC,deltas,Uin)     
 
      call tileDesc%boundBox(bndBox)
      imin       = tileLimits (LOW, IAXIS)
@@ -135,7 +135,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
       z = z + DeltaK
      end do
 
-   @M iter_end
+   @M iter_end(Uin)
      !
 !
 !     ...Create the arrays that will contain the radial info.
@@ -157,7 +157,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
 
   nQ = 0
 
-   @M iter_all_begin(LEAF,.FALSE.,tileLimits,tileLimitsGC,deltas)  
+   @M iter_all_begin(LEAF,.FALSE.,tileLimits,tileLimitsGC,deltas, Uin)  
 
       call tileDesc%boundBox(bndBox)
 
@@ -232,7 +232,7 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
       end do
       z = z + DeltaK
      end do
-   @M iter_end
+   @M iter_end(Uin)
      !$omp end single
 !
 !
