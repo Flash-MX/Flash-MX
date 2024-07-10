@@ -82,7 +82,9 @@ subroutine gr_mpoleMom3Dcartesian (idensvar)
   real    :: x,y,z
 
   real    :: bndBox (LOW:HIGH,1:MDIM)
-
+  real,dimension(MDIM) :: deltas
+  integer :: level
+  
   @M iter_declare(tileLimits,tileLimitsGC,grownLimits,Uin)
 !
 !
