@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import os, sys, string, re, time, shutil, types, glob, socket, math
+import os, sys, string, re, time, shutil, types, glob, socket, math, toml
 
-import parseCmd, lazyFile
+import parseCmd, lazyFile, createParfile, unitMods
 import globals
 from globals import *   # GVars and SetupError
 from utils import *     # Assorted little cute functions
@@ -301,6 +301,19 @@ def main():
     # if no flash.par copy default.par over
     if not os.path.isfile('flash.par'):
        shutil.copy(globals.RPDefaultParFilename, 'flash.par')
+
+    # generate parfile and input file from toml file instead
+    if GVars.tomlfile:
+       if GVars.parfile:
+           raise SetupError("Cannot mix options --tomlfile and --parfile")
+       else:
+           GVars.tomlDict = toml.load(GVars.tomlfile)
+           GVars.out.put("Generating input files and overwriting default flash.par using tomlfile")
+           createParfile.main(GVars)
+
+    # Call unit modules to run preprocessing scripts
+    if GVars.withUnitMods:
+        unitMods.main(GVars,unitList)
 
     # create the successfile
     ofd = open(globals.SuccessFilename,"w")
