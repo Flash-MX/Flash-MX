@@ -104,16 +104,21 @@ def __createParfile(GVars, paramsDict):
     will only be available when the "instrument" flag is present
     in Jobfile.
     """
+    if GVars.parfile:
+        writeMode = "a"
+    else:
+        writeMode = "w"
+
     # Open flash.par in write mode in JobWorkDir, reserved environment
     # variable for working node along the directory tree.
     with open(
-        os.path.join(GVars.flashHomeDir, GVars.objectDir, "flash.par"), "w"
+        os.path.join(GVars.flashHomeDir, GVars.objectDir, "flash.par"), writeMode
     ) as parfile:
         # Add a comment to the parfile to indicate that this was generated
         # using a tool. Add warning to note that this can be replaced and should
         # be copied to a new location or renamed before making changes.
         parfile.write(
-            "# Programmatically generated parfile for Flash-X. Copy before editing.\n"
+            "# The content below is programmatically generated from tomlfile. Copy before editing.\n"
         )
 
         # Loop over keys in the input dictionary to and start building the parfile

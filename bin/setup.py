@@ -305,14 +305,16 @@ def main():
     # generate parfile and input file from toml file instead
     if GVars.tomlfile:
        if GVars.parfile:
-           raise SetupError("Cannot mix options --tomlfile and --parfile")
+           GVars.out.put("Appending parfile with contents from tomlfile")
        else:
-           GVars.tomlDict = toml.load(GVars.tomlfile)
-           GVars.out.put("Generating input files and overwriting default flash.par using tomlfile")
-           createParfile.main(GVars)
+           GVars.out.put("Generating parfile with contents from tomlfile")
+
+       GVars.tomlDict = toml.load(GVars.tomlfile)
+       createParfile.main(GVars)
 
     # Call unit modules to run preprocessing scripts
     if GVars.withUnitMods:
+        GVars.out.put("Executing setup modules for individual units")
         unitMods.main(GVars,unitList)
 
     # create the successfile
