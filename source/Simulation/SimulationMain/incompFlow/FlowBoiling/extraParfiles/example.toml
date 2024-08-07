@@ -91,6 +91,8 @@
   mph_CpGas = 0.83
   mph_Stefan = 0.5298
   mph_Tsat = 0.15
+  mph_presTol = 0.1
+  mph_tempTol = 0.01
 
 # Runtime parameters for the HeatAD unit
 [HeatAD]
