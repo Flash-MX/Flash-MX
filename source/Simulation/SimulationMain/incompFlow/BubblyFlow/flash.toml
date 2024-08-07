@@ -65,7 +65,7 @@
   mph_muGas = 0.01
   mph_iPropSmear = 2.0
   mph_invWeber = 1.2
-  mph_presTol = 0.1
+  mph_presTol = 0.01
 
 [IO]
   basenm = "INS_Bubbly_Flow_"
