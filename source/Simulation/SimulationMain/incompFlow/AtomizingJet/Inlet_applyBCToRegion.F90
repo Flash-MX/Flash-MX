@@ -23,7 +23,7 @@ subroutine Inlet_applyBCToRegion(level, ivar, gridDataStruct, regionData, coordi
                                  guard, face, axis, secondDir, thirdDir)
 
    use Driver_interface, ONLY: Driver_getSimTime, Driver_abort
-   use Simulation_data, ONLY: sim_jetCoords, sim_jetRadius, sim_jetVel
+   use Simulation_data, ONLY: sim_jetCoords, sim_jetRadius, sim_jetVel, sim_jetAmp, sim_jetFreq
 
    implicit none
    integer, intent(IN) :: level, ivar, gridDataStruct
@@ -67,6 +67,7 @@ subroutine Inlet_applyBCToRegion(level, ivar, gridDataStruct, regionData, coordi
                                        (coordinates(i, j, k, KAXIS)-sim_jetCoords(KAXIS))**2)-sim_jetRadius
 
                      regionData(i, j, k, ivar) = 2*jetProfile-regionData(offset-i, j, k, ivar)
+                     !regionData(i, j, k, ivar) = 2*(jetProfile-0.1*cos(3*time*pi))-regionData(offset-i, j, k, ivar)
 
                   end do
                end do
@@ -83,7 +84,10 @@ subroutine Inlet_applyBCToRegion(level, ivar, gridDataStruct, regionData, coordi
                         jetProfile = sqrt((coordinates(i, j, k, IAXIS)-sim_jetCoords(IAXIS))**2+ &
                                           (coordinates(i, j, k, KAXIS)-sim_jetCoords(KAXIS))**2)-sim_jetRadius
 
-                        jetVelocity = ((1-sign(1., jetProfile))/2)*sim_jetVel
+                        !jetVelocity = ((1-sign(1., jetProfile))/2)*sim_jetVel
+                        !jetVelocity = ((1-sign(1., jetProfile-0.1*cos(3*time*pi)))/2)*sim_jetVel
+                        jetVelocity = ((1-sign(1., jetProfile))/2)*(sim_jetVel*(1+sim_jetAmp*cos(sim_jetFreq*time)))
+
                         regionData(i, j, k, ivar) = jetVelocity
 
                      end do

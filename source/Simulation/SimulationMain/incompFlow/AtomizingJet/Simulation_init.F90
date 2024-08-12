@@ -55,6 +55,9 @@ subroutine Simulation_init()
    call RuntimeParameters_get('ins_gravY', sim_gravY)
    call RuntimeParameters_get('ins_gravZ', sim_gravZ)
 
+   call RuntimeParameters_get('sim_jetFreq', sim_jetFreq)
+   call RuntimeParameters_get('sim_jetAmp', sim_jetAmp)
+
    if (sim_meshMe .eq. MASTER_PE) then
       write (*, *) 'sim_gravX =', sim_gravX
       write (*, *) 'sim_gravY =', sim_gravY
