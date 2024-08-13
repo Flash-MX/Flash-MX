@@ -62,6 +62,8 @@ subroutine Simulation_init()
       write (*, *) 'sim_gravX =', sim_gravX
       write (*, *) 'sim_gravY =', sim_gravY
       write (*, *) 'sim_gravZ =', sim_gravZ
+      write (*, *) 'sim_jetFreq =', sim_jetFreq
+      write (*, *) 'sim_jetAmp =', sim_jetAmp
    end if
 
 end subroutine Simulation_init

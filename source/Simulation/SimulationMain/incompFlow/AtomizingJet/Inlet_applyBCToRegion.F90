@@ -57,7 +57,7 @@ subroutine Inlet_applyBCToRegion(level, ivar, gridDataStruct, regionData, coordi
 
    if (face == LOW) then
       if (axis == JAXIS) then
-         if (ivar == DFUN_VAR) then
+         if (ivar == DFUN_VAR .and. gridDataStruct == CENTER) then
             offset = 2*guard+1
             do k = 1, ke
                do j = 1, je
@@ -67,29 +67,25 @@ subroutine Inlet_applyBCToRegion(level, ivar, gridDataStruct, regionData, coordi
                                        (coordinates(i, j, k, KAXIS)-sim_jetCoords(KAXIS))**2)-sim_jetRadius
 
                      regionData(i, j, k, ivar) = 2*jetProfile-regionData(offset-i, j, k, ivar)
-                     !regionData(i, j, k, ivar) = 2*(jetProfile-0.1*cos(3*time*pi))-regionData(offset-i, j, k, ivar)
 
                   end do
                end do
             end do
 
-         else if (ivar == VELC_FACE_VAR) then
+         else if (ivar == VELC_FACE_VAR .and. gridDataStruct == FACEY) then
 
             if (isFace) then
                offset = 2*guard+2
                do k = 1, ke
                   do j = 1, je
-                     do i = 1, guard+1
+                     jetProfile = sqrt((coordinates(guard+1, j, k, IAXIS)-sim_jetCoords(IAXIS))**2+ &
+                                       (coordinates(guard+1, j, k, KAXIS)-sim_jetCoords(KAXIS))**2)-sim_jetRadius
 
-                        jetProfile = sqrt((coordinates(i, j, k, IAXIS)-sim_jetCoords(IAXIS))**2+ &
-                                          (coordinates(i, j, k, KAXIS)-sim_jetCoords(KAXIS))**2)-sim_jetRadius
+                     jetVelocity = ((1-sign(1., jetProfile))/2)*(sim_jetVel*(1+sim_jetAmp*cos(sim_jetFreq*time)))
+                     regionData(guard+1, j, k, ivar) = jetVelocity
 
-                        !jetVelocity = ((1-sign(1., jetProfile))/2)*sim_jetVel
-                        !jetVelocity = ((1-sign(1., jetProfile-0.1*cos(3*time*pi)))/2)*sim_jetVel
-                        jetVelocity = ((1-sign(1., jetProfile))/2)*(sim_jetVel*(1+sim_jetAmp*cos(sim_jetFreq*time)))
-
-                        regionData(i, j, k, ivar) = jetVelocity
-
+                     do i = 1, guard
+                        regionData(i, j, k, ivar) = 2*jetVelocity-regionData(offset-i, j, k, ivar)
                      end do
                   end do
                end do
