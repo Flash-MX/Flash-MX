@@ -25,6 +25,7 @@
 
 subroutine IncompNS_fluxUpdate(tileDesc)
 
+   use Grid_interface, ONLY: Grid_correctFluxData
    use Grid_tile, ONLY: Grid_tile_t
    use Timers_interface, ONLY: Timers_start, Timers_stop
 
@@ -34,13 +35,13 @@ subroutine IncompNS_fluxUpdate(tileDesc)
    real :: del(MDIM)
    integer :: lo(3), hi(3)
 #if NDIM < MDIM
-   real, pointer, dimension(:, :, :, :) :: solnData, facexData, faceyData, fluxxData, fluxyData
+   real, pointer, dimension(:, :, :, :) :: solnData, facexData, faceyData, fluxxData, fluxyData, fluxzData
 #else
    real, pointer, dimension(:, :, :, :) :: solnData, facexData, faceyData, facezData, fluxxData, fluxyData, fluxzData
 #endif
 !----------------------------------------------------------------------------------------
 #if NDIM < MDIM
-   nullify (solnData, facexData, faceyData, fluxxData, fluxyData)
+   nullify (solnData, facexData, faceyData, fluxxData, fluxyData, fluxzData)
 #else
    nullify (solnData, facexData, faceyData, facezData, fluxxData, fluxyData, fluxzData)
 #endif
@@ -59,17 +60,27 @@ subroutine IncompNS_fluxUpdate(tileDesc)
    call tileDesc%getDataPtr(fluxyDAta, FLUXY)
 #if NDIM == 3
    call tileDesc%getDataPtr(facezData, FACEZ)
-   call tileDesc%getDataPtr(fluxzData, FLUXZ)
 #endif
+   call tileDesc%getDataPtr(fluxzData, FLUXZ)
 
    lo(1:MDIM) = tileDesc%limits(LOW, 1:MDIM)
    hi(1:MDIM) = tileDesc%limits(HIGH, 1:MDIM)
 
-   facexData(VELC_FACE_VAR, lo(1):hi(1)+1, lo(2):hi(2), lo(3):hi(3)) = fluxxData(MOMT_FLUX, :, :, :)/(del(DIR_Y)*del(DIR_Z))
-   faceyData(VELC_FACE_VAR, lo(1):hi(1), lo(2):hi(2)+1, lo(3):hi(3)) = fluxyData(MOMT_FLUX, :, :, :)/(del(DIR_X)*del(DIR_Z))
+#ifdef FLASH_GRID_AMREX
+   fluxxData(MOMT_FLUX, :, :, :) = facexData(VELC_FACE_VAR, lo(1):hi(1)+1, lo(2):hi(2), lo(3):hi(3))
+   fluxyData(MOMT_FLUX, :, :, :) = faceyData(VELC_FACE_VAR, lo(1):hi(1), lo(2):hi(2)+1, lo(3):hi(3))
 #if NDIM==3
-   facezData(VELC_FACE_VAR, lo(1):hi(1), lo(2):hi(2), lo(3):hi(3)+1) = fluxzData(MOMT_FLUX, :, :, :)/(del(DIR_X)*del(DIR_Y))
+   fluxzData(MOMT_FLUX, :, :, :) = facezData(VELC_FACE_VAR, lo(1):hi(1), lo(2):hi(2), lo(3):hi(3)+1)
+#endif
+
+   call Grid_correctFluxData(tileDesc, fluxxData, fluxyData, fluxzData, lo)
+
+   facexData(VELC_FACE_VAR, lo(1):hi(1)+1, lo(2):hi(2), lo(3):hi(3)) = fluxxData(MOMT_FLUX, :, :, :)
+   faceyData(VELC_FACE_VAR, lo(1):hi(1), lo(2):hi(2)+1, lo(3):hi(3)) = fluxyData(MOMT_FLUX, :, :, :)
+#if NDIM==3
+   facezData(VELC_FACE_VAR, lo(1):hi(1), lo(2):hi(2), lo(3):hi(3)+1) = fluxzData(MOMT_FLUX, :, :, :)
 #endif      
+#endif
 
    ! Release pointers:
    call tileDesc%releaseDataPtr(solnData, CENTER)
