@@ -39,7 +39,7 @@
 !!
 !!
 !!***
-!!REORDER(4): solnData
+!!REORDER(4): solnData, face[xyz]Data
 
 #include "constants.h"
 #include "Simulation.h"
@@ -64,8 +64,10 @@ subroutine Simulation_initBlock(solnData, tileDesc)
    logical :: gcell = .true.
    real :: dfun
    integer :: ibub
+   real, pointer, dimension(:, :, :, :) :: facexData, faceyData, facezData
 
    !----------------------------------------------------------------------
+   nullify (facexData, faceyData, facezData)
    lo = tileDesc%limits(LOW, :)
    hi = tileDesc%limits(HIGH, :)
    allocate (xCenter(lo(IAXIS):hi(IAXIS)))
@@ -96,6 +98,10 @@ subroutine Simulation_initBlock(solnData, tileDesc)
    end do
 
    deallocate (xCenter, yCenter, zCenter)
+
+   call tileDesc%getDataPtr(faceyData, FACEY)
+   faceyData(VELC_FACE_VAR, :, :, :) = 1.0
+   call tileDesc%releaseDataPtr(faceyData, FACEY)
 
    return
 
