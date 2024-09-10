@@ -417,9 +417,7 @@ class UnitList:
     def getRequestedVariants(self,unitName):
       varList = []
       for var in self.units[unitName]['VARIANTS']:
-        varUnit = unitName + "/" + var
-        if self.hasUnit(varUnit):
-          varList.append(var)
+        varList.append(var)
       isNull = [ var.lower() == 'null' for var in self.units[unitName]['VARIANTS'] ]
       if (len(varList)==0 and any(isNull) ):
         varList.append('Null')
