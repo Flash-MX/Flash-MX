@@ -68,6 +68,7 @@ module ut_testDriverMod
 
     public :: start_test_run
     public :: finish_test_run
+    public :: ut_testFailureCount
 
     public :: assertTrue
     public :: assertFalse
@@ -113,6 +114,10 @@ contains
             end if
         end if
     end function finish_test_run
+
+    integer function ut_testFailureCount()
+        ut_testFailureCount = my_n_failed
+    end function ut_testFailureCount
 
     subroutine assertTrue(a, msg)
         logical,      intent(IN) :: a
