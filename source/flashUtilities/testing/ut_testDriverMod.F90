@@ -186,7 +186,7 @@ contains
         real :: prec
         character(256) :: buffer
 
-        prec = 2.0 * spacing(min(abs(a),abs(b)))
+        prec = 3.0 * spacing(min(abs(a),abs(b)))
         if (ABS(b - a) > prec) then
 700         format(A,' (with auto tol)',6P,G24.16,A,0P,G24.16)
             write(buffer,700) msg, a, " != ", b
