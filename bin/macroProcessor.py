@@ -306,13 +306,15 @@ def main():
     )
     parser.add_argument("--output", "-o", type=str, help="output filename")
     parser.add_argument(
-        "--macroDefs", "-m", type=str, help="file with list of extra macro definitions"
+        "--macroDefs", "-m",
+        type=str, action="append",
+        help="file with list of extra macro definitions"
     )
     args = parser.parse_args()
 
     m = macroProcessor()
     if args.macroDefs is not None:
-        m.loadDefs(args.macroDefs)
+        m.loadDefsList(args.macroDefs)
 
     # if args.filename is None:
     #     processFilesInCurrentDir()
@@ -322,14 +324,14 @@ def main():
             defs_in_dir = [
                 f for f in os.listdir(".") if (os.path.isfile(f) and (".ini" in f))
             ]
-            m.loadDefs(defs_in_dir)
-        # Convert just the given file
-        if args.output is None:
-            if args.filename.count(".F90-mc") >= 1:
-                args.output = args.filename.replace(".F90-mc", ".F90")
-            else:
-                args.output = args.filename + ".out"
-        m.convertFile(args.filename, args.output)
+            m.loadDefsList(defs_in_dir)
+    # Convert just the given file
+    if args.output is None:
+        if args.filename.count(".F90-mc") >= 1:
+            args.output = args.filename.replace(".F90-mc", ".F90")
+        else:
+            args.output = args.filename + ".out"
+    m.convertFile(args.filename, args.output)
 
 
 if __name__ == "__main__":
