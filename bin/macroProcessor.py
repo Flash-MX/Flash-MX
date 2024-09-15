@@ -38,7 +38,7 @@ LINE_CONT_CHARS = ["\\\\", "&&"]
 
 
 class macroProcessor:
-    def __init__(self):
+    def __init__(self, dbg=False):
         self.mdict = {}
         self.argdict = {}
         self.fldict = {}
@@ -46,6 +46,7 @@ class macroProcessor:
         self.indentdict = {}
         self.sourcedict = {}
         self.keylist = []
+        self.debug = dbg
         # self.loadDefsList(standardMacroDefLibrary)
 
     ######### LOADING DEFS ###########
@@ -180,10 +181,10 @@ class macroProcessor:
 
         # use regex to get parts of invocation
         if not functionLike:    # simple macro, no parentheses expected
-            print('expandMacro: non-fl invocation is "%s"' % invocation)
+            if self.debug: print('expandMacro: non-fl invocation is "%s"' % invocation)
             invocation_parts = re.match(invocation_regex_simple, invocation)
         else:
-            print('expandMacro: function-like invocation is "%s"' % invocation)
+            if self.debug: print('expandMacro: function-like invocation is "%s"' % invocation)
             invocation_parts = re.match(invocation_regex_fl, invocation)
         macroName = invocation_parts.group("key")
         indent = invocation_parts.group("indent")
@@ -359,9 +360,10 @@ def main():
         type=str, action="append",
         help="file with list of extra macro definitions"
     )
+    parser.add_argument("--debug", action="store_true", help="Enable some debugging output")
     args = parser.parse_args()
 
-    m = macroProcessor()
+    m = macroProcessor(args.debug)
     if args.macroDefs is not None:
         m.loadDefsList(args.macroDefs)
 
