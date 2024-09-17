@@ -68,6 +68,7 @@ subroutine Driver_initAll()
   use Timers_interface, ONLY : Timers_init, Timers_start, Timers_stop
 
   use Grid_interface, ONLY : Grid_init, Grid_initDomain
+  use Orchestration_interface, ONLY : Orchestration_init
 
 #include "Simulation.h"
   use Multispecies_interface, ONLY : Multispecies_init
@@ -137,6 +138,9 @@ subroutine Driver_initAll()
   call Grid_init()
   call Profiler_init()
 
+  ! Must initialize Grid first
+  call Orchestration_init()
+
 !!  call Driver_initMaterialProperties()
   if(dr_globalMe==MASTER_PE)print*,'MaterialProperties initialized'
 
@@ -150,6 +154,9 @@ subroutine Driver_initAll()
 
   ! Heater source term
   call Heater_init()
+
+  ! ImBound unit initialization
+  call ImBound_init(dr_restart)
 
   if(.not. dr_restart) then
 
@@ -195,9 +202,6 @@ subroutine Driver_initAll()
 
   ! Stencils unit initialization
   call Stencils_init()
-
-  ! ImBound unit initialization
-  call ImBound_init(dr_restart)
 
   ! Multiphase unit must go before INS
   call Multiphase_init(dr_restart)

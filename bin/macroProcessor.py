@@ -242,6 +242,37 @@ class macroProcessor:
             lines.append(line)
         return lines
 
+
+    # delete trailing "&" in compiler directives
+    def _removeTrailingAmpersand(self, filename):
+        directive_pattern = re.compile(r"^\s*!\$(acc|omp)")
+
+        with open(filename, "r") as file:
+            lines = file.readlines()
+
+        modified_lines = []
+        for i in range(len(lines)):
+            line = lines[i].rstrip()  # Remove trailing whitespace
+            is_directive = directive_pattern.match(line) is not None
+
+            # Process only if the line is a compiler directive
+            if is_directive and line.endswith("&") and i + 1 < len(lines):
+                next_line = lines[i + 1].lstrip()
+                next_line_is_not_directive = (
+                    directive_pattern.match(next_line) is None
+                )
+
+                if next_line_is_not_directive:
+                    line = line[:-1].rstrip()  # Remove the '&'
+
+            modified_lines.append(line)
+
+        # Write the modified lines back to the file
+        with open(filename, "w") as file:
+            for line in modified_lines:
+                file.write(f"{line}\n")
+
+
     # Process a whole file
     def convertFile(self, filename, output):
         with open(output, "w") as f:
@@ -250,6 +281,8 @@ class macroProcessor:
             lines = self._continuationLine(fin, LINE_CONT_CHARS)
             for line in lines:
                 f.write(self.processLine(line))
+        # post processing
+        self._removeTrailingAmpersand(output)
 
 
 ###########################################################
@@ -273,13 +306,15 @@ def main():
     )
     parser.add_argument("--output", "-o", type=str, help="output filename")
     parser.add_argument(
-        "--macroDefs", "-m", type=str, help="file with list of extra macro definitions"
+        "--macroDefs", "-m",
+        type=str, action="append",
+        help="file with list of extra macro definitions"
     )
     args = parser.parse_args()
 
     m = macroProcessor()
     if args.macroDefs is not None:
-        m.loadDefs(args.macroDefs)
+        m.loadDefsList(args.macroDefs)
 
     # if args.filename is None:
     #     processFilesInCurrentDir()
@@ -289,14 +324,14 @@ def main():
             defs_in_dir = [
                 f for f in os.listdir(".") if (os.path.isfile(f) and (".ini" in f))
             ]
-            m.loadDefs(defs_in_dir)
-        # Convert just the given file
-        if args.output is None:
-            if args.filename.count(".F90-mc") >= 1:
-                args.output = args.filename.replace(".F90-mc", ".F90")
-            else:
-                args.output = args.filename + ".out"
-        m.convertFile(args.filename, args.output)
+            m.loadDefsList(defs_in_dir)
+    # Convert just the given file
+    if args.output is None:
+        if args.filename.count(".F90-mc") >= 1:
+            args.output = args.filename.replace(".F90-mc", ".F90")
+        else:
+            args.output = args.filename + ".out"
+    m.convertFile(args.filename, args.output)
 
 
 if __name__ == "__main__":
