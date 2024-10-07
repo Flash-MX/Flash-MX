@@ -27,6 +27,7 @@ subroutine Orchestration_setupPipelineForExtCpuGpuSplitTasks(MH_tileTaskFunction
                                                              MH_tileProto_Cptr,       &
                                                              MH_postTileProto_Cptr)
     use iso_c_binding, ONLY : C_PTR
+    use Orchestration_interfaceTypeDecl, ONLY : milhoja_runtime_taskFunction
 
     implicit none
 
