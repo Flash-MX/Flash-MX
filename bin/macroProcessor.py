@@ -386,10 +386,10 @@ class variantLineProcessor:
         i = 0
         while i < len(self.lines):
             line = self.lines[i]
-            # Check if the line starts with !!VARIANTS(
-            variant_match = re.match(r'^\s*!!VARIANTS\(([^)]+)\):\s*(.*)', line, re.IGNORECASE)
+            variant_match = re.match(r'^\s*!!VARIANTS\s*\(\s*([^)]+)\s*\):\s*(.*)', line, re.IGNORECASE)
             if variant_match:
-                variant = variant_match.group(1).strip()
+                # Split the captured variants by comma and strip whitespace
+                variant_list = [v.strip() for v in variant_match.group(1).split(',')]
                 subs_line = variant_match.group(2).strip()
                 subs = []
                 self.variant_lines_indices.add(i)
@@ -408,7 +408,9 @@ class variantLineProcessor:
                         break
                 # Last line without '&'
                 subs.extend([s.strip() for s in subs_line.split(',') if s.strip()])
-                variants[variant].extend(subs)
+                # Map each variant to the list of subroutines
+                for variant in variant_list:
+                    variants[variant].extend(subs)
             i += 1
         self.variants = dict(variants)
 
