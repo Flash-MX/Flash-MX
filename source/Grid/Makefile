@@ -17,7 +17,7 @@ Grid += Grid_init.o \
 	Grid_getDomainBoundBox.o \
 	Grid_updateRefinement.o \
 	Grid_getDeltas.o \
-	Grid_getCellCoords.o \
+	Grid_getCellCoords.o Grid_getCellCoords_1drange.o \
 	Grid_getCellFaceAreas.o \
 	Grid_getCellVolumes.o \
 	Grid_getBlkIndexLimits.o Grid_getBlkCornerID.o \
@@ -63,7 +63,6 @@ Grid += Grid_init.o \
 	Grid_receiveInputData.o \
 	Grid_getNeighProcList.o \
 	Grid_getBlkNeighLevels.o \
-	Grid_makeVector.o \
 	Grid_zeroFluxData.o \
 	Grid_addFineToFluxRegister.o \
 	Grid_addFineToFluxRegister_block.o \

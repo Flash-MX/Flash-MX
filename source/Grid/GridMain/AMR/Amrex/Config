@@ -25,8 +25,11 @@ ENDIF
 # with I/O only optionally depend on the iso_c_binding module.
 #PPDEFINE USE_IO_C_INTERFACE
 
-IF not NoLevelwideFluxes
+IF not NoLevelwideFluxes and not useAmrexFlashFluxreg
    REQUIRES ./levelFlux
+ENDIF
+IF not NoLevelwideFluxes and useAmrexFlashFluxreg
+   REQUIRES ./levelFluxAFFR
 ENDIF
 
 USESETUPVARS Incomp
@@ -109,7 +112,12 @@ PARAMETER amrexInterpolator STRING "CELL_CONSERVATIVE_LINEAR"
 D amrexFaceInterpolator Name of AMReX face interpolator to use
 PARAMETER amrexFaceInterpolator STRING "FACE_LINEAR"
 
+USESETUPVARS Bittree
 D amrexUseBittree Parameter for AMReX mode with Bittree
-PARAMETER gr_amrexUseBittree BOOLEAN FALSE
+IF Bittree
+  PARAMETER gr_amrexUseBittree BOOLEAN TRUE
+ELSE
+  PARAMETER gr_amrexUseBittree BOOLEAN FALSE
+ENDIF
 
 PPDEFINE GRID_MAX_GCMASK_CHUNKS 10
