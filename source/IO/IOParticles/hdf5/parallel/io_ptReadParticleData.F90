@@ -300,13 +300,6 @@ subroutine io_ptReadParticleData()
            call Driver_abort("Error reading particles")
         end if
 
-        !The commented out function is no longer used because it deadlocks           
-        !in collective HDF5 mode when a processor reads 0 particles.
-        !call io_h5read_particles(io_chkptFileID, &
-        !     particles, &
-        !     reLocalNumParticles, &
-        !     NPART_PROPS, &
-        !     localPartOffset)
      else
 
         if (io_globalMe == 0) then
