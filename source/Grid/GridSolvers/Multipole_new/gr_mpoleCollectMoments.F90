@@ -167,7 +167,7 @@ subroutine gr_mpoleCollectMoments ()
   allMoments = gr_mpoleMaxLM * gr_mpoleMaxQ * 2
   gr_mpoleMomRI(:,1:gr_mpoleMaxQ,1)= gr_mpoleMomentR (:,1:gr_mpoleMaxQ)
   gr_mpoleMomRI(:,1:gr_mpoleMaxQ,2)= gr_mpoleMomentI (:,1:gr_mpoleMaxQ)
-  call MPI_IAllReduce (gr_mpoleMomRI (:,1:gr_mpoleMaxQ,:), &
+  call MPI_IAllReduce (gr_mpoleMomRI, &
                       gr_mpoleScratch,                    &
                       allMoments,                         &
                       FLASH_REAL,                         &
