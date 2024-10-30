@@ -11,7 +11,7 @@ Grid += gr_ptInterface.o gr_ptInit.o gr_ptMove.o \
 	gr_interface.o gr_interfaceTypeDecl.o gr_pfftInterfaceTypeDecl.o \
 	gr_mgInterface.o gr_mgInit.o gr_mgFinalize.o gr_mgPfftInit.o gr_mgPfftFinalize.o \
         gr_bicgInterface.o gr_bicgInit.o gr_bicgFinalize.o \
-        gr_getRegionDataCoordinates.o
+        gr_getRegionDataCoordinates.o gr_getBndBox.o
 
 Grid += gr_hg_amr_1blk_bcset_work.o gr_pfftPoissonDirect.o
 
@@ -21,7 +21,9 @@ Grid +=  gr_amrexMultigridInterface.o gr_amrexMultigridInit.o gr_amrexMultigridF
 
 Grid += gr_mpoleAllocateRadialArrays.o   \
         gr_mpoleCen1Dspherical.o         \
+	gr_mpoleCen2Dspherical.o         \
         gr_mpoleCen2Dcylindrical.o       \
+	gr_mpoleCen3Dspherical.o         \
         gr_mpoleCen3Dcartesian.o         \
         gr_mpoleCenterOfExpansion.o      \
         gr_mpoleCollectMoments.o         \
@@ -31,19 +33,27 @@ Grid += gr_mpoleAllocateRadialArrays.o   \
         gr_mpoleHeapsort.o               \
         gr_mpoleInit.o                   \
         gr_mpoleMom1Dspherical.o         \
+	gr_mpoleMom2Dspherical.o         \
         gr_mpoleMom2Dcylindrical.o       \
+	gr_mpoleMom3Dspherical.o         \
         gr_mpoleMom3Dcartesian.o         \
         gr_mpoleMomBins1Dspherical.o     \
+	gr_mpoleMomBins2Dspherical.o     \
         gr_mpoleMomBins2Dcylindrical.o   \
+	gr_mpoleMomBins3Dspherical.o     \
         gr_mpoleMomBins3Dcartesian.o     \
         gr_mpoleMoments.o                \
         gr_mpolePot1Dspherical.o         \
+	gr_mpolePot2Dspherical.o         \
         gr_mpolePot2Dcylindrical.o       \
+	gr_mpolePot3Dspherical.o         \
         gr_mpolePot3Dcartesian.o         \
         gr_mpolePotentials.o             \
         gr_mpolePrintRadialInfo.o        \
         gr_mpoleRad1Dspherical.o         \
+	gr_mpoleRad2Dspherical.o         \
         gr_mpoleRad2Dcylindrical.o       \
+	gr_mpoleRad3Dspherical.o         \
         gr_mpoleRad3Dcartesian.o         \
         gr_mpoleRadialSampling.o         \
         gr_mpoleSetInnerZoneGrid.o       \

@@ -27,7 +27,7 @@
 !! DESCRIPTION
 !!
 !!    This subroutine is an accessor function that gets the coordinates of
-!!    the cells in a given block.
+!!    the cells in a given range.
 !!    Coordinates are retrieved one axis at a time, 
 !!    meaning you can get the i, j, _or_ k coordinates with one call.  
 !!    If you want all the coordinates, all axes, you
@@ -42,8 +42,8 @@
 !! ARGUMENTS
 !!            
 !!   axis - specifies the integer index coordinates of the cells being retrieved.
-!!          axis can have one of three different values, IAXIS, JAXIS or KAXIS 
-!!          (defined in constants.h as 1,2 and 3)
+!!          axis can have one of three different values, IAXIS, JAXIS, or KAXIS
+!!          (defined in constants.h as 1, 2, and 3)
 !!
 !!   edge - integer value with one of four values, 
 !!          LEFT_EDGE, RIGHT_EDGE, CENTER or FACES
@@ -67,8 +67,8 @@
 !!          lo(axis) ... hi(axis).
 !!
 !!   coordinates - The array holding the data returning the coordinate values.
-!!                 The array must be at large enough to hold the number of
-!!                 coordinate values that are requested occording to lo and hi
+!!                 The array must be large enough to hold the number of
+!!                 coordinate values that are requested according to lo and hi
 !!                 arguments. That is, the following must be true:
 !!           
 !!          if edge = CENTER/LEFT_EDGE/RIGHT_EDGE then

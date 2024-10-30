@@ -52,13 +52,13 @@ subroutine Multiphase_thermalForcing(tileDesc)
                       solnData(NRMY_VAR, :, :, :), &
                       (mph_invReynolds/mph_Prandtl)*solnData(mph_iAlphaCVar, :, :, :), &
                       solnData(mph_iTempVar, :, :, :), &
-                      solnData(mph_iGfmVar, :, :, :), &
+                      solnData(mph_iTempFrcVar, :, :, :), &
                       solnData(HFLQ_VAR, :, :, :), &
                       solnData(HFGS_VAR, :, :, :), &
                       mph_Tsat, &
                       del(DIR_X), del(DIR_Y), &
                       GRID_ILO_GC, GRID_IHI_GC, &
-                      GRID_JLO_GC, GRID_JHI_GC)
+                      GRID_JLO_GC, GRID_JHI_GC, tol=mph_tempTol)
 
 #else
 
@@ -68,14 +68,14 @@ subroutine Multiphase_thermalForcing(tileDesc)
                       solnData(NRMZ_VAR, :, :, :), &
                       (mph_invReynolds/mph_Prandtl)*solnData(mph_iAlphaCVar, :, :, :), &
                       solnData(mph_iTempVar, :, :, :), &
-                      solnData(mph_iGfmVar, :, :, :), &
+                      solnData(mph_iTempFrcVar, :, :, :), &
                       solnData(HFLQ_VAR, :, :, :), &
                       solnData(HFGS_VAR, :, :, :), &
                       mph_Tsat, &
                       del(DIR_X), del(DIR_Y), del(DIR_Z), &
                       GRID_ILO_GC, GRID_IHI_GC, &
                       GRID_JLO_GC, GRID_JHI_GC, &
-                      GRID_KLO_GC, GRID_KHI_GC)
+                      GRID_KLO_GC, GRID_KHI_GC, tol=mph_tempTol)
 
 #endif
 

@@ -18,8 +18,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  Grid_init()
-!!
+!!  call Grid_init()
 !!
 !! DESCRIPTION
 !!
@@ -74,6 +73,7 @@ subroutine Grid_init()
 
   use Driver_interface, ONLY : Driver_getMype, Driver_getNumProcs, Driver_getComm
   use Grid_data
+  use gr_specificData, ONLY : gr_globalOffset
   use gr_tilePolicyData,ONLY : gr_initTilePolicy
   use gr_sbInterface, ONLY : gr_sbInit
 
@@ -88,7 +88,6 @@ subroutine Grid_init()
   character(len=MAX_STRING_LENGTH) :: zl_bcString,zr_bcString
   character(len=MAX_STRING_LENGTH) :: eosModeString, grav_boundary_type
 
-  logical :: useProtonImaging
 
   integer :: i, localnxb, localnyb, localnzb
 
@@ -112,9 +111,7 @@ subroutine Grid_init()
      call Driver_getComm(AXIS_COMM, gr_axisComm(i),i)
   end do
 
-  call RuntimeParameters_get("geometry", gr_str_geometry)
-  call RuntimeParameters_mapStrToInt(gr_str_geometry, gr_geometry)
-  call RuntimeParameters_get("geometryOverride",gr_geometryOverride)
+  ! Initialization of gr_geometry etc is done in gr_initGeometry, called below.
 
   call RuntimeParameters_get("bndPriorityOne",gr_bndOrder(1))
   call RuntimeParameters_get("bndPriorityTwo",gr_bndOrder(2))
@@ -143,28 +140,21 @@ subroutine Grid_init()
   call RuntimeParameters_mapStrToInt(zl_bcString,gr_domainBC(LOW,KAXIS))
   call RuntimeParameters_mapStrToInt(zr_bcString,gr_domainBC(HIGH,KAXIS))
 
-  call RuntimeParameters_get('xmin', gr_imin)
-  call RuntimeParameters_get('xmax', gr_imax)
-  call RuntimeParameters_get('ymin', gr_jmin)
-  call RuntimeParameters_get('ymax', gr_jmax)
-  call RuntimeParameters_get('zmin', gr_kmin)
-  call RuntimeParameters_get('zmax', gr_kmax)
-
-  gr_globalDomain(LOW,IAXIS) = gr_imin
-  gr_globalDomain(LOW,JAXIS) = gr_jmin
-  gr_globalDomain(LOW,KAXIS) = gr_kmin
-  gr_globalDomain(HIGH,IAXIS) = gr_imax
-  gr_globalDomain(HIGH,JAXIS) = gr_jmax
-  gr_globalDomain(HIGH,KAXIS) = gr_kmax
+  ! Initialization of gr_globalDomain and of gr_imin,...,gr_kmax (which contain
+  ! the same information) is done in gr_initGeometry, called below.
 
   call RuntimeParameters_get('smalle', gr_smalle)
   call RuntimeParameters_get('smallx', gr_smallx)
   call RuntimeParameters_get('smlrho', gr_smallrho)
 
+! Initialize gr_geometry from the "geometry" runtime parameter,
+! and perform some other initializations related to the geometry.
 ! Determine the geometries of the individual dimensions, and scale
 ! angle value parameters that are expressed in degrees to radians.
-! This call must be made after gr_geometry, gr_domainBC, and gr_{j,k}{min,max}
+! This call must be made after boundary conditions in gr_domainBC
 ! have been set based on the corresponding runtime parameters.
+! After this call, gr_geometry and gr_{i,j,k}{min,max} will have
+! been set correctly.
   call gr_initGeometry()
 
 
@@ -185,28 +175,13 @@ subroutine Grid_init()
   gr_useParticles=.false.
 #endif
 
-#ifdef FLASH_EDEP
-  call RuntimeParameters_get('useEnergyDeposition', gr_useEnergyDeposition)
-  gr_useParticles = gr_useEnergyDeposition
-#else
-  gr_useEnergyDeposition = .false.
-#endif
 
-#ifdef FLASH_GRID_PARTICLES
-  call RuntimeParameters_get('useProtonImaging',useProtonImaging)
-  if (useProtonImaging) then
-      gr_useParticles=.true.
-  end if
-#endif
 
   gr_globalNumBlocks = gr_meshNumProcs
   gr_globalOffset = gr_meshMe
 
 
   gr_justExchangedGC = .false.
-!!  do i = UNK_VARS_BEGIN,UNK_VARS_END
-!!     gr_vars(i)=i
-!!  end do
 
 #ifdef FIXEDBLOCKSIZE
   call Driver_abort("Uniform Grid is not supported in fixedblocksize mode")

@@ -48,6 +48,7 @@ module Grid_data
     integer, save :: gr_meshAcrossMe
     integer, save :: gr_meshAcrossNumProcs
 
+    logical, save :: gr_useOrchestration
     integer, save :: gr_envOmpNumThreads
 
     real,    save :: gr_smallx
@@ -85,6 +86,7 @@ module Grid_data
     logical, save :: gr_useTiling
     integer, save :: gr_tileSize(1:MDIM)
 
+    logical, save :: gr_geometryOverride
     character(len=MAX_STRING_LENGTH), save :: gr_str_geometry
 
     integer, save :: gr_eosMode

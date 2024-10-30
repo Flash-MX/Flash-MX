@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """This program parses all the .c files in the current directory and finds the header files
 each file depends on. Having done that, it appends those dependencies to Makefile.Depends."""
 
 import re, os, os.path, string, sys, io
 
-incpatt = """^\s*[#]\s*include\s+["']?([A-Za-z._0-9]+)['"]?\s+.*"""
+incpatt = r"""^\s*[#]\s*include\s+["']?([A-Za-z._0-9]+)['"]?\s+.*"""
 
 # searches for file "name" in a specified list of directories 
 # and returns the absolute name

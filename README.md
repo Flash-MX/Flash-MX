@@ -23,7 +23,10 @@ should be made known to the Flash-X build system by a site-specific (or, as a fa
 Makefile.h file. See the subdirectories under sites/ .
 
 This applies in particular to the AMReX library. Separate library instances for 1D, 2D, and 3D
-should be installed, and the appropriate locations mentioned in Makefile.h .
+should be installed, and the appropriate locations mentioned in Makefile.h . The Flash-X code in
+this branch is compatible with AMReX version 23.11 (and with earlier unreleased versions of AMReX that
+have f817d776f544410c315cf6007564f88f6b16fc2b and d77d93b060ae4bc7e1e65ac1465ad7fc06a5d4dc in their commit history).
+Simulations that use AMReX may not be compatible with versions of AMReX earlier than that.
 
 On the other hand, some applications and tests use INTERNAL libraries. Such libraries are built, as part of the Flash-X setup process, from source code that is located in subdirectories under lib/ . There are two cases for such libraries:
 
@@ -91,7 +94,19 @@ Contributors with write permission should create a feature branch from the main 
 instead of a fork. The remainder of the workflow remains the same.
 
 ## Code Formatting
-Use [fprettify](https://github.com/pseewald/fprettify) to format your source code and enforce consistency with indentation and whitespacing. Works for both `.F90` and `.F90-mc` files
+
+Currently Flash-X source code uses different formatting styles for different code units:
+
+1. **fprettify** (https://github.com/pseewald/fprettify): With 3 white space indentation style.
+2. **fxprettify** (tools/fileTools/fxprettify.py): A wrapper around fprettify that implements emacs style formatting. 
+
+Until strict formatting rules are established, we recommend using a style that produces minimum whitespace 
+differences when editing/adding code to an existing unit. For new units we recommend using **fprettify** with
+the following setting,
+
+```
+fprettify -i3 -w1 *.F90
+```
 
 ## Special Syntax Highlighting
 
@@ -123,13 +138,55 @@ autocmd BufNewFile,BufRead *.F90-mc set filetype=fortran
 
 ## Containerization Workflows
 
-![incompFlow](https://github.com/Flash-X/Flash-X/workflows/incompFlow/badge.svg)
-![Sod](https://github.com/Flash-X/Flash-X/workflows/Sod/badge.svg)
-![Sedov](https://github.com/Flash-X/Flash-X/workflows/Sedov/badge.svg)
+[comment]: ![incompFlow](https://github.com/Flash-X/Flash-X/workflows/incompFlow/badge.svg)
+[comment]: ![Sod](https://github.com/Flash-X/Flash-X/workflows/Sod/badge.svg)
+[comment]: ![Sedov](https://github.com/Flash-X/Flash-X/workflows/Sedov/badge.svg)
 
 These workflows are located in `.github/workflows` and are not part of default testing framework. Please to refer `.github/workflows/README.md` and `container/README.md` for details on containerization with **Flash-X**
 
 ## Tests
-The source code for flashtest and a full set of tests are available from the
-Flash-X-Test repository. The repository also has tools to help you setup your local test suite.
+Test specifications for individual simulations are included under ``*/tests/tests.yaml`` files in each simulation directory under ``source/Simulation/SimulationMain``. New tests should be added as enteries in the prescribed YAML format before including it as a part of suites on different platforms.
 
+Testing and maintainence of the code is implemented using command line tools available in Flash-X-Test repository: https://github.com/Flash-X/Flash-X-Test
+
+Please refer to the instructions there to setup your own testing infrastructure. Also take a look at ``sites/ganon_jenkins/UnitTests.suite`` for an example of publicly available test suite which can be edited to enable code coverage for new modules.
+
+Testing servers:
+
+- Argonne, GCE:
+
+  FlashTest server for running tests on `staged` branch
+
+  - GCC   - https://jenkins-gce.cels.anl.gov/job/Flash-X-staged_GCC
+  - Intel - https://jenkins-gce.cels.anl.gov/job/Flash-X-staged_Intel
+
+  FlashTestView
+
+  - GCC - https://web.cels.anl.gov/projects/FLASH5/testsuite/home.py?target_dir=/nfs/pub_html/gce/projects/FLASH5/output/staged_gcc
+  - Intel - https://web.cels.anl.gov/projects/FLASH5/testsuite/home.py?target_dir=/nfs/pub_html/gce/projects/FLASH5/output/staged_intel
+
+- Ganon:
+
+  FlashTest - http://ganon.device.utk.edu:8080 or http://ganon2.device.utk.edu:8080
+
+- Compatibility with AMReX
+
+  Testing with latest AMReX developments happens here - https://jenkins-gce.cels.anl.gov/job/Flash-X-amrex_GCC
+
+## Citation
+
+Please use the following for citing Flash-X
+
+```
+@article{Flash-X-SoftwareX,
+title = {Flash-X: A multiphysics simulation software instrument},
+journal = {SoftwareX},
+volume = {19},
+pages = {101168},
+year = {2022},
+issn = {2352-7110},
+doi = {https://doi.org/10.1016/j.softx.2022.101168},
+url = {https://www.sciencedirect.com/science/article/pii/S2352711022001030},
+author = {Anshu Dubey and Klaus Weide and Jared O’Neal and Akash Dhruv and Sean Couch and J. Austin Harris and Tom Klosterman and Rajeev Jain and Johann Rudi and Bronson Messer and Michael Pajkos and Jared Carlson and Ran Chu and Mohamed Wahib and Saurabh Chawdhary and Paul M. Ricker and Dongwook Lee and Katie Antypas and Katherine M. Riley and Christopher Daley and Murali Ganapathy and Francis X. Timmes and Dean M. Townsley and Marcos Vanella and John Bachan and Paul M. Rich and Shravan Kumar and Eirik Endeve and W. Raphael Hix and Anthony Mezzacappa and Thomas Papatheodore},
+}
+```

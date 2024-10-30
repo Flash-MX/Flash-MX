@@ -1,0 +1,17 @@
+# YAML file for test information
+# comments start with "#"
+
+# The following test used to be configured with -debug.
+UnitTest/Grid/AMR/Milhoja/1D/TestInit:
+  setupOptions: -auto  -1d -nxb=8 +noio +mh_grid
+  parfiles: test_milhoja_grid.par
+
+# The following test used to be configured with -debug.
+UnitTest/Grid/AMR/Milhoja/2D/TestInit:
+  setupOptions: -auto  -2d -nxb=8 -nyb=4 +noio +mh_grid
+  parfiles: test_milhoja_grid.par
+
+# The following test used to be configured with -debug.
+UnitTest/Grid/AMR/Milhoja/3D/TestInit:
+  setupOptions: -auto  -3d -nxb=8 -nyb=4 -nzb=2 +noio +mh_grid
+  parfiles: test_milhoja_grid.par

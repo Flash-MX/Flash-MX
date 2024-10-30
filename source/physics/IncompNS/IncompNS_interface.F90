@@ -66,6 +66,12 @@ Module IncompNS_interface
          real, intent(out)             :: value
       end subroutine IncompNS_getScalarPropReal
 
+      subroutine IncompNS_getScalarPropInteger(name, value)
+         implicit none
+         character(len=*), intent(in)  :: name
+         integer, intent(out)          :: value
+      end subroutine IncompNS_getScalarPropInteger
+ 
       subroutine IncompNS_getScalarPropLogical(name, value)
          implicit none
          character(len=*), intent(in)  :: name
@@ -160,6 +166,22 @@ Module IncompNS_interface
          implicit none
          type(Grid_tile_t), INTENT(IN) :: tileDesc
       end subroutine IncompNS_reInitGridVars
+   end interface
+
+   interface
+      subroutine IncompNS_fluxSet(tileDesc)
+         use Grid_tile, ONLY: Grid_tile_t
+         implicit none
+         type(Grid_tile_t), INTENT(IN) :: tileDesc
+      end subroutine IncompNS_fluxSet
+   end interface
+
+   interface
+      subroutine IncompNS_fluxUpdate(tileDesc)
+         use Grid_tile, ONLY: Grid_tile_t
+         implicit none
+         type(Grid_tile_t), INTENT(IN) :: tileDesc
+      end subroutine IncompNS_fluxUpdate
    end interface
 
 end Module IncompNS_interface
