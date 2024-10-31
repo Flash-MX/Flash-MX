@@ -282,7 +282,7 @@ call Grid_sortParticles(particles,NPART_PROPS,l_numParticles, particleTypes,&
   if (allocated(particlest)) then
         ! do nothing
    else ! allocate to zero, avoid collective hdf5 calls error 
-      allocate(particlest(0,0))
+      allocate(particlest(NPART_PROPS,0))
   endif
 
 
