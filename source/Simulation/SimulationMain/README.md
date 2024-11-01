@@ -6,3 +6,5 @@
 5) BrioWuShockTube
 6) DivergenceCleaningTest
 7) OrszagTang
+ - Note that all plot scripts in these problem directories assume
+Static mesh refinement. 

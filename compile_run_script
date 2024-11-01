@@ -9,47 +9,55 @@ echo "that is used to compile+run test problems. It might not look great, but it
 echo "for the most part. The resolutions and spatial dimensions you provide are"
 echo "assumed to already have a corresponding par file to go with them, i.e., you"
 echo "might have to create your own parfiles depending on what options you want"
-echo "Default options are shown in the README.md files in each problem directory."
-echo "--------------------------------------------------------------------"
+echo "------------------------------------------------------------------------------"
 echo "Problem options:"
-echo "(1) Acoustic Wave"
-echo "(2) Linear Wave MHD: Slow Magnetosonic mode"
-echo "(3) Linear Wave MHD: Fast Magnetosonic mode"
-echo "(4) Linear Wave MHD: Alfven speed"
-echo "(5) Brio & Wu Shock tube (1D or 2D)"
-echo "(6) Orszag Tang Vortex (2D)"
-echo "(7) Divergence cleaning test (2D)"
-echo "--------------------------------------------------------------------"
+echo "(1) Acoustic Wave                           (defaults: 1D + nX=256 + 1 rank)"
+echo "(2) Linear Wave MHD: Fast Magnetosonic mode (defaults: 1D + nX=256 + 1 rank)"
+echo "(3) Linear Wave MHD: Alfven Speed           (defaults: 1D + nX=256 + 1 rank)"
+echo "(4) Linear Wave MHD: Slow Magnetosonic mode (defaults: 1D + nX=256 + 1 rank)"
+echo "(5) Brio & Wu Shock tube                    (defaults: 1D + nX=200 + 1 rank OR 2D + nX=nY=200 + 1 rank)"
+echo "(6) Orszag Tang Vortex                      (defaults: 2D + nX=nY=192 + 16 ranks)"
+echo "(7) Divergence cleaning test                (defaults: 2D + nX=nY=200 + 16 ranks)"
+echo "-------------------------------------------------------------------------------"
 read -p "Problem option number (e.g., Acoustic Wave = 1):     " problem_OPTION
-read -p "(if applicable) Problem dimensionality (1=1D, 2=2D): " dimension
+read -p "Problem dimensionality (1=1D, 2=2D):                 " dimension
 read -p "Spatial resolution in x-direction:                   " nX
-dataDIR=nX_${nX}_DIR
+read -p "Number of ranks:                                     " nRank
+read -p "Run option (1 = compile, 2 = compile + run):         " run_OPTION
+resolution=nX_${nX}
+dataDIR=${resolution}_DIR
 if [ ${dimension} -eq 2 ]; then
 	read -p "Spatial resolution in y-direction:                   " nY
-	dataDIR=nX_${nX}_nY_${nY}_DIR
+	resolution=nX_${nX}_nY_${nY}
+	dataDIR=${resolution}_DIR
 fi
 
 # PROBLEM OPTIONS
 if [ ${problem_OPTION} -eq 1 ]; then	
 	./setup AcousticWave -auto -1d -maxblocks=100 -nxb=${nX} -site=dpochik-osc +hdf5 +cartesian +spark +nofbs useTVD=true -parfile=flash_${nX}.par
 	workDIR=Flashwork_1D_AcousticWave_DIR
+	problemDataName=acousticWave
 else
 	if [ ${problem_OPTION} -eq 2 ]; then
 		./setup LinearWave_MHD_FastMagnetosonic -auto -1d -maxblocks=100 -nxb=${nX} -site=dpochik-osc +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par
 		workDIR=Flashwork_1D_LinearWave_MHD_FM_DIR
+		problemDataName=linWave_MHD_FM
 	else
 		if [ ${problem_OPTION} -eq 3 ]; then
 			./setup LinearWave_MHD_AlfvenSpeed -auto -1d -maxblocks=100 -nxb=${nX} -site=dpochik-osc +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par
 			workDIR=Flashwork_1D_LinearWave_MHD_AS_DIR
+			problemDataName=linWave_MHD_AS
 		else
 			if [ ${problem_OPTION} -eq 4 ]; then
 				./setup LinearWave_MHD_SlowMagnetosonic -auto -1d -maxblocks=100 -nxb=${nX} -site=dpochik-osc +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par
 				workDIR=Flashwork_1D_LinearWave_MHD_SM_DIR
+				problemDataName=linWave_MHD_SM
 			else
 				if [ ${problem_OPTION} -eq 5 ]; then	
+					problemDataName=BrioWu
 					if [ ${dimension} -eq 1 ]; then
 						./setup BrioWuShockTube -auto -1d -maxblocks=100 -nxb=${nX} -site=dpochik-osc +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par
-						workDIR=Flashwork_1D_BrioWu_DIR
+						workDIR=Flashwork_1D_BrioWu_DIR	
 					else
 						if [ ${dimension} -eq 2 ]; then	
 							./setup BrioWuShockTube -auto -2d -maxblocks=100 -nxb=${nX} -nyb=${nY} -site=dpochik-osc +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}_${nY}.par
@@ -69,6 +77,7 @@ else
 						fi
 							./setup OrszagTang -auto -2d -maxblocks=100 -nxb=${nX} -nyb=${nY} -site=dpochik-osc +hdf5 +cartesian useTVD=true +nofbs -parfile=flash_${nX}_${nY}.par useGLM=true +spark
 							workDIR=Flashwork_2D_OrszagTang_DIR
+							problemDataName=OrszagTang
 					else
 						if [ ${problem_OPTION} -eq 7 ]; then
 							if [ ! ${dimension} -eq 2 ]; then
@@ -79,6 +88,7 @@ else
 							fi
 							./setup DivergenceCleaningTest -auto -2d -maxblocks=100 -nxb=${nX} -nyb=${nY} -site=dpochik-osc +hdf5 +cartesian useTVD=true +nofbs -parfile=flash_${nX}_${nY}.par useGLM=true +spark
 							workDIR=Flashwork_2D_DivBTest_DIR
+							problemDataName=divBtest
 						else
 							echo "Incorrect problem option set. Exiting script."
 							exit
@@ -106,10 +116,28 @@ if [ ! -d "${workDIR}/${dataDIR}" ]; then
 	mkdir ${workDIR}/${dataDIR}
 fi
 
-# Creates a directory for tar files to be stored in
+# Creates a directory for tar files to be stored in, which
+# might make it easier to x-fer data between machines.
 if [ ! -d "${workDIR}/tar_DIR" ]; then
 	echo "Making tar_DIR"
 	mkdir ${workDIR}/tar_DIR
 fi
 
 cp object/flash.par object/flashx ${workDIR}/${dataDIR}/
+
+if [ ${run_OPTION} -eq 2 ]; then
+	cd ${workDIR}/${dataDIR}/	
+	# Run the executable
+	mpirun -n ${nRank} ./flashx
+	tarfile=problem_${problemDataName}_${resolution}.tar.gz
+	tar -zcvf ${tarfile} ${problemDataName}*
+	mv ${tarfile} ../tar_DIR
+else
+	if [ ${run_OPTION} -eq 1 ]; then
+		echo "Stopping after compiling."
+	else
+		echo "Stopping by default after compiling."
+	fi
+fi
+
+echo "SCRIPT COMPLETE"
