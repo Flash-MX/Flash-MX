@@ -4,21 +4,21 @@ module load hdf5
 module load openmpi
 module load netcdf
 
-echo "NOTE: This is a *very* crude script with an awful series of nested if loops"
-echo "that is used to compile+run test problems. It might not look great, but it works"
-echo "for the most part. The resolutions and spatial dimensions you provide are"
-echo "assumed to already have a corresponding par file to go with them, i.e., you"
-echo "might have to create your own parfiles depending on what options you want"
-echo "------------------------------------------------------------------------------"
-echo "Problem options:"
-echo "(1) Acoustic Wave                           (defaults: 1D + nX=256 + 1 rank)"
-echo "(2) Linear Wave MHD: Fast Magnetosonic mode (defaults: 1D + nX=256 + 1 rank)"
-echo "(3) Linear Wave MHD: Alfven Speed           (defaults: 1D + nX=256 + 1 rank)"
-echo "(4) Linear Wave MHD: Slow Magnetosonic mode (defaults: 1D + nX=256 + 1 rank)"
-echo "(5) Brio & Wu Shock tube                    (defaults: 1D + nX=200 + 1 rank OR 2D + nX=nY=200 + 1 rank)"
-echo "(6) Orszag Tang Vortex                      (defaults: 2D + nX=nY=192 + 16 ranks)"
-echo "(7) Divergence cleaning test                (defaults: 2D + nX=nY=200 + 16 ranks)"
-echo "-------------------------------------------------------------------------------"
+echo "NOTE: This is a *very* crude script with an awful series of nested if loops
+      that is used to compile+run test problems. It might not look great, but it works
+      for the most part. The resolutions and spatial dimensions you provide are
+      assumed to already have a corresponding par file to go with them, i.e., you
+      might have to create your own parfiles depending on what options you want
+      ------------------------------------------------------------------------------
+      Problem options:
+      (1) Acoustic Wave                           (defaults: 1D + nX=256 + 1 rank)
+      (2) Linear Wave MHD: Fast Magnetosonic mode (defaults: 1D + nX=256 + 1 rank)
+      (3) Linear Wave MHD: Alfven Speed           (defaults: 1D + nX=256 + 1 rank)
+      (4) Linear Wave MHD: Slow Magnetosonic mode (defaults: 1D + nX=256 + 1 rank)
+      (5) Brio & Wu Shock tube                    (defaults: 1D + nX=200 + 1 rank OR 2D + nX=nY=200 + 1 rank)
+      (6) Orszag Tang Vortex                      (defaults: 2D + nX=nY=192 + 16 ranks)
+      (7) Divergence cleaning test                (defaults: 2D + nX=nY=200 + 16 ranks)
+      -------------------------------------------------------------------------------"
 read -p "Problem option number (e.g., Acoustic Wave = 1):     " problem_OPTION
 read -p "Problem dimensionality (1=1D, 2=2D):                 " dimension
 read -p "Spatial resolution in x-direction:                   " nX
