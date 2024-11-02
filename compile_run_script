@@ -4,11 +4,9 @@ module load hdf5
 module load openmpi
 module load netcdf
 
-echo "NOTE: This is a *very* crude script with an awful series of nested if loops
-      that is used to compile+run test problems. It might not look great, but it works
-      for the most part. The resolutions and spatial dimensions you provide are
-      assumed to already have a corresponding par file to go with them, i.e., you
-      might have to create your own parfiles depending on what options you want
+echo "NOTE: This is a *very* crude script that is used to compile+run test problems. 
+      It might not look great, but it works for the most part. This script only runs
+      with default options for each problem.
       ------------------------------------------------------------------------------
       Problem options:
       (1) Acoustic Wave                           (defaults: 1D + nX=256 + 1 rank)
@@ -19,76 +17,83 @@ echo "NOTE: This is a *very* crude script with an awful series of nested if loop
       (6) Orszag Tang Vortex                      (defaults: 2D + nX=nY=192 + 16 ranks)
       (7) Divergence cleaning test                (defaults: 2D + nX=nY=200 + 16 ranks)
       -------------------------------------------------------------------------------"
-read -p "Problem option number (e.g., Acoustic Wave = 1):     " problem_OPTION
-read -p "Problem dimensionality (1=1D, 2=2D):                 " dimension
-read -p "Spatial resolution in x-direction:                   " nX
-read -p "Number of ranks:                                     " nRank
-read -p "Run option (1 = compile, 2 = compile + run):         " run_OPTION
-resolution=nX_${nX}
-dataDIR=${resolution}_DIR
-if [ ${dimension} -eq 2 ]; then
-	read -p "Spatial resolution in y-direction:                   " nY
-	resolution=nX_${nX}_nY_${nY}
-	dataDIR=${resolution}_DIR
-fi
+read -p "Problem option number (e.g., Acoustic Wave = 1):             " problem_OPTION
+read -p "Run option (1 = compile, 2 = compile + run):                 " run_OPTION
+read -p "Desired Makefile directory under sites/ (e.g., dpochik-osc): " site_OPTION
 
 # PROBLEM OPTIONS
-if [ ${problem_OPTION} -eq 1 ]; then	
-	./setup AcousticWave -auto -1d -maxblocks=100 -nxb=${nX} -site=dpochik-osc +hdf5 +cartesian +spark +nofbs useTVD=true -parfile=flash_${nX}.par
+if [ ${problem_OPTION} -eq 1 ]; then
+	nX=256
+	nRank=1
+	resolution=nX_${nX}
 	workDIR=Flashwork_1D_AcousticWave_DIR
 	problemDataName=acousticWave
+	./setup AcousticWave -auto -1d -maxblocks=100 -nxb=${nX} -site=${site_OPTION} +hdf5 +cartesian +spark +nofbs useTVD=true -parfile=flash_${nX}.par	
 else
 	if [ ${problem_OPTION} -eq 2 ]; then
-		./setup LinearWave_MHD_FastMagnetosonic -auto -1d -maxblocks=100 -nxb=${nX} -site=dpochik-osc +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par
+		nX=256
+		nRank=1
+		resolution=nX_${nX}
 		workDIR=Flashwork_1D_LinearWave_MHD_FM_DIR
 		problemDataName=linWave_MHD_FM
+		./setup LinearWave_MHD_FastMagnetosonic -auto -1d -maxblocks=100 -nxb=${nX} -site=${site_OPTION} +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par	
 	else
 		if [ ${problem_OPTION} -eq 3 ]; then
-			./setup LinearWave_MHD_AlfvenSpeed -auto -1d -maxblocks=100 -nxb=${nX} -site=dpochik-osc +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par
+			nX=256
+			nRank=1
+			resolution=nX_${nX}
 			workDIR=Flashwork_1D_LinearWave_MHD_AS_DIR
 			problemDataName=linWave_MHD_AS
+			./setup LinearWave_MHD_AlfvenSpeed -auto -1d -maxblocks=100 -nxb=${nX} -site=${site_OPTION} +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par	
 		else
 			if [ ${problem_OPTION} -eq 4 ]; then
-				./setup LinearWave_MHD_SlowMagnetosonic -auto -1d -maxblocks=100 -nxb=${nX} -site=dpochik-osc +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par
+				nX=256
+				nRank=1
+				resolution=nX_${nX}
 				workDIR=Flashwork_1D_LinearWave_MHD_SM_DIR
 				problemDataName=linWave_MHD_SM
+				./setup LinearWave_MHD_SlowMagnetosonic -auto -1d -maxblocks=100 -nxb=${nX} -site=${site_OPTION} +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par
 			else
 				if [ ${problem_OPTION} -eq 5 ]; then	
+					read -p "Problem dimensionality (1=1D, 2=2D):                         " dimension	
 					problemDataName=BrioWu
 					if [ ${dimension} -eq 1 ]; then
-						./setup BrioWuShockTube -auto -1d -maxblocks=100 -nxb=${nX} -site=dpochik-osc +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par
+						nX=200
+						nRank=1
+						resolution=nX_${nX}
 						workDIR=Flashwork_1D_BrioWu_DIR	
+						./setup BrioWuShockTube -auto -1d -maxblocks=100 -nxb=${nX} -site=${site_OPTION} +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}.par
 					else
 						if [ ${dimension} -eq 2 ]; then	
-							./setup BrioWuShockTube -auto -2d -maxblocks=100 -nxb=${nX} -nyb=${nY} -site=dpochik-osc +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}_${nY}.par
+							nX=200
+							nY=200
+							nRank=1
+							resolution=nX_${nX}_nY_${nY}
 							workDIR=Flashwork_2D_BrioWu_DIR
+							./setup BrioWuShockTube -auto -2d -maxblocks=100 -nxb=${nX} -nyb=${nY} -site=${site_OPTION} +hdf5 +cartesian +spark useGLM=true +nofbs useTVD=true -parfile=flash_${nX}_${nY}.par	
 						else
 							echo "Incorrect dimensionality specified. Exiting script"
 							exit
 						fi
 					fi
 				else
-					if [ ${problem_OPTION} -eq 6 ]; then
-						if [ ! ${dimension} -eq 2 ]; then
-							echo "Incompatible dimension + problem choice."
-							echo "Problem is only capable of running in 2D."
-							echo "Exiting script"
-							exit
-						fi
-							./setup OrszagTang -auto -2d -maxblocks=100 -nxb=${nX} -nyb=${nY} -site=dpochik-osc +hdf5 +cartesian useTVD=true +nofbs -parfile=flash_${nX}_${nY}.par useGLM=true +spark
-							workDIR=Flashwork_2D_OrszagTang_DIR
-							problemDataName=OrszagTang
+					if [ ${problem_OPTION} -eq 6 ]; then	
+						nX=192
+						nY=192
+						nRank=16
+						resolution=nX_${nX}_nY_${nY}
+						workDIR=Flashwork_2D_OrszagTang_DIR
+						problemDataName=OrszagTang
+						./setup OrszagTang -auto -2d -maxblocks=100 -nxb=${nX} -nyb=${nY} -site=${site_OPTION} +hdf5 +cartesian useTVD=true +nofbs -parfile=flash_${nX}_${nY}.par useGLM=true +spark
 					else
-						if [ ${problem_OPTION} -eq 7 ]; then
-							if [ ! ${dimension} -eq 2 ]; then
-								echo "Incompatible dimension + problem choice."
-								echo "Problem is only capable of running in 2D."
-								echo "Exiting script"
-								exit
-							fi
-							./setup DivergenceCleaningTest -auto -2d -maxblocks=100 -nxb=${nX} -nyb=${nY} -site=dpochik-osc +hdf5 +cartesian useTVD=true +nofbs -parfile=flash_${nX}_${nY}.par useGLM=true +spark
+						if [ ${problem_OPTION} -eq 7 ]; then	
+							nX=200
+							nY=200
+							nRank=16
+							resolution=nX_${nX}_nY_${nY}
 							workDIR=Flashwork_2D_DivBTest_DIR
 							problemDataName=divBtest
+							./setup DivergenceCleaningTest -auto -2d -maxblocks=100 -nxb=${nX} -nyb=${nY} -site=${site_OPTION} +hdf5 +cartesian useTVD=true +nofbs -parfile=flash_${nX}_${nY}.par useGLM=true +spark
 						else
 							echo "Incorrect problem option set. Exiting script."
 							exit
@@ -111,6 +116,7 @@ make -j8
 
 cd ../
 # Creates data directory
+dataDIR=${resolution}_DIR
 if [ ! -d "${workDIR}/${dataDIR}" ]; then
 	echo "Making data directory"
 	mkdir ${workDIR}/${dataDIR}
