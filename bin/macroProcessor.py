@@ -442,6 +442,9 @@ class variantLineProcessor:
             if idx in self.variant_lines_indices:
                 # Do not modify variant declaration lines
                 continue
+            if line.strip().startswith("#"):
+                # Skip preprocessor directives
+                continue
             modified_line = line
             for sub, pattern in patterns.items():
                 if pattern.search(modified_line):
