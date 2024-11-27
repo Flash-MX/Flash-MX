@@ -452,11 +452,16 @@ class UnitList:
         requiredList = self.units[unitName]["REQUIRES"]
         for requiredSet in requiredList:
             for requiredUnit in requiredSet:
-                defsList[0] += self.recursiveGetDefs(sourceDir,requiredUnit)
+                for inifile in self.recursiveGetDefs(sourceDir,requiredUnit):
+                    # prevent unintended overriding...
+                    if inifile not in defsList[0]:
+                        defsList[0].append(inifile)
 
         # get defs for the unit itself
-        defsList[0] += self.recursiveGetDefs(sourceDir,unitName)
-
+        for inifile in self.recursiveGetDefs(sourceDir,unitName):
+            # prevent unintended overriding...
+            if inifile not in defsList[0]:
+                defsList[0].append(inifile)
         # defs in simulation directory should overwrite others
         defsList[1] += getDefs(simDir)
 
