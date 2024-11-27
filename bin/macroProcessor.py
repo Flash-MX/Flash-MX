@@ -419,7 +419,7 @@ class variantLineProcessor:
         Replaces occurrences of specified subroutines with their modified versions based on variants.
         Modifications are done in-place on the self.lines list.
         """
-        if not self.variants:
+        if not self.requested_var:
             # No variants to process. Skipping replacement.
             return
 
