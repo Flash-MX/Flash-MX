@@ -448,14 +448,21 @@ class UnitList:
         # get common defs from bin dir
         defsList[0] += getDefs(binDir)
 
-        # get all defs from required units
+        # get all defs from required units that are actually in the unitList
         requiredList = self.units[unitName]["REQUIRES"]
-        for requiredSet in requiredList:
-            for requiredUnit in requiredSet:
-                for inifile in self.recursiveGetDefs(sourceDir,requiredUnit):
-                    # prevent unintended overriding...
-                    if inifile not in defsList[0]:
-                        defsList[0].append(inifile)
+        # each member of this list-within-a-list will represent
+        # a series of alternative Units as specified in a Config
+        # file by the syntax "REQUIRES A OR B OR C".
+        for setOfAlternatives in requiredList:
+            # The following loop nest only descends into the **first** of
+            # these required units that is actually present in self.units:
+            for requiredName in setOfAlternatives:
+                if requiredName in self.units:
+                    for inifile in self.recursiveGetDefs(sourceDir,requiredName):
+                        # prevent unintended overriding...
+                        if inifile not in defsList[0]:
+                            defsList[0].append(inifile)
+                    break
 
         # get defs for the unit itself
         for inifile in self.recursiveGetDefs(sourceDir,unitName):
