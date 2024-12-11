@@ -55,6 +55,15 @@ mh_grid:Grid=Milhoja:-unit=Grid/GridMain/AMR/Milhoja:-with-unofficial=Grid/GridM
 # Using the Milhoja library only for the Orchestration implementation: (also needs Milhoja=...)
 mh_orch:-unit=Orchestration/OrchestrationMain/Milhoja:-with-unofficial=Orchestration/OrchestrationMain/Milhoja:-index-reorder
 
+#Using Eos in variants mode
+eoshelmCPU:-with-unit=physics/Eos/EosMain/NULL:-with-unit=physics/Eos/EosMain/Helmholtz/NULL
+eosgamCPU: -with-unit=physics/Eos/EosMain/CPU:-with-unit=physics/Eos/EosMain/Gamma/CPU 
+eoswlCPU: -with-unit=physics/Eos/EosMain/NULL:-with-unit=physics/Eos/EosMain/WeakLib/NULL
+
+eoshelmGPU:-with-unit=physics/Eos/EosMain/GPU:-with-unit=physics/Eos/EosMain/Helmholtz/GPU
+eosgamGPU: -with-unit=physics/Eos/EosMain/GPU:-with-unit=physics/Eos/EosMain/Gamma/GPU
+eoswlGPU: -with-unit=physics/Eos/EosMain/GPU:-with-unit=physics/Eos/EosMain/WeakLib/GPU
+
 ### For execute-style ORCHA ### (needs libmilhoja or libmilhoja_grid)
 # Using the Milhoja library for Grid and Orchestration implementations, CPU tt config only:
 mh_exec_cpu:+mh_grid:+mh_orch:-defines=RUNTIME_MUST_USE_TILEITER:Milhoja=AMReX,none,none
