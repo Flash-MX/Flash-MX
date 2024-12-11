@@ -437,6 +437,9 @@ class UnitList:
                 if(not isVariant):
                     unitDir = os.path.join(sourceDir,unit)
                     defsList += getDefs(unitDir)
+                else:
+                    GVars.out.put("           McDef files in %s skipped because of isTarget" % unit, globals.INFO)
+
         return defsList
 
     # A unit needs definitions from itself as well as any unit it REQUIRES.
@@ -444,6 +447,8 @@ class UnitList:
     # should be crawled (unless they are a variant).
     def collectDefs(self,sourceDir,unitName,binDir,simDir):
         defsList = [[],[]] # two lists, variant-specific definitions should be inbetween
+
+        GVars.out.put("Collect McDef files for unit %s in %s" % (unitName, sourceDir), globals.INFO)
 
         # get common defs from bin dir
         defsList[0] += getDefs(binDir)
@@ -461,6 +466,7 @@ class UnitList:
                     for inifile in self.recursiveGetDefs(sourceDir,requiredName):
                         # prevent unintended overriding...
                         if inifile not in defsList[0]:
+                            GVars.out.put("        McDef file %s because unit %s REQUIRES %s" % (inifile, unitName, sourceDir), globals.INFO)
                             defsList[0].append(inifile)
                     break
 
@@ -468,6 +474,7 @@ class UnitList:
         for inifile in self.recursiveGetDefs(sourceDir,unitName):
             # prevent unintended overriding...
             if inifile not in defsList[0]:
+                GVars.out.put("        McDef file %s for unit %s itself" % (inifile, unitName), globals.INFO)
                 defsList[0].append(inifile)
         # defs in simulation directory should overwrite others
         defsList[1] += getDefs(simDir)
