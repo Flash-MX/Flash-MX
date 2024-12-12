@@ -423,22 +423,31 @@ class UnitList:
         varList.append('Null')
       return varList
 
-    def recursiveGetDefs(self,sourceDir,targetUnit):
+    def recursiveGetDefs(self,sourceDir,targetUnit,requiringDir=None):
+        """
+        requiringDir: The directory containing the Config file that has the
+        REQUIRES that got this function invoked.
+        """
         defsList = []
         # Since this list has been sorted, the children should be
         # checked in the proper order
         for unit in self.getLinkOrder():
             if(targetUnit.startswith(unit) or unit.startswith(targetUnit)):
                 isVariant = False
-                for varUnit in self.getAllVariants(targetUnit):
-                    if(unit.startswith(varUnit)):
-                        isVariant = True
+                if requiringDir is not None:
+                    for varUnit in self.getAllVariants(requiringDir):
+                        if(unit.startswith(varUnit)):
+                            isVariant = True
+                if not isVariant:
+                    for varUnit in self.getAllVariants(targetUnit):
+                        if(unit.startswith(varUnit)):
+                            isVariant = True
 
                 if(not isVariant):
                     unitDir = os.path.join(sourceDir,unit)
                     defsList += getDefs(unitDir)
                 else:
-                    GVars.out.put("           McDef files in %s skipped because of isTarget" % unit, globals.INFO)
+                    GVars.out.put("           McDef files in %s skipped because of isVariant" % unit, globals.INFO)
 
         return defsList
 
@@ -463,10 +472,10 @@ class UnitList:
             # these required units that is actually present in self.units:
             for requiredName in setOfAlternatives:
                 if requiredName in self.units:
-                    for inifile in self.recursiveGetDefs(sourceDir,requiredName):
+                    for inifile in self.recursiveGetDefs(sourceDir,requiredName,unitName):
                         # prevent unintended overriding...
                         if inifile not in defsList[0]:
-                            GVars.out.put("        McDef file %s because unit %s REQUIRES %s" % (inifile, unitName, sourceDir), globals.INFO)
+                            GVars.out.put("        McDef file %s because unit %s REQUIRES %s" % (inifile, unitName, requiredName), globals.INFO)
                             defsList[0].append(inifile)
                     break
 
