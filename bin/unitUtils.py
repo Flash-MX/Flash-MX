@@ -454,8 +454,54 @@ class UnitList:
         return defsList
 
     # A unit needs definitions from itself as well as any unit it REQUIRES.
-    # Units that are either direct parents or direct children of a target Unit
-    # should be crawled (unless they are a variant).
+    #
+    # Directories that are ancestors of a target (REQUIRED) unit,
+    # except those that are recognized as a variant of the requiring unit,
+    # are searched for McDef files.
+    #
+    # A REQUIRED unit itself,
+    # except when it is recognized as a variant of the requiring unit,
+    # is searched for McDef files.
+    #
+    # Directories that are direct(*) children of a target (REQUIRED) unit,
+    # except those that are recognized as a variant of the current or the target unit,
+    # are searched for McDef files.
+    #
+    # Ancestor directories of the current unit are searched for McDef files.
+    # The current unit itself is searched for McDef files.
+    # Directories that are direct(*) children of the current unit,
+    # except those that are recognized as a variant of the current unit,
+    # are searched for McDef files.
+    #
+    # Note that the directories that are collected here and listed above include ONLY
+    # those that exist in the unitList self, i.e., directories that are included in the 
+    # simulation configuration by the usual means of `-with-unit` or `-unit` setup
+    # options, REQUIRES, REQUESTS, and DEFAULT directives (as far as they become
+    # effective) in Config files, and equivalents thereof. These directories do NOT
+    # include ones that are ONLY referenced by VARIANT directives in Config files.
+    #
+    # Also note that what is returned is not actually a list of directories, but a list
+    # of two lists, each of them containing filenames of McDef files - for the most
+    # part, these are the McDef files that are found by searching as described above.
+    # Each McDef file is expected to occur at most once in a list.
+    #
+    # There is additional special handling for
+    # - McDef files in the binDir: these should all appear at the beginning of the first list.
+    # - McDef files in the simulation directory: if there are any, these should all
+    #   appear as the contents of the second list.
+    #
+    # McDef files in directories that are not included in the simulation configuration
+    # by the usual means, but are referenced by a VARIANT directive in an included
+    # Config file, will be collected elsewhere! See generateVariants of the
+    # macroProcessorHelper. The list of those "pure VARIANT" McDef files is to be
+    # combined with the lists returned by the present function in such a way that, for
+    # actual macro expansion, the expected rules of priority for handling same-name
+    # macros from different McDef sources are obtained.
+    #
+    # (*) the limiting of McDef search to ***direct*** children only is curently not
+    # implemented; currently, all decedent directories are included in the search where
+    # the above description has "children". It is unclear what the desired behavior
+    # should be.
     def collectDefs(self,sourceDir,unitName,binDir,simDir):
         defsList = [[],[]] # two lists, variant-specific definitions should be inbetween
 
