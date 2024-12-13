@@ -434,15 +434,22 @@ class UnitList:
         # Since this list has been sorted, the children should be
         # checked in the proper order
         for unit in self.getLinkOrder():
-            if(targetUnit.startswith(unit) or unit.startswith(targetUnit)):
+            if(targetUnit == unit or
+               targetUnit.startswith(unit+"/") or # targetUnit is unit+"/"+<something>
+               unit.startswith(targetUnit+"/")    # unit is targetUnit+"/"+<something>
+               ):
                 isVariant = False
                 if requiringDir is not None:
                     for varUnit in self.getAllVariants(requiringDir):
-                        if(unit.startswith(varUnit)):
+                        if unit == varUnit:
+                            isVariant = True
+                        elif unit.startswith(varUnit+"/"):
                             isVariant = True
                 if not isVariant:
                     for varUnit in self.getAllVariants(targetUnit):
-                        if(unit.startswith(varUnit)):
+                        if unit == varUnit:
+                            isVariant = True
+                        elif unit.startswith(varUnit+"/"):
                             isVariant = True
 
                 if(not isVariant):
