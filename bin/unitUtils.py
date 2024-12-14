@@ -472,13 +472,13 @@ class UnitList:
     # except when it is recognized as a variant or subvariant of the requiring unit,
     # is searched for McDef files.
     #
-    # Directories that are direct(*) children of a target (REQUIRED) unit,
+    # Directories that are children or higher-degree descendants of a target (REQUIRED) unit,
     # except those that are recognized as a variant or subvariant of the current or the target unit,
     # are searched for McDef files.
     #
     # Ancestor directories of the current unit are searched for McDef files.
     # The current unit itself is searched for McDef files.
-    # Directories that are direct(*) children of the current unit,
+    # Directories that are children or higher-degree descendants of the current unit,
     # except those that are recognized as a variant or subvariant of the current unit,
     # are searched for McDef files.
     #
@@ -514,11 +514,6 @@ class UnitList:
     # combined with the lists returned by the present function in such a way that, for
     # actual macro expansion, the expected rules of priority for handling same-name
     # macros from different McDef sources are obtained.
-    #
-    # (*) the limiting of McDef search to ***direct*** children only is curently not
-    # implemented; currently, all decedent directories are included in the search where
-    # the above description has "children". It is unclear what the desired behavior
-    # should be.
     def collectDefs(self,sourceDir,unitName,binDir,simDir):
         # We build, and shall return, two lists:
         defsList = [[],[]]
