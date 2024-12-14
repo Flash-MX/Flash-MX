@@ -436,9 +436,8 @@ class UnitList:
         for unit in self.getLinkOrder():
             if(targetUnit == unit or
                targetUnit.startswith(unit+"/") or # targetUnit is unit+"/"+<something>
-               (unit.startswith(targetUnit+"/") and # unit is targetUnit+"/"+<something>
-                unit.rfind("/") == len(targetUnit)  # unit is targetUnit+"/"+<something without slashes>
-                )):
+               unit.startswith(targetUnit+"/")    # unit is targetUnit+"/"+<something>
+               ):
                 isVariant = False
                 if requiringDir is not None:
                     for varUnit in self.getAllVariants(requiringDir):
@@ -473,15 +472,14 @@ class UnitList:
     # except when it is recognized as a variant or subvariant of the requiring unit,
     # is searched for McDef files.
     #
-    # Directories that are direct children of a target (REQUIRED) unit,
-    # except those that are recognized as a variant or subvariant of the current unit
-    # or as a variant of the target unit,
+    # Directories that are direct(*) children of a target (REQUIRED) unit,
+    # except those that are recognized as a variant or subvariant of the current or the target unit,
     # are searched for McDef files.
     #
     # Ancestor directories of the current unit are searched for McDef files.
     # The current unit itself is searched for McDef files.
-    # Directories that are direct children of the current unit,
-    # except those that are recognized as a variant of the current unit,
+    # Directories that are direct(*) children of the current unit,
+    # except those that are recognized as a variant or subvariant of the current unit,
     # are searched for McDef files.
     #
     # Subvariant of x: a directory that is either a variant of x or in
@@ -517,8 +515,10 @@ class UnitList:
     # actual macro expansion, the expected rules of priority for handling same-name
     # macros from different McDef sources are obtained.
     #
-    # The limiting of McDef search to ***direct*** children only is now
-    # implemented.  However, it is unclear whether this is the desired behavior.
+    # (*) the limiting of McDef search to ***direct*** children only is curently not
+    # implemented; currently, all decedent directories are included in the search where
+    # the above description has "children". It is unclear what the desired behavior
+    # should be.
     def collectDefs(self,sourceDir,unitName,binDir,simDir):
         # We build, and shall return, two lists:
         defsList = [[],[]]
