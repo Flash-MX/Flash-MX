@@ -66,15 +66,18 @@ class macroProcessor:
                 else:
                     previousPath = self.sourcedict[section]
                     if not (
-                        previousPath.startswith(dirName)
-                        or dirName.startswith(previousPath)
+                        previousPath == dirName
+                        or previousPath.startswith(dirName+"/")
+                        or dirName.startswith(previousPath+"/")
                     ):
                         if not (
                             "source/Simulation" in dirName or "/bin" in previousPath
                         ):
                             raise SyntaxError(
-                                "{} defined in parellel directories, can't inherit properly".format(
-                                    section
+                                "{} defined in directories {} and {}, can't inherit properly".format(
+                                    section,
+                                    previousPath,
+                                    dirName
                                 )
                             )
                     self.sourcedict[
@@ -424,7 +427,7 @@ class variantLineProcessor:
             return
 
         if self.requested_var not in self.variants:
-            msg = f"The requested variant, {self.requested_var}, is not appeared in !!VARIANTS line"
+            msg = f"The requested variant, {self.requested_var}, is not listed on a !!VARIANTS line in {self.input_file}."
             raise SyntaxError(msg)
 
         requested_var = self.requested_var

@@ -428,7 +428,7 @@ class UnitList:
         requiringDir: The directory containing the Config file that has the
         REQUIRES that got this function invoked. Only passed in when
         it is different from targetUnit. I.e., when targetUnit really
-        comes from the arget of an effective REQUIRES directive.
+        comes from the target of an effective REQUIRES directive.
         """
         defsList = []
         # Since this list has been sorted, the children should be
