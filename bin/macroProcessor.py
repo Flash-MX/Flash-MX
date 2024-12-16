@@ -3,6 +3,8 @@ import os
 import re
 import argparse
 from collections import defaultdict
+import globals
+from globals import GVars
 
 try:
     from configparser import ConfigParser  # Python 3
@@ -124,6 +126,9 @@ class macroProcessor:
         if len(arglist) != len(args):
             msg = f"Error: macro: {key} needs {len(arglist)} argument(s), but {len(args)} given."
             raise SyntaxError(msg)
+        # else:
+        #     msg = f"Info: macro: {key} needs {len(arglist)} argument(s), and it is given {args}."
+        #     GVars.out.put(msg, globals.INFO)
         for i, arg in enumerate(args):
             if i < len(arglist):
                 arg_re = r"\b" + arglist[i] + r"\b"  # don't substitute substrings
@@ -342,13 +347,14 @@ class macroProcessor:
 
 class variantLineProcessor:
     """
-    A class to modify Fortran source code by appending variant suffixes to specified subroutines.
+    A class to modify Fortran source code by appending variant suffixes to specified names.
+    Typically, specified names are names of subroutines, either defined or called in the source.
 
     Attributes:
         input_file (str): Path to the input Fortran source file.
         output_file (str): Path to the output Fortran source file.
         requested_var (str): Requested variant
-        variants (Dict[str, List[str]]): Dictionary mapping each variant to its list of subroutines.
+        variants (Dict[str, List[str]]): Dictionary mapping each variant to its list of names.
         variant_lines_indices (Set[int]): Set of line indices that are part of variant declarations.
     """
 
@@ -411,7 +417,7 @@ class variantLineProcessor:
                         break
                 # Last line without '&'
                 subs.extend([s.strip() for s in subs_line.split(',') if s.strip()])
-                # Map each variant to the list of subroutines
+                # Map each variant to the list of names (typically, subroutine names)
                 for variant in variant_list:
                     variants[variant].extend(subs)
             i += 1
@@ -419,7 +425,7 @@ class variantLineProcessor:
 
     def replace_subs(self) -> None:
         """
-        Replaces occurrences of specified subroutines with their modified versions based on variants.
+        Replaces occurrences of specified names (think subroutines) with their modified versions based on variants.
         Modifications are done in-place on the self.lines list.
         """
         if not self.requested_var:
@@ -428,7 +434,11 @@ class variantLineProcessor:
 
         if self.requested_var not in self.variants:
             msg = f"The requested variant, {self.requested_var}, is not listed on a !!VARIANTS line in {self.input_file}."
-            raise SyntaxError(msg)
+            GVars.out.put(msg, globals.IMPINFO)
+            return
+        else:
+            msg = f"The requested variant, {self.requested_var}, IS listed on a !!VARIANTS line in {self.input_file}."
+            GVars.out.put(msg, globals.INFO)
 
         requested_var = self.requested_var
 
