@@ -419,7 +419,8 @@ class UnitList:
       for var in self.units[unitName]['VARIANTS']:
         varList.append(var)
       isNull = [ var.lower() == 'null' for var in self.units[unitName]['VARIANTS'] ]
-      if (len(varList)==0 and any(isNull) ):
+      if (len(varList)==0 and any(isNull) ): # Huh? This can never be
+          # true! What is the intention here? - KW
         varList.append('Null')
       return varList
 
