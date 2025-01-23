@@ -126,9 +126,6 @@ class macroProcessor:
         if len(arglist) != len(args):
             msg = f"Error: macro: {key} needs {len(arglist)} argument(s), but {len(args)} given."
             raise SyntaxError(msg)
-        # else:
-        #     msg = f"Info: macro: {key} needs {len(arglist)} argument(s), and it is given {args}."
-        #     GVars.out.put(msg, globals.INFO)
         for i, arg in enumerate(args):
             if i < len(arglist):
                 arg_re = r"\b" + arglist[i] + r"\b"  # don't substitute substrings
