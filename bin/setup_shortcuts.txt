@@ -205,6 +205,7 @@ spark:--with-unit=physics/Hydro/HydroMain/Spark:+nolwf
 sparkbase1d:--with-unit=physics/Hydro/HydroMain/Spark:+nolwf:-1d:
 sparkbase2d:--with-unit=physics/Hydro/HydroMain/Spark:+nolwf:-2d:+sqr16
 sparkbase3d:--with-unit=physics/Hydro/HydroMain/Spark:+nolwf:-3d:+cube16
+sparkGLM:+spark:useGLM=True:useTVD=True
 # for future
 spark3:--with-unit=physics/Hydro/HydroMain/Spark/rk3:Spark=True:+nolwf
 sparklwf:--with-unit=physics/Hydro/HydroMain/Spark:NoLevelwideFluxes=False
