@@ -458,7 +458,7 @@ class UnitList:
                     defsList += getDefs(unitDir)
                 else:
                     GVars.out.push()
-                    GVars.out.put("McDef files in %s skipped because of isVariant" % unit, globals.DEBUG)
+                    GVars.out.put("McDef files in %s skipped because of isVariant" % unit, globals.INFO)
                     GVars.out.pop()
 
         return defsList
@@ -522,8 +522,8 @@ class UnitList:
         # handled by the caller as if their priority was in between
         # the priorities of the first and the second returned list.
 
+        GVars.out.put("Collect McDef files for unit %s in %s" % (unitName, sourceDir), globals.INFO)
         GVars.out.push()
-        GVars.out.put("Collect McDef files for unit %s in %s" % (unitName, sourceDir), globals.DEBUG)
 
         # get common defs from bin dir
         defsList[0] += getDefs(binDir)

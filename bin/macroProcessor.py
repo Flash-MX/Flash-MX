@@ -431,11 +431,15 @@ class variantLineProcessor:
 
         if self.requested_var not in self.variants:
             msg = f"The requested variant, {self.requested_var}, is not listed on a !!VARIANTS line in {self.input_file}."
+            GVars.out.push()
             GVars.out.put(msg, globals.IMPINFO)
+            GVars.out.pop()
             return
         else:
             msg = f"The requested variant, {self.requested_var}, IS listed on a !!VARIANTS line in {self.input_file}."
+            GVars.out.push()
             GVars.out.put(msg, globals.INFO)
+            GVars.out.pop()
 
         requested_var = self.requested_var
 
@@ -478,10 +482,12 @@ class variantLineProcessor:
         """
         Executes the full processing sequence: reading, extracting, replacing, and writing.
         """
+        GVars.out.push()
         self.read_file()
         self.extract_variants()
         self.replace_subs()
         self.write_file()
+        GVars.out.pop()
 
 
 ###########################################################
