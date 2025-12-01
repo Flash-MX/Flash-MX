@@ -48,6 +48,7 @@ class macroProcessor:
         self.typedict = {}
         self.indentdict = {}
         self.sourcedict = {}
+        self.sourcefiledict = {}
         self.keylist = []
         self.debug = dbg
         # self.loadDefsList(standardMacroDefLibrary)
@@ -55,19 +56,35 @@ class macroProcessor:
     ######### LOADING DEFS ###########
     # Read a file and add contained macro definitions
     # to the macro dictionary.
-    def loadDefs(self, filename):
+    def loadDefs(self, filename, check):
         parser = ConfigParser(comment_prefixes=("#!", "#!!"))
         parser.optionxform = lambda option: option  # read keys case sensitively
         if filename is not None:
             dirName = os.path.dirname(os.path.abspath(filename))
+            GVars.out.put(f"loadDefs File {filename} -> {dirName}", globals.DEBUG)
             parser.read(filename)
             for section in parser.sections():
                 if section not in self.keylist:
                     self.keylist.append(section)
                     self.sourcedict[section] = dirName
+                    self.sourcefiledict[section] = filename
+                    GVars.out.put(f"loadDefs({filename}) [{section}] ->  {dirName}", globals.DEBUG)
                 else:
                     previousPath = self.sourcedict[section]
-                    if not (
+                    previousFile = self.sourcefiledict[section]
+                    GVars.out.put(f"loadDefs({filename}) [{section}] prev {previousPath} -> {dirName}", globals.DEBUG)
+                    if (
+                        previousPath == dirName
+                        and previousFile != filename
+                    ):
+                        raise SyntaxError(
+                                "{} defined in files {} and {}, can't inherit properly".format(
+                                    section,
+                                    previousFile,
+                                    filename
+                                )
+                        )
+                    if check and not (
                         previousPath == dirName
                         or previousPath.startswith(dirName+"/")
                         or dirName.startswith(previousPath+"/")
@@ -85,6 +102,9 @@ class macroProcessor:
                     self.sourcedict[
                         section
                     ] = dirName  # overwrite keyword with def from new location
+                    self.sourcefiledict[
+                        section
+                    ] = filename  # also remember source file of current definition
 
                 self.mdict[section] = parser.get(section, "definition").strip()
 
@@ -112,10 +132,12 @@ class macroProcessor:
                 except:
                     self.indentdict[section] = [0]
 
-    # Load a whole list of files.
-    def loadDefsList(self, filenames):
-        for filename in filenames:
-            self.loadDefs(filename)
+    # Load several whole lists of files, either with or without extra checking.
+    def loadDefsLists(self, mcDefSections):
+        for i, (filenames, doCheck) in enumerate(mcDefSections):
+            GVars.out.put(f"loadDefsList #{i}: *** {filenames} ***", globals.DEBUG)
+            for filename in filenames:
+                self.loadDefs(filename, doCheck)
 
     ####### EXPAND INVOCATIONS OF MACROS #############
 
@@ -520,7 +542,7 @@ def main():
 
     m = macroProcessor(args.debug)
     if args.macroDefs is not None:
-        m.loadDefsList(args.macroDefs)
+        m.loadDefsList(((args.macroDefs, True),))
 
     # if args.filename is None:
     #     processFilesInCurrentDir()

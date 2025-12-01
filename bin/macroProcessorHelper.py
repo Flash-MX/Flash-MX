@@ -26,11 +26,24 @@ def formatOutput(outpath):
                 subprocess.run("fprettify -w1 {}".format(outpath), shell=True, check=True)
 
 
-# unitDir: path to unit directory with mc files
+# unitDir: path to unit directory with mc files, probably as full path
+# unitname: same directory as unitDir, but probably relative to the Flash-X source dir;
+#           use for some messages.
 # objDir: path to object directory
 # defsList: list of common defs and unit defs
 # varList: list of variant names (unit has variants/varName.ini files)
-def generateVariants(unitDir, objDir, defsList, varList, macroOnly=False, mcFiles=None):
+# macroOnly: Are we being asked to expand macros only, rather than build application?
+# mcFiles: list of *-mc files in the unitDir (previously cached by setup as memo)
+# vmdpDirs: list containing variant macro def parent dirs requested by Config in the unitDir (if ... ?)
+def generateVariants(unitDir, unitname, objDir, defsList, varList, macroOnly=False, mcFiles=None,
+                     vmdpDirs=None):
+    """
+    Actually generate source files, like xxx.F90 or xxx_GPU.F90, etc. from the xxx.F90-mc files
+    in a directory (unitDir), whether VARIANTS where requested (see varList) by the Config or not,
+    whether substitution of certain names in those files was requested (see !!VARIANTS directives
+    in the -mc files) or not, whether VARIANT processing of some files was. suppressed
+    (see !!NOVARIANTS directives in those files) or not.
+    """
     print("Generating variants {} for files in {}".format(varList,
                                                           os.path.relpath(unitDir,
                                                                           GVars.sourceDir)))
@@ -52,19 +65,25 @@ def generateVariants(unitDir, objDir, defsList, varList, macroOnly=False, mcFile
                     baseList.append(base + removeSuffix(ext, "-mc"))
     for var in varList:
         m = macroProcessor()
-        if var != "":
-            varDir = os.path.join(unitDir, var)
-            if os.path.isdir(varDir):
-                varDefs = [
-                    os.path.join(varDir, f)
-                    for f in os.listdir(varDir)
-                    if ((os.path.splitext(f)[-1] == ".ini"))
+        if var != "" and vmdpDirs is not None:
+            varDirs = [
+                vmdpdir
+                for vmdpdir in vmdpDirs
+                if vmdpdir.endswith("/"+var)
                 ]
-                m.loadDefsList(defsList[0] + varDefs + defsList[1])
-            else:
-                m.loadDefsList(defsList[0] + defsList[1])
+            GVars.out.put(f"varDirs is {varDirs}",globals.INFO)
+            varDefs = []
+            for varDir in varDirs:
+                if os.path.isdir(os.path.join(GVars.sourceDir,varDir)):
+                    varDefs.extend( [
+                        os.path.join(GVars.sourceDir, varDir, f)
+                        for f in os.listdir(os.path.join(GVars.sourceDir,varDir))
+                        if ((os.path.splitext(f)[-1] == ".ini"))
+                    ] )
+            GVars.out.put(f"varDefs is {varDefs}",globals.INFO)
+            m.loadDefsLists(((defsList[0], True), (varDefs, False), (defsList[1], False)))
         else:
-            m.loadDefsList(defsList[0] + defsList[1])
+            m.loadDefsLists(((defsList[0], True), (defsList[1], False)))
         for f in mcList:
             filebase, ext = os.path.splitext(os.path.basename(f))
             outfile = makeVariantName(filebase, var, removeSuffix(ext, "-mc"))
@@ -77,7 +96,7 @@ def generateVariants(unitDir, objDir, defsList, varList, macroOnly=False, mcFile
 
     # convert files with no variants
     m = macroProcessor()
-    m.loadDefsList(defsList[0] + defsList[1])
+    m.loadDefsLists(((defsList[0], True), (defsList[1], False)))
     for f in mcListNoVariants:
         filebase, ext = os.path.splitext(os.path.basename(f))
         outfile = makeVariantName(filebase, "", removeSuffix(ext, "-mc"))
