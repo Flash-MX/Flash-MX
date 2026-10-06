@@ -408,13 +408,65 @@ class UnitList:
         return cInfo
 
     def getAllVariants(self,unitName):
+      """
+      Return a list of variant directories requested by Config, like
+      (typical case)
+          [
+           'physics/Eos/EosMain/Gamma/GPU',
+           'physics/Eos/EosMain/Gamma/Null'
+          ]
+      or (showing additional possibilities)
+          [
+           'physics/Eos/EosMain/GPU',
+           'physics/Eos/EosMain/Null',
+           'physics/Eos/EosMain/Gamma/GPU',
+           'physics/Eos/EosMain/Gamma/Null',
+           '/even/some/absolute/path/GPU',
+           '/even/some/absolute/path/Null'
+          ]
+      which might result from a physics/Eos/EosMain/Gamma/Config file that
+      contains
+
+          VARIANTS GPU Null
+          VARIANT_MACRODEF_PARENTDIRS .. .
+          VARIANT_MACRODEF_PARENTDIRS /even/some/absolute/path
+
+      The returned list may be empty.
+      Directory paths returned are relative to the Flash-X source directory,
+      unless they begin with '/'.
+      """
       varList = []
-      for var in self.units[unitName]['VARIANTS']:
-        varUnit = unitName + "/" + var
-        varList.append(varUnit)
+      if self.units[unitName]['VARIANTS']:
+          if self.units[unitName]['VARIANT_MACRODEF_PARENTDIRS'] is None:
+              GVars.out.put("getAllVariants(%s) defaults VARIANT_MACRODEF_PARENTDIRS to ['.']" % unitName, globals.INFO)
+              self.units[unitName]['VARIANT_MACRODEF_PARENTDIRS'] = ['.']
+          for dir in self.units[unitName]['VARIANT_MACRODEF_PARENTDIRS']:
+              if dir[0]  == '/':    # absolute path given?
+                  vtdir = dir
+              elif dir == '.':
+                  vtdir = unitName
+              elif dir == '..':
+                  vtdir = unitName[0:unitName.rfind('/')].rstrip('/')
+              elif dir.startswith('../'):
+                  vtdir = ( unitName[0:unitName.rfind('/')].rstrip('/') + '/' + lstrip(dir[3:],'/') ).rstrip('/')
+              elif dir.startswith('./'):
+                  vtdir = ( unitName.rstrip('/') + '/' + dir[2:].lstrip('/') ).rstrip('/')
+              else:
+                  vtdir = ( unitName.rstrip('/') + '/' + dir ).rstrip('/')
+                  vtdir = ( dir ).rstrip('/')
+
+              for var in self.units[unitName]['VARIANTS']:
+                  varUnit = vtdir + "/" + var
+                  varList.append(varUnit)
+          GVars.out.put("getAllVariants(%s) returns %s" % (unitName, varList), globals.INFO)
+      else:
+          GVars.out.put("getAllVariants(%s) returns %s" % (unitName, varList), globals.DEBUG)
       return varList
 
     def getRequestedVariants(self,unitName):
+      """
+      Return a list of variants requested by Config, like ['GPU', 'Null'], may be empty.
+      """
       varList = []
       for var in self.units[unitName]['VARIANTS']:
         varList.append(var)
@@ -434,6 +486,7 @@ class UnitList:
         defsList = []
         # Since this list has been sorted, the children should be
         # checked in the proper order
+
         for unit in self.getLinkOrder():
             if(targetUnit == unit or
                targetUnit.startswith(unit+"/") or # targetUnit is unit+"/"+<something>
@@ -458,7 +511,7 @@ class UnitList:
                     defsList += getDefs(unitDir)
                 else:
                     GVars.out.push()
-                    GVars.out.put("McDef files in %s skipped because of isVariant" % unit, globals.DEBUG)
+                    GVars.out.put("McDef files in %s skipped because of isVariant" % unit, globals.INFO)
                     GVars.out.pop()
 
         return defsList
@@ -466,27 +519,34 @@ class UnitList:
     # A unit needs definitions from itself as well as any unit it REQUIRES.
     #
     # Directories that are ancestors of a target (REQUIRED) unit,
-    # except those that are recognized as a variant or subvariant of the requiring unit,
+    # except those that are recognized as a variant or subvariant of the requiring unit
+    # or of the target unit, ***
     # are searched for McDef files.
     #
     # A REQUIRED unit itself,
-    # except when it is recognized as a variant or subvariant of the requiring unit,
+    # except when it is recognized as a variant or subvariant of the requiring unit
+    # or of itself, ***
     # is searched for McDef files.
     #
     # Directories that are children or higher-degree descendants of a target (REQUIRED) unit,
     # except those that are recognized as a variant or subvariant of the current or the target unit,
     # are searched for McDef files.
     #
-    # Ancestor directories of the current unit are searched for McDef files.
-    # The current unit itself is searched for McDef files.
+    # Ancestor directories of the current unit are searched for McDef files,
+    # except those that are variants or subvariants of the current unit. ***
+    #
+    # The current unit itself is searched for McDef files,
+    # unless it is a variant or subvariant of itself. ***
+    #
     # Directories that are children or higher-degree descendants of the current unit,
     # except those that are recognized as a variant or subvariant of the current unit,
     # are searched for McDef files.
     #
     # Subvariant of x: a directory that is either a variant of x or in
     # a directory subtree under x.
-    # Cases that cannot happen are omitted from mention above. For example, it is taken
-    # for granted that a variant of x cannot possibly be x itself or an ancestor of x.
+    # Cases that cannot happen are omitted from mention above. Other quite strange
+    # cases are marked with '***' above. In particular, it would be very strange, but not
+    # altogether impossible, that x itself or an ancestor of x is allso a variant of x.
     # The terms 'unit' and 'directory' are used interchangably, but it is assumed that
     # a 'unit' only matters if it is included in the 'unitList', i.e., the list of
     # directories that are included in the simulation configuration by the usual means.
@@ -522,8 +582,8 @@ class UnitList:
         # handled by the caller as if their priority was in between
         # the priorities of the first and the second returned list.
 
+        GVars.out.put("Collect McDef files for unit %s in %s" % (unitName, sourceDir), globals.INFO)
         GVars.out.push()
-        GVars.out.put("Collect McDef files for unit %s in %s" % (unitName, sourceDir), globals.DEBUG)
 
         # get common defs from bin dir
         defsList[0] += getDefs(binDir)

@@ -13,15 +13,15 @@ from unitUtils import * # for UnitList class
 from macroProcessorHelper import generateVariants, modifyMakefile
 from unitUtils import getLowestBase
 
-memo = {}
+memoMcF = {}
 
-def __memoMcFiles(orderedUnitlist, GVars, memo):
+def __memoMcFiles(orderedUnitlist, GVars, memoMcF):
     for unitname in orderedUnitlist:
         # If units have -mc files, remember them so the macroProcessor can later
         # generate variants in the object dir.
-        __memoMcFile(unitname, GVars, memo)
+        __memoMcFile(unitname, GVars, memoMcF)
 
-def __memoMcFile(unitname, GVars, memo):
+def __memoMcFile(unitname, GVars, memoMcF):
         # If a unit has -mc files, remember them so the macroProcessor can later
         # generate variants in the object dir.
         unitDir = os.path.join(GVars.sourceDir, unitname)
@@ -29,15 +29,15 @@ def __memoMcFile(unitname, GVars, memo):
         mcFilesHere = [ f for f in os.listdir(unitDir) if f.endswith("-mc") ]
         if mcFilesHere:
             GVars.out.put(f"+ unitname {unitname}, mcFilesHere = {mcFilesHere}.",globals.INFO)
-            memo[unitname] = mcFilesHere
+            memoMcF[unitname] = mcFilesHere
 
-def __runMacroProcessor(unitList, orderedUnitlist, GVars, memo):
+def __runMacroProcessor(unitList, orderedUnitlist, GVars, memoMcF):
     for unitname in orderedUnitlist:
         # If unit has -mc files, run the macroProcessor to generate variants
         # in the object dir.
 
         # if a list of mc files exists for this source directory and is not empty:
-        if unitname in memo and memo[unitname]:
+        if unitname in memoMcF and memoMcF[unitname]:
             simDir = os.path.join(GVars.simulationsDir, GVars.simulationName)
             binDir = os.path.join(GVars.flashHomeDir,'bin')
             defList = unitList.collectDefs(GVars.sourceDir, unitname,binDir, simDir)
@@ -45,12 +45,14 @@ def __runMacroProcessor(unitList, orderedUnitlist, GVars, memo):
             if not varList:
                 varList = ['']
             unitDir = os.path.join(GVars.sourceDir, unitname)
-            baseList = generateVariants(unitDir,
+            baseList = generateVariants(unitDir, unitname,
                             os.path.join(GVars.flashHomeDir,GVars.objectDir),
                             defList,
                             varList,
                             macroOnly=GVars.macroOnly,
-                            mcFiles=memo[unitname])
+                            mcFiles=memoMcF[unitname],
+                            vmdpDirs=unitList.getAllVariants(unitname)
+                                        )
             for baseFile in baseList:
                 if(os.path.exists(baseFile)):
                     os.unlink(baseFile)
@@ -128,11 +130,11 @@ def main():
     # is not applied in this case!
     if GVars.macroOnly:
         # change directory
-        GVars.out.put("Flag -mconly set, only checking -mc files.")
+        GVars.out.put("Flag -mconly set, only checking and expanding -mc files.")
         os.chdir(GVars.flashHomeDir)
         os.chdir(GVars.objectDir)
-        __memoMcFiles(orderedUnitlist, GVars, memo)
-        __runMacroProcessor(unitList, orderedUnitlist, GVars, memo)
+        __memoMcFiles(orderedUnitlist, GVars, memoMcF)
+        __runMacroProcessor(unitList, orderedUnitlist, GVars, memoMcF)
         # exit to only run macro processor.
         return
 
@@ -184,10 +186,10 @@ def main():
     # side effect of forgetting some -mc files again if they are shadowed),
     # have to be done in ONE loop.
     for unitname in orderedUnitlist:
-        __memoMcFile(unitname, GVars, memo)
-        linkList.linkFiles(os.path.join(GVars.sourceDir, unitname), memo)
+        __memoMcFile(unitname, GVars, memoMcF)
+        linkList.linkFiles(os.path.join(GVars.sourceDir, unitname), memoMcF)
 
-    linkList.linkFiles(os.path.join(GVars.flashHomeDir, 'sites'), memo)
+    linkList.linkFiles(os.path.join(GVars.flashHomeDir, 'sites'), memoMcF)
 
     # Link in the right version of the make file
     # attempt to find Makefile in FLASH root directory, otherwise link make file from sites
@@ -202,16 +204,16 @@ def main():
         print("Using Makefile.h: " + tmp_makefilePathSites)
 
     # functions in the simulations dir override earlier instances
-    linkList.linkFiles(GVars.simulationsDir, memo)
+    linkList.linkFiles(GVars.simulationsDir, memoMcF)
 
     # functions from LINKIF statements override everything else,
     # assuming their conditions apply.
-    linkList.doLINKIFOverrides(unitList.getList(), configInfo['LINKIF'], memo)
+    linkList.doLINKIFOverrides(unitList.getList(), configInfo['LINKIF'], memoMcF)
 
     # now is when we do the real link/copying
     linkList.reallyLink()
 
-    __runMacroProcessor(unitList, orderedUnitlist, GVars, memo)
+    __runMacroProcessor(unitList, orderedUnitlist, GVars, memoMcF)
 
     ############## flash.par and Makefiles **************
 
