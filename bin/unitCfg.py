@@ -184,6 +184,33 @@ class FlashUnit(dict,preProcess):
         self['DATAFILES'].extend([os.path.join(self.name,x) for x in mobj.group(1).split()])
 
     @staticmethod
+    def initparseVARIANT_MACRODEF_PARENTDIRS():
+        return None, r'VARIANT_MACRODEF_PARENTDIRS(?P<nonempty>\s+(?P<names>\S+(\s+\S+)*))?\s*$'
+
+    def parseVARIANT_MACRODEF_PARENTDIRS(self, mobj):
+        def normpath(path):
+            if path.startswith("."):
+                path = os.path.join(self.name, path)
+            return os.path.normpath(path)
+        names = mobj.group("names")
+        if names is not None: vdefdirs = names.split()
+        # Make a list of requested variant macro definition parent dirs that followed the
+        # "VARIANT_MACRODEF_PARENTDIRS".
+        # If "VARIANT_MACRODEF_PARENTDIRS" is NOT followed by a list at all,
+        # reset the list for this unit to empty. Otherwise append to it.
+        if not names:
+            self['VARIANT_MACRODEF_PARENTDIRS'] = []
+        else:
+            # change any relative paths to absolute paths; remove any empties
+            vdefdirs = [normpath(dir) for dir in vdefdirs if len(dir) > 0]
+            if self['VARIANT_MACRODEF_PARENTDIRS'] is None:
+                self['VARIANT_MACRODEF_PARENTDIRS'] = list(vdefdirs)
+            else:
+                self['VARIANT_MACRODEF_PARENTDIRS'].extend(vdefdirs)
+        GVars.out.put("%s: Storing current variant macro definition parent dirs: %s"
+                      % (self.name, self['VARIANT_MACRODEF_PARENTDIRS']), globals.INFO)
+
+    @staticmethod
     def initparseVARIANTS():
         return [], r'VARIANTS\s+(.*)$'
 
@@ -638,6 +665,7 @@ class UnitUnion(dict):
         dict.__init__(self)
         self['DATAFILES'] = []
         self['VARIANTS'] = []
+        self['VARIANT_MACRODEF_PARENTDIRS'] = None  # None is special here, different from []
         self['FACEVAR'] = {}
         self['FLUX'] = {}
         self['SCRATCHVAR'] = {}
