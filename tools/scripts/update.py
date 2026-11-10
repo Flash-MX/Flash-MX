@@ -25,7 +25,6 @@ if exitStatus != 0:
 
 # else
 scriptsToExecute = ["codeCheck.py",
-                    "rpDoc.py",
                     "fixRobodocHeaders.py"]
 errors = []
 

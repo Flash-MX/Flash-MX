@@ -53,7 +53,7 @@ subroutine Driver_evolveAll()
                           dr_nstep, dr_dtOld, dr_dtNew, &
                           dr_simGeneration, &
                           dr_restart
-   use Driver_interface, ONLY: Driver_sourceTerms, Driver_computeDt
+   use Driver_interface, ONLY: Driver_computeDt
    use Logfile_interface, ONLY: Logfile_stamp, Logfile_close
    use Timers_interface, ONLY: Timers_start, Timers_stop, &
                                Timers_getSummary

@@ -64,10 +64,6 @@ simply prevents this violation / fix from being applied to any file.
    pmFour = "source/Grid/GridMain/AMR/Paramesh4"
    pmFourKernel = "source/Grid/GridMain/AMR/Paramesh4/PM4_package"
    pmInterp = "source/Grid/GridMain/AMR/Paramesh4/interpolation/"
-   PPM   = "source/physics/Hydro/HydroMain/split/PPM/PPMKernel"
-   PPMexp = "source/physics/Hydro/HydroMain/split/PPM_exp"
-   SPPM   = "source/physics/Hydro/HydroMain/split/SPPM/"
-   SlowFlow   = "source/physics/Hydro/HydroMain/split/SlowFlowPPM/"
    IncompNS = "source/physics/IncompNS"
    IncompNSVarDens = "source/physics/IncompNS/IncompNSMain/vardens"
    Samrai = "source/Grid/GridMain/Samrai"
@@ -75,10 +71,7 @@ simply prevents this violation / fix from being applied to any file.
    SamraiIO = "source/IO/IOMain/hdf5/parallel/Samrai"
    MHD = "source/physics/MHD/MHDMain/"
    ST = "source/physics/sourceTerms/"
-   ST_B = "source/physics/sourceTerms/Burn/"
    ST_C = "source/physics/sourceTerms/Cool/"
-   ST_Delep = "source/physics/sourceTerms/Deleptonize/DeleptonizeMain"
-   ST_DelepLAPI = "source/physics/sourceTerms/Deleptonize/localAPI"
    ST_H = "source/physics/sourceTerms/Heat/HeatMain"
    ST_I = "source/physics/sourceTerms/Ioniz/"
    ST_ED = "source/physics/sourceTerms/EnergyDeposition/"
@@ -92,15 +85,12 @@ simply prevents this violation / fix from being applied to any file.
    IOPnet = "source/IO/IOMain/pnetcdf"
    IOdir   = "source/IO/IOMain/direct"
    IOPart = "source/IO/IOParticles"	
-   Grav = "source/physics/Gravity"
    MultigridFFT = "source/Grid/GridSolvers/Multigrid/fft"
    MultigridExperimental = "source/Grid/GridSolvers/Multigrid_experimental"
    MultigridMC = "source/Grid/GridSolvers/MultigridMC"
    MultigridMC2 = "source/Grid/GridSolvers/MultigridMC_VarDens_HYPRE"
    MultigridDiffHgADI = "source/Grid/GridSolvers/Multigrid_forDiffuseAdvanceByHgADI"
    MultigridDiffHgFFT = "source/Grid/GridSolvers/Multigrid_forDiffuseAdvanceByHgFFT"
-   paraBurn = "source/physics/sourceTerms/Burn/BurnMain/parametricBurn"
-   paraBurnOld = "source/physics/sourceTerms/Burn/BurnMain/parametricBurn/Co2nse"
    linalg = "source/physics/utilities/solvers/LinearAlgebra"
    cosmoKernel = "source/physics/Cosmology/CosmologyMain/MatterLambdaKernel"
    materialProperties = "source/physics/materialProperties"
@@ -111,10 +101,7 @@ simply prevents this violation / fix from being applied to any file.
    BIPCGStab = "source/Grid/GridSolvers/BiPCGStab"
    BIPCGStabVarcoeff = "source/Grid/GridSolvers/BiPCGStab/varcoeffpoisson"
    GridStructures = "source/Grid/GridStructures"
-   Aprox13t = "source/physics/sourceTerms/Burn/BurnMain/nuclearBurn/Aprox13t"
-   Aprox13tInt = "source/physics/sourceTerms/Burn/BurnIntegrate/Aprox13t"
    DrIncompNS = "source/Driver/DriverMain/INSfracstep"
-   EosNuc     = "source/physics/Eos/EosNuclear/kernel"
    SolidMechanics = "source/physics/SolidMechanics/SolidMechanicsMain"
    SimAdvect = "source/Simulation/SimulationMain/Advect"
    SimAdvectMass = "source/Simulation/SimulationMain/AdvectMassScalars"
@@ -122,7 +109,6 @@ simply prevents this violation / fix from being applied to any file.
    SimBubLab = "source/Simulation/SimulationMain/BubLab"
    SimCDMHalo = "source/Simulation/SimulationMain/CDMHalo"
    SimCell = "source/Simulation/SimulationMain/Cellular"
-   SimCellpb = "source/Simulation/SimulationMain/CellularParametricBurn"
    SimCollShock = "source/Simulation/SimulationMain/CollShock"
    SimCoreColl  = "source/Simulation/SimulationMain/CoreCollapse"
    SimConduction = "source/Simulation/SimulationMain/ConductionDelta"
@@ -173,18 +159,13 @@ simply prevents this violation / fix from being applied to any file.
    SimSamTest = "source/Simulation/SimulationMain/SamraiTest"
    SimSBlast = "source/Simulation/SimulationMain/SBlast"
    SimSedov = "source/Simulation/SimulationMain/Sedov"
-   SimSedovSG = "source/Simulation/SimulationMain/SedovSelfGravity"
    SimShock = "source/Simulation/SimulationMain/ShockCyl"
    SimSod = "source/Simulation/SimulationMain/Sod"
    SimSodRHD = "source/Simulation/SimulationMain/SodRHD"
    SimSodSphere = "source/Simulation/SimulationMain/SodSpherical"
    SimSodStep = "source/Simulation/SimulationMain/SodStep"
    SimSoundwave = "source/Simulation/SimulationMain/Soundwave"
-   SimStir = "source/Simulation/SimulationMain/StirTurb"
-   SimStirEIP = "source/Simulation/SimulationMain/StirTurbEIP"
-   SimEosLite = "source/Simulation/SimulationMain/TestEosLite"
    Sim2Gamma = "source/Simulation/SimulationMain/TwoGamma"
-   SimUTBurn = "source/Simulation/SimulationMain/unitTest/Burn"
    SimUTRayP = "source/Simulation/SimulationMain/unitTest/RayPath"
    SimUTPFFT = "source/Simulation/SimulationMain/unitTest/PFFT"
    SimUTPParab = "source/Simulation/SimulationMain/unitTest/PFFT_PoissonParabolae"
@@ -205,10 +186,9 @@ simply prevents this violation / fix from being applied to any file.
    #generalexcludes = [pmTwo, ]
    
    excludes = [pmFourKernel, pmInterp,
-       Samrai, SamraiIO, SPPM, SlowFlow,
-       paraBurnOld, hgFlash2, hgFlash2fft,
+       Samrai, SamraiIO, 
+       hgFlash2, hgFlash2fft,
        MultigridDiffHgADI, MultigridDiffHgFFT,
-       EosNuc,
        cosmoKernel,
        ST_H,
        DiffUG, DiffCG,
@@ -217,7 +197,7 @@ simply prevents this violation / fix from being applied to any file.
        MultigridMC2,
        GridStructures,
        PartPredCorOld,
-       SimAdvect, SimAdvectMass, SimBubLab, SimCellpb,
+       SimAdvect, SimAdvectMass, SimBubLab, 
        SimCollShock, SimFlame3, SimFlameBub,
        SimDustCart,
        SimGalaxy, SimGalaxyM,
@@ -235,7 +215,6 @@ simply prevents this violation / fix from being applied to any file.
        SimGadget, SimLayer3, SimNoh, SimPoisRefinement, SimProto,
        SimTFlame,
        SimSamTest, SimShock, SimSoundwave,
-       SimStirEIP, SimEosLite,
        SimVortexRings, SimWD, SimWDexp, SimWDinert,  SimWDdet, SimWDjet,
        SimNucOToRT, SimNuc2Grid,
        chomboUnitTests
@@ -1614,7 +1593,7 @@ def usage():
    print("     List mode lists the methods which can be used.", file=sys.stderr)
    print(file=sys.stderr) 
    print(" <report-file> is where the report will be written.", file=sys.stderr)
-   print("     If not specified, it defaults to 'docs/designDocs/violations.txt' for check mode.", file=sys.stderr)
+   print("     If not specified, it defaults to stdout for check mode.", file=sys.stderr)
    print("     - implies stdout", file=sys.stderr)
    print(file=sys.stderr) 
    print(" <target> If a directory, all files underneath it will be checked (recursively).", file=sys.stderr)
@@ -1634,7 +1613,7 @@ def main():
    # command line args
    opts = ["mode=","report-file=","target=","method="]
    # default report filename
-   fname = os.path.join(flashHome,"docs","designDocs","violations.txt")
+   fname = "-"   # default: report to stdout
    # default mode: choices check,fix
    mode = "check"
    meths = []

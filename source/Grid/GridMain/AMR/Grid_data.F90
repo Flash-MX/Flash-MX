@@ -63,8 +63,6 @@ Module Grid_data
   real, save, dimension(LOW:HIGH,MDIM) :: gr_boxContainingLeafNodes
 
 
-  integer, save :: gr_eosMode
-  integer, save :: gr_eosModeInit, gr_eosModeNow
   integer, save :: gr_oneRefLev=1 !! To be used with the multigrid
   integer ,save :: gr_nrefs
   logical ,save :: gr_convertToConsvdForMeshCalls

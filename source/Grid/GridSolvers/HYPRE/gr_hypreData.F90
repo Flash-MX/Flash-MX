@@ -67,8 +67,6 @@ Module gr_hypreData
   integer, save :: gr_hypreRefineMIN
   integer, save :: gr_hypreRefineMAX
 
-  real,    save :: gr_asol, gr_speedlt 
-
   logical, save :: gr_hypreUseFloor
   real,    save :: gr_hypreFloor
   logical, save :: gr_hypreUse2Norm

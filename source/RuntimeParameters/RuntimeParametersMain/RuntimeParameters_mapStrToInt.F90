@@ -53,7 +53,6 @@
 
 #include "Simulation.h"
 #include "constants.h"
-#include "Eos.h"
 
 #ifdef FLASH_GRID_MILHOJA
 #include "Milhoja.h"

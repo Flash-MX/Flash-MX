@@ -24,3 +24,24 @@ retains certain rights.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+----------------------------------------------------------------------
+
+Flash-MX
+========
+
+Flash-MX is derived from Flash-X (https://github.com/Flash-X/Flash-X),
+starting from Flash-X commit ad45147f5. It retains the Flash-X
+infrastructure and the incompressible multiphase flow capabilities. The
+version-control history of the retained files is preserved with its
+original authorship; commit identifiers differ from those in Flash-X
+because the history was filtered.
+
+This distribution has been modified relative to Flash-X: the compressible
+hydrodynamics, equation of state, gravity, radiation transport, spacetime,
+burn, deleptonization and stirring physics units, the setups, tests and
+libraries that depend on them, and all site configurations other than the
+container site have been removed. The modifications are recorded in the
+git history of this repository.
+
+Licensed under the Apache License, Version 2.0, as is Flash-X. See LICENSE.

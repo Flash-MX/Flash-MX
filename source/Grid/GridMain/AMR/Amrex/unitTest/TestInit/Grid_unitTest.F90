@@ -32,9 +32,7 @@ subroutine Grid_unitTest(fileUnit, perfect)
                                       gr_refine_var, &
                                       gr_refine_cutoff, gr_derefine_cutoff, &
                                       gr_refine_filter, &
-                                      gr_enforceMaxRefinement, &
-                                      gr_eosMode, &
-                                      gr_eosModeInit
+                                      gr_enforceMaxRefinement
     use Grid_iterator,         ONLY : Grid_iterator_t
     use Grid_tile,             ONLY : Grid_tile_t
     use ut_testDriverMod
@@ -609,11 +607,6 @@ subroutine Grid_unitTest(fileUnit, perfect)
 
     call assertFalse(gr_enforceMaxRefinement, "gr_enforceMaxRefinement True")
 
-    !!!!! CONFIRM EoS SETUP
-    call assertEqual(gr_eosMode, MODE_DENS_EI, &
-                     "Incorrect eosMode")
-    call assertEqual(gr_eosModeInit, MODE_DENS_TEMP, &
-                     "Incorrect eosModeInit")
 
     perfect = finish_test_run()
 

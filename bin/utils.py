@@ -37,28 +37,7 @@ def updateAndMergeVariablePropertyTuples(dictout,dictin,infotext):
                 except ValueError:
                     firstProblem = -1
                 if (firstProblem >= 0): # Put some effort into generating meaningful messages.
-                    if infotext=="VARIABLE":
-                        if firstProblem==0:
-                            attr = "TYPE"
-                        elif firstProblem==1:
-                            if zippedItem[1][0]==zippedItem[2][0] and zippedItem[1][1]==zippedItem[2][1]:
-                                attr = "EOSMAP"
-                            else:
-                                attr = "EOSMAPIN"
-                        elif firstProblem==2:
-                            attr = "EOSMAPOUT"
-                        else:
-                            attr = "EOSMAP"
-                    else:
-                        if firstProblem==0:
-                            if zippedItem[0][0]==zippedItem[1][0] and zippedItem[0][1]==zippedItem[1][1]:
-                                attr = "EOSMAP"
-                            else:
-                                attr = "EOSMAPIN"
-                        elif firstProblem==1:
-                            attr = "EOSMAPOUT"
-                        else:
-                            attr = "EOSMAP"
+                    attr = "TYPE" if infotext == "VARIABLE" else "properties"
                     raise SetupError('Conflicting specifications for %s %s %s: "%s" and "%s".' %
                                      (infotext,k,attr, zippedItem[firstProblem][0],zippedItem[firstProblem][1]))
                 dictout[k] = v
@@ -76,28 +55,7 @@ def updateAndMergeVariablePropertyTuples(dictout,dictin,infotext):
                 except ValueError:
                     firstProblem = -1
                 if (firstProblem >= 0): # Put some effort into generating meaningful messages.
-                    if infotext=="VARIABLE":
-                        if firstProblem==0:
-                            attr = "TYPE"
-                        elif firstProblem==1:
-                            if zippedItem[1][0]==zippedItem[2][0] and zippedItem[1][1]==zippedItem[2][1]:
-                                attr = "EOSMAP"
-                            else:
-                                attr = "EOSMAPIN"
-                        elif firstProblem==2:
-                            attr = "EOSMAPOUT"
-                        else:
-                            attr = "EOSMAP"
-                    else:
-                        if firstProblem==0:
-                            if zippedItem[0][0]==zippedItem[1][0] and zippedItem[0][1]==zippedItem[1][1]:
-                                attr = "EOSMAP"
-                            else:
-                                attr = "EOSMAPIN"
-                        elif firstProblem==1:
-                            attr = "EOSMAPOUT"
-                        else:
-                            attr = "EOSMAP"
+                    attr = "TYPE" if infotext == "VARIABLE" else "properties"
                     raise SetupError('Conflicting specifications for %s %s %s: "%s" and "%s".' %
                                      (infotext,k,attr, zippedItem[firstProblem][0],zippedItem[firstProblem][1]))
                 mergedItem = list(map(secondIfSignificant, zippedItem))
@@ -162,9 +120,11 @@ def getOSType(prototypesDir):
     ostype = str.lower(sys.platform)
     if '-' in ostype:
         ostype = ostype[:str.find(ostype, '-')]
-    for proto in os.listdir(prototypesDir):
-        if str.count(ostype, str.lower(proto)):
-            return proto
+    # Flash-MX ships only sites/container, so the sites/Prototypes directory may not exist.
+    if os.path.isdir(prototypesDir):
+        for proto in os.listdir(prototypesDir):
+            if str.count(ostype, str.lower(proto)):
+                return proto
     return ostype
 
 # return the hostname to use

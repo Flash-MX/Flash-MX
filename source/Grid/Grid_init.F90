@@ -79,10 +79,6 @@
 !!        physical domain lower bound in z dir
 !!    zr_boundary_type [STRING]
 !!        upper boundary condition in z dir
-!!    eosMode [STRING]
-!!        the default Eos mode, usually MODE_DENS_EI, 
-!!        where density and energy are provided to 
-!!        calculate pressure and temperature
 !!    smallx [REAL]  
 !!        cutoff value for abundances, used in Paramesh2 "monotonic" interpolation
 !!        for mesh prolongation

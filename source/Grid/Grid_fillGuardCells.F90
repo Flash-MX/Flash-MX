@@ -19,8 +19,6 @@
 !!  call Grid_fillGuardCells(integer(IN) :: gridDataStruct,
 !!                           integer(IN) :: idir,
 !!                  optional,integer(IN) :: minLayers,
-!!                  optional,integer(IN) :: eosMode,
-!!                  optional,logical(IN) :: doEos,
 !!                  optional,integer(IN) :: maskSize,
 !!                  optional,logical(IN),dimension(:) :: mask(maskSize),
 !!                  optional,logical(IN) :: makeMaskConsistent,
@@ -38,29 +36,6 @@
 !!  levels of refinement, then in addition to copying, there will be 
 !!  restriction or prolongation. 
 !!
-!!  The optional arguments related to the Eos calls are provided because if
-!!  a solver relies on a call to Eos to establish thermodynamic equilibrium
-!!  in various variables, then either the solver can call Eos explicitly itself,
-!!  or more conveniently, it can instruct the GC-fill routine to do it. This
-!!  feature is especially useful when mesh quantities are used to derive,
-!!  for example, tracer particle attributes. If the user opts to enable doEos,
-!!  they will not have to determine whether or where an Eos call is needed, the
-!!  code will do it for them. Note that Eos calls via Grid_fillGuardCells will
-!!  only be applied to guard cells, and potentially only to guard cell regions
-!!  where the data in those guard cells may be the result of either
-!!  interpolation or cell averaging because a block boundary coincides with or
-!!  touches a fine/coarse boundary.
-!!
-!!  For performance reasons, users may choose to use masking in filling the
-!!  guardcells, which is a feature supported only with Paramesh4 and Amrex. They can
-!!  do so by using the optional arguments mask, maskSize, and makeMaskConsistent.
-!!  However, users should exercise extreme caution in using masking. Please see
-!!  the NOTES section for potential side effects. If masking is present, and
-!!  both makeMaskConsistent and doEos are true, the Eos calculation is applied only
-!!  if at least one of the variables selected in the mask is potentially an output
-!!  of the Eos calculation. A local routine gr_makeMaskConsistent or
-!!  gr_makeMaskConsistent_gen handles this processing.
-!!
 !!  The argument "gridDataStruct" can take one of several valid values to determine
 !!  a specific grid data structure (or combination of data structures) on which to
 !!  apply the guardcell fill operation. The currently available options are listed
@@ -74,9 +49,6 @@
 !!  The user can also choose to fill guard cells either in a single direction,
 !!  or all of them. For the Flash-X solvers supplied as of 2023,
 !!  guard cell are filled in all directions.
-!!
-!!  
-!!
 !!
 !! ARGUMENTS 
 !!  
@@ -133,21 +105,6 @@
 !!              and for the most part ignored by the Amrex Grid implementation
 !!              (but don't count on it).
 !!
-!!   eosMode -  the EOS mode being used by the solver that is calling the 
-!!              routine. Some of the valid values are :
-!!              MODE_DENS_EI     density and energy input, pressure and temp output
-!!              MODE_DENS_PRES   density/pressure input, temperature/energy output
-!!              MODE_DENS_TEMP   density/temperature input, pressure/energy output
-!!              Other values may be supported by specific Eos implementations.
-!!              When this optional argument is not present in a call, the behavior
-!!              is the same as when the default Eos mode that is being used by the
-!!              Grid unit is specified; the latter will usually be determined by
-!!              a runtime parameter such as eosModeInit or eosMode.
-!!
-!!  doEos    - a logical variable indicating if the calling routine wants the
-!!             GC-fill routine to also make sure that Eos is applied to achieve
-!!             thermodynamically consistent values of all variables.
-!!
 !!
 !!             The mask-related arguments are useful only with PARAMESH4. They have
 !!             no meaning in UG.  The Amrex Grid currently provides a partial
@@ -163,23 +120,6 @@
 !!          false.
 !!          The mask is always ignored if the runtime parameter
 !!          enableMaskedGCFill is set .FALSE.
-!!  
-!! makeMaskConsistent - If true then when a mask is applied, the implementation of
-!!          Grid_fillGuardCells makes sure that in addition to all the variables
-!!          that are explicitly selected by the mask, all other variables (of
-!!          the same grid data structure selected by gridDataStruct) on which
-!!          those variables depend for proper GC-fill operation are also
-!!          included in the set of variables that are communicated and updated
-!!          in guard cells. (See NOTES section for an example regarding the
-!!          dependence of conserved variables on the density variable.)
-!!          the the doEos argument is also present and true, then the
-!!          implementation of Grid_fillGuardCells also determines whether there
-!!          is a need to apply the Eos, and the Eos calculation may be skipped
-!!          if not.
-!!
-!! doLogMask - If present and true when a mask is applied, stamp some information
-!!          about masking (and whether Eos is or would be called) to the Logfile.
-!!          Ignored in implementations that do not support variable masking.
 !!
 !!  selectBlockType - selects the blocks whose guard cells must be filled
 !!            by block type.
@@ -281,15 +221,13 @@
 
 
 subroutine Grid_fillGuardCells( gridDataStruct, idir,&
-     minLayers, eosMode, doEos, maskSize, mask, makeMaskConsistent,&
+     minLayers, maskSize, mask, makeMaskConsistent,&
      doLogMask,selectBlockType,unitReadsMeshDataOnly)
   
   implicit none
   integer, intent(in) :: gridDataStruct
   integer, intent(in) :: idir
   integer, optional,intent(in) :: minLayers
-  integer, optional, intent(in) :: eosMode
-  logical, optional,intent(IN) :: doEos
   integer, optional, intent(IN) :: maskSize
   logical, optional, dimension(:),intent(IN) :: mask
   logical, optional,intent(IN) :: makeMaskConsistent

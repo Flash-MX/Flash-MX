@@ -30,15 +30,11 @@
 !!
 !!***
 subroutine dr_molPostUpdate(t)
-   use Hydro_interface, only: Hydro_molPostUpdate
-   use RadTrans_interface, only: RadTrans_molPostUpdate
    use Simulation_interface, only: Simulation_molPostUpdate
 
    implicit none
 
    real, intent(in) :: t
 
-   call Hydro_molPostUpdate(t)
-   call RadTrans_molPostUpdate(t)
    call Simulation_molPostUpdate(t)
 end subroutine dr_molPostUpdate

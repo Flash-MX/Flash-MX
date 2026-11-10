@@ -18,13 +18,12 @@
 !! This subroutine has not yet been implemented and aborts if called.
 !!
 !! @todo Implement
-subroutine Grid_guardCellMaskHook(ccMask, needEos)
+subroutine Grid_guardCellMaskHook(ccMask)
     use Driver_interface, ONLY : Driver_abort
 
     implicit none
     
     logical, intent(INOUT) :: ccMask(*)
-    logical, intent(IN)    :: needEos
 
     CALL Driver_abort("[Grid_guardCellMaskHook] Not implemented yet")
 end subroutine Grid_guardCellMaskHook

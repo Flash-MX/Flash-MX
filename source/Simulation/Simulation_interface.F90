@@ -74,12 +74,6 @@ Module Simulation_interface
    end interface
 
    interface
-      subroutine Simulation_initSpecies()
-         implicit none
-      end subroutine Simulation_initSpecies
-   end interface
-
-   interface
       subroutine Simulation_mapIntToStr(key, str, block)
          implicit none
          integer, intent(in) :: key, block

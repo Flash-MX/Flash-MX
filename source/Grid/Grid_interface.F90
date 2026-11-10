@@ -173,13 +173,11 @@ Module Grid_interface
 
   interface
      subroutine Grid_fillGuardCells( gridDataStruct,idir,&
-          minLayers,eosMode,doEos,maskSize,mask,makeMaskConsistent,&
+          minLayers,maskSize,mask,makeMaskConsistent,&
           doLogMask,selectBlockType,unitReadsMeshDataOnly)
        integer, intent(in) :: gridDataStruct
        integer, intent(in) :: idir
        integer,optional,intent(in) :: minLayers
-       integer,optional,intent(in) :: eosMode
-       logical,optional,intent(IN) :: doEos
        integer,optional,intent(in) :: maskSize
        logical,optional,dimension(:), intent(IN) :: mask
        logical,optional, intent(IN) :: makeMaskConsistent
@@ -355,10 +353,9 @@ Module Grid_interface
   end interface Grid_getSingleCellVol
 
   interface
-     subroutine Grid_guardCellMaskHook(ccMask, needEos)
+     subroutine Grid_guardCellMaskHook(ccMask)
        implicit none
        logical,intent(INOUT) :: ccMask(*)
-       logical,intent(IN)    :: needEos
      end subroutine Grid_guardCellMaskHook
   end interface
 

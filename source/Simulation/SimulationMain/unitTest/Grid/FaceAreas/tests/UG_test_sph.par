@@ -37,6 +37,4 @@ zl_boundary_type = "periodic"
 zr_boundary_type = "periodic"
 
 ##### EoS CONFIGURATION
-eosMode     = "dens_ie"
-eosModeInit = "dens_temp"
 

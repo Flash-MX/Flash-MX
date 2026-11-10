@@ -17,8 +17,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Simulation_guardCellMaskHook(logical(INOUT)  :: ccmask,
-!!                                    logical(IN)  :: needeos)
+!!  call Simulation_guardCellMaskHook(logical(INOUT)  :: ccmask)
 !!
 !! DESCRIPTION
 !!
@@ -32,16 +31,13 @@
 !!
 !!   ccmask : the mask
 !!
-!!   needeos : switch for the need of Eos
-!!
 !!
 !!***
 
 
-subroutine Simulation_guardCellMaskHook(ccMask, needEos)
+subroutine Simulation_guardCellMaskHook(ccMask)
   implicit none
   logical,intent(INOUT) :: ccMask(*)
-  logical,intent(IN)    :: needEos
 
   ! Stub does nothing.
 end subroutine Simulation_guardCellMaskHook

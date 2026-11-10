@@ -91,9 +91,6 @@
 !!   Cutoff value for velocity
 !! smallx [REAL]  
 !!   Cutoff value for abundances
-!! eosMode[STRING]
-!!   determines which variables to calculate from the ones
-!!   defined. Possible values are "dens_ie", "dens_pres" and "dens_temp"
 !! interpol_order [INTEGER]
 !!   Order of interpolation, used in Paramesh2 "monotonic" interpolation
 !!   for mesh prolongation
@@ -157,7 +154,6 @@ subroutine Grid_init()
   character(len=MAX_STRING_LENGTH) :: xl_bcString,xr_bcString
   character(len=MAX_STRING_LENGTH) :: yl_bcString,yr_bcString
   character(len=MAX_STRING_LENGTH) :: zl_bcString,zr_bcString
-  character(len=MAX_STRING_LENGTH) :: eosModeString, grav_boundary_type
   integer,save :: refVar
   integer :: countInComm, color, key, ierr
   integer :: nonrep
@@ -271,8 +267,8 @@ subroutine Grid_init()
 
   !Check if there are gravitational isolated boundary conditions
   !in order to determine which solvers to intialize.
-  call RuntimeParameters_get("grav_boundary_type", grav_boundary_type)
-  gr_isolatedBoundaries = (grav_boundary_type=="isolated")
+  ! Flash-MX has no self-gravity, so there are no gravitational isolated boundaries.
+  gr_isolatedBoundaries = .false.
 
   gr_allPeriodic = .TRUE.
   do i = 1, NDIM
@@ -288,13 +284,6 @@ subroutine Grid_init()
   ! is done in gr_initGeometry, called above.
 
 
-  call RuntimeParameters_get("eosMode", eosModeString)
-  call RuntimeParameters_mapStrToInt(eosModeString, gr_eosMode)
-
-  call RuntimeParameters_get("eosModeInit", eosModeString)
-  call RuntimeParameters_mapStrToInt(eosModeString, gr_eosModeInit)
-
-  gr_eosModeNow = gr_eosModeInit ! may change after initialization is done
 
   call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
   gr_justExchangedGC = .false.

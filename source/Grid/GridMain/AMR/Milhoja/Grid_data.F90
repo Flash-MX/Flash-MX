@@ -89,8 +89,6 @@ module Grid_data
     logical, save :: gr_geometryOverride
     character(len=MAX_STRING_LENGTH), save :: gr_str_geometry
 
-    integer, save :: gr_eosMode
-    integer, save :: gr_eosModeInit
 
     logical, save :: gr_justExchangedGC
     logical, save :: gr_gcellsUpToDate

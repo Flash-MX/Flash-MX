@@ -45,8 +45,7 @@ initialized to dummy values in Driver_evolveFlash
 the flash.par (see sample flash.par)
 
 *The only units besides the simulation unit included in this
-simulation are Grid, IO, Driver, Timers, Logfile, RuntimeParameters
-and PhysicalConstants.
+simulation are Grid, IO, Driver, Timers, Logfile and RuntimeParameters.
 
 *If the Paramesh Grid implementation is being used, it is important to
 note that the grid will not refine on its own.  The user should set

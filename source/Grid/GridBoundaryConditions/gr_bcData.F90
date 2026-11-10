@@ -22,6 +22,4 @@
 !!***
 
 Module gr_bcData
-  logical, save :: gr_bcUseGravity
-  real, save :: gr_bcEintSwitch
 end Module gr_bcData

@@ -19,8 +19,6 @@
 !!  call Grid_fillGuardCells(integer(IN) :: gridDataStruct,
 !!                           integer(IN) :: idir,
 !!                  optional,integer(IN) :: minLayers,
-!!                  optional,integer(IN) :: eosMode,
-!!                  optional,logical(IN) :: doEos,
 !!                  optional,integer(IN) :: maskSize,
 !!                  optional,logical(IN) :: mask(maskSize),
 !!                  optional,logical(IN) :: makeMaskConsistent,
@@ -101,18 +99,6 @@
 !!              the physical domain, where the code currently always behaves
 !!              as if minLayers=0 had been specified.
 !! 
-!!  eosMode -   the EOS mode being used by the solver that is calling the 
-!!              routine. Some of the valid values are :
-!!              MODE_DENS_EI     density and energy input, pressure and temp output
-!!              MODE_DENS_PRES   density/pressure input, temperature/energy output
-!!              MODE_DENS_TEMP   density/temperature input, pressure/energy output
-!!              (IGNORED in this implementation)
-!!  doEos    - a logical variable indicating if the calling routine wants the
-!!             gcfill process to also make sure that Eos is applied to achieve
-!!             thermodynamically consistent values of all variables.
-!!             The UG implementation does not act upon this argument, since
-!!             guard cell filling never involves interpolation or averaging.
-!!
 !!  maskSize - the size of the mask array. 
 !! 
 !!  mask -  It is a one-dimensional logical array 
@@ -123,10 +109,6 @@
 !!          The mask is always ignored if the runtime parameter
 !!          enableMaskedGCFill is set .FALSE.
 !!  
-!! makeMaskConsistent - If true when mask is applied, it is made sure that for
-!!          all the selected variables in the mask, the ones they are dependent
-!!          on are true too. It is also determined whether there is a need to 
-!!          apply Eos if doEos argument is true.
 !!
 !! selectBlockType - IGNORED
 !!
@@ -168,7 +150,7 @@
 #endif
 
 
-subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
+subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers&
      &, maskSize, mask, makeMaskConsistent, doLogMask,selectBlockType,&
      unitReadsMeshDataOnly)
 
@@ -186,8 +168,6 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
   integer, intent(in) :: gridDataStruct
   integer, intent(in) :: idir
   integer, optional,intent(in) :: minLayers
-  integer, optional,intent(in) :: eosMode
-  logical, optional,intent(in) :: doEos
   integer, optional, intent(IN) :: maskSize
   logical, optional, dimension(:),intent(IN) :: mask
   logical, optional,intent(IN) :: makeMaskConsistent

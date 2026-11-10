@@ -47,9 +47,8 @@ subroutine Grid_initDomain( restart,particlesInitialized)
   use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator, &
        Grid_fillGuardCells
   
-  use Grid_data, ONLY : gr_gid, gr_eosModeInit, gr_eosMode, gr_eosModeNow, gr_globalMe,&
+  use Grid_data, ONLY : gr_gid, gr_globalMe,&
        gr_globalNumProcs
-  use Eos_interface, ONLY : Eos_multiDim
   use Simulation_interface, ONLY : Simulation_initBlock, Simulation_initRestart
   use Grid_tile, ONLY : Grid_tile_t
   use Grid_iterator, ONLY : Grid_iterator_t
@@ -93,7 +92,6 @@ subroutine Grid_initDomain( restart,particlesInitialized)
 
         solnData(:,:,:,:) = 0.0
         call Simulation_initBlock(solnData, tileDesc)
-        call Eos_multiDim(gr_eosModeInit, tileDesc%limits, tileDesc%blkLimitsGC(LOW,:), solnData)
 
         call tileDesc%releaseDataPtr(solnData, CENTER)
         call itor%next()
@@ -119,7 +117,6 @@ subroutine Grid_initDomain( restart,particlesInitialized)
 
   call Grid_fillGuardCells( CENTER_FACES, ALLDIR)
 
-  gr_eosModeNow = gr_eosMode
   call gr_solversInit()
 
 

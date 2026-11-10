@@ -33,7 +33,6 @@
 !!       of it?
 subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                minLayers, &
-                               eosMode, doEos, &
                                maskSize, mask, makeMaskConsistent, doLogMask, &
                                selectBlockType, &
                                unitReadsMeshDataOnly)
@@ -44,20 +43,16 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
     use Grid_interface,      ONLY : Grid_getTileIterator, &
                                     Grid_releaseTileIterator
     use Grid_data,           ONLY : gr_justExchangedGC, &
-                                    gr_eosMode, &
                                     gr_gcellsUpToDate, &
                                     gr_meshMe
     use Grid_iterator,       ONLY : Grid_iterator_t
     use Grid_tile,           ONLY : Grid_tile_t
     use gr_interface,        ONLY : gr_setGcFillNLayers
     use gr_milhojaInterface, ONLY : gr_checkMilhojaError
-    use Eos_interface,       ONLY : Eos_guardCells
 
     integer, intent(IN)           :: gridDataStruct
     integer, intent(IN)           :: idir
     integer, intent(IN), optional :: minLayers
-    integer, intent(IN), optional :: eosMode
-    logical, intent(IN), optional :: doEos
     integer, intent(IN), optional :: maskSize
     logical, intent(IN), optional :: mask(:)
     logical, intent(IN), optional :: makeMaskConsistent
@@ -71,8 +66,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
     logical, save :: isFirstCall = .TRUE.
 
-    integer :: gcEosMode
-    logical :: needEos
     integer :: layers(1:MDIM)
     integer :: returnLayers(1:MDIM)
 
@@ -102,18 +95,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
         end if
     end if
 
-    if (present(eosMode)) then
-        gcEosMode=eosMode
-    else
-        gcEosMode=gr_eosMode
-    end if
-
-    if (present(doEos)) then
-        needEos = doEos
-    else
-        needEos = .FALSE.
-    end if
-
     !----------------------------------------------------------------
     ! Figure out nlayers arguments to amr_guardcell based on our arguments
     CALL gr_setGcFillNLayers(layers, idir, NGUARD, minLayers, returnLayers)
@@ -123,26 +104,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
         CALL milhoja_grid_fillGuardCells(MH_err) 
         CALL gr_checkMilhojaError("Grid_fillGuardCells", MH_err)
 
-        !!!!! FINALIZE CELL-CENTERED DATA
-        ! Clean data to account for possible unphysical values caused by
-        ! interpolation, revert to primitive form if needed, and
-        ! run EoS if needed
-        if (needEos) then
-            CALL Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
-            do while (itor%isValid())
-                CALL itor%currentTile(tileDesc)
-                CALL tileDesc%getDataPtr(solnData, CENTER)
-                
-                ! This call disallows the use of tiling
-                CALL Eos_guardCells(gcEosMode, solnData, corners=.true., &
-                                    layers=returnLayers, &
-                                    blockDesc=tileDesc)
-                
-                CALL tileDesc%releaseDataPtr(solnData, CENTER)
-                CALL itor%next()
-            end do
-            CALL Grid_releaseTileIterator(itor)
-        end if
     end if
     
     gr_justExchangedGC = .TRUE.

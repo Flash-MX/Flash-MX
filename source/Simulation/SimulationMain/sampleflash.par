@@ -14,7 +14,6 @@ gamma           = 1.4
 #		Grid parameters
 
 geometry        = "cartesian"
-eosMode 	= "dens_ie"
 convertToConsvdInMeshInterp = .true.
 
 #		Size of computational volume

@@ -65,7 +65,6 @@
 !!
 !!  Support in some implementations provided with FLASH4:
 !!
-!!   GridSolvers/Multipole:                  GRID_PDE_BND_ISOLATED                   
 !!   GridSolvers/Multigrid (simple):         GRID_PDE_BND_PERIODIC, GRID_PDE_BND_DIRICHLET(hom.),
 !!                                            GRID_PDE_BND_NEUMANN(hom.)(?)
 !!                                            (same type in all directions),

@@ -10,7 +10,7 @@ Comparison/RisingBubble/AMReX/2d:
   parfiles: test_default.par
 
 Comparison/RisingBubble/Paramesh/2d:
-  setupOptions: -auto -2d -nxb=16 -nyb=16 +pmvdev --index-reorder
+  setupOptions: -auto -2d -nxb=16 -nyb=16 +pm4dev --index-reorder
                 -gridinterpolation=native -maxblocks=100 +incomp
   parfiles: test_default.par
 
@@ -23,6 +23,6 @@ Comparison/RisingBubble/AMReXGCFill/3d:
   parfiles: test_gcfill.par
 
 Comparison/RisingBubble/ParameshGCFill/2d:
-  setupOptions: -auto -2d -nxb=16 -nyb=16 +pmvdev --index-reorder
+  setupOptions: -auto -2d -nxb=16 -nyb=16 +pm4dev --index-reorder
                 -gridinterpolation=native -maxblocks=100 +incomp
   parfiles: test_gcfill.par

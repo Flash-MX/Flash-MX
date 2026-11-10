@@ -1,12 +1,14 @@
-# Flash-X, a Multiphysics Scientific Software System
+# Flash-MX, Incompressible Multiphase Flow
 
-Flash-X is a highly composable multiphysics software system that can
-be used to simulate physical phenomena in several scientific
-domains. It is derived from FLASH, which has a history of being a
-community code for several communities. The Flash-X architecture has
-been redesigned to be compatible with increasingly heterogeneous
-hardware platforms. Part of the redesign is a newly designed
-performance portability layer that is language agnostic.
+Flash-MX is a software system for simulating incompressible multiphase
+flows, including boiling and heat transfer, immersed boundaries and solid
+mechanics. It is derived from [Flash-X](https://github.com/Flash-X/Flash-X)
+and keeps the Flash-X composable architecture: unit-based `setup`, the
+Grid, IO and Driver units, and support for AMReX and PARAMESH grids.
+The compressible hydrodynamics and astrophysics physics units, and the
+setups and libraries that depend on them, are not part of Flash-MX. The
+version-control history of the retained code is preserved. See `NOTICE`
+for provenance and licensing.
 
 ## Libraries
 
@@ -36,9 +38,8 @@ On the other hand, some applications and tests use INTERNAL libraries. Such libr
 
 2. **Library source code must be retrieved from a separate repository.**
 
-   Examples are the THORNADO and WEAKLIB libraries.
-   Follow the instructions on submodules to automatically put the source code for these two
-   in the right places in subdirectories under lib/.
+   An example is the PARAMESH library, which is provided as the git submodule described above.
+   Follow the instructions on submodules below to retrieve its source code.
 
 ## Git with Submodules
 
@@ -138,11 +139,7 @@ autocmd BufNewFile,BufRead *.F90-mc set filetype=fortran
 
 ## Containerization Workflows
 
-[comment]: ![incompFlow](https://github.com/Flash-X/Flash-X/workflows/incompFlow/badge.svg)
-[comment]: ![Sod](https://github.com/Flash-X/Flash-X/workflows/Sod/badge.svg)
-[comment]: ![Sedov](https://github.com/Flash-X/Flash-X/workflows/Sedov/badge.svg)
-
-These workflows are located in `.github/workflows` and are not part of default testing framework. Please to refer `.github/workflows/README.md` and `container/README.md` for details on containerization with **Flash-X**
+These workflows are located in `.github/workflows` and are not part of default testing framework. Please refer to `.github/workflows/README.md` and `sites/container/README.md` for details on containerization with **Flash-MX**
 
 ## Tests
 Test specifications for individual simulations are included under ``*/tests/tests.yaml`` files in each simulation directory under ``source/Simulation/SimulationMain``. New tests should be added as enteries in the prescribed YAML format before including it as a part of suites on different platforms.

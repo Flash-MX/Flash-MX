@@ -121,23 +121,6 @@ module gr_bcInterface
   end interface
 
   interface
-     subroutine gr_bcHseInit()
-     end subroutine gr_bcHseInit
-  end interface
-
-  interface
-     subroutine gr_hseStep(dens, temp, ye, sumy, n, inputg, delta, direction, order, mode, massFrac)
-       implicit none
-       real, dimension(:), intent(IN)    :: ye, sumy
-       real, dimension(:), intent(INOUT) :: dens, temp
-       integer, intent(IN)               :: n               ! index to update
-       real, intent(IN)                  :: inputg, delta
-       integer, intent(IN)               :: direction, order, mode
-       real, optional, intent(IN)        :: massFrac(:)
-     end subroutine gr_hseStep
-  end interface
-
-  interface
      subroutine gr_bcFinalize()
      end subroutine gr_bcFinalize
   end interface

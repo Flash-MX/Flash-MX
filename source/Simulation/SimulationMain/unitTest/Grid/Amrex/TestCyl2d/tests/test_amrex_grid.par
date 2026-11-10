@@ -54,8 +54,6 @@ refine_filter_2 = 0.025
 refine_filter_3 = 0.035
 
 ##### EoS CONFIGURATION
-eosMode     = "dens_ie"
-eosModeInit = "dens_temp"
 
 #### Bittree
 gr_amrexUseBittree = .TRUE.

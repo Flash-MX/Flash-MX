@@ -10,7 +10,7 @@ Comparison/incompFlow/ChanneFlow/AMReX/2d:
   parfiles: test_periodic_bc.par
 
 Comparison/incompFlow/ChanneFlow/Paramesh/2d:
-  setupOptions: -auto -maxblocks=100 +pmvdev --index-reorder -gridinterpolation=native 
+  setupOptions: -auto -maxblocks=100 +pm4dev --index-reorder -gridinterpolation=native 
                 +parallelIO -2d -nxb=16 -nyb=16 +incomp
   parfiles: test_outflow_bc.par
 

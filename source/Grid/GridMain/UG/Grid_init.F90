@@ -86,7 +86,6 @@ subroutine Grid_init()
   character(len=MAX_STRING_LENGTH) :: xl_bcString,xr_bcString
   character(len=MAX_STRING_LENGTH) :: yl_bcString,yr_bcString
   character(len=MAX_STRING_LENGTH) :: zl_bcString,zr_bcString
-  character(len=MAX_STRING_LENGTH) :: eosModeString, grav_boundary_type
 
 
   integer :: i, localnxb, localnyb, localnzb
@@ -158,17 +157,6 @@ subroutine Grid_init()
   call gr_initGeometry()
 
 
-#ifdef FLASH_EOS
-  call RuntimeParameters_get("eosMode", eosModeString)
-  call RuntimeParameters_mapStrToInt(eosModeString,gr_eosMode)
-  call RuntimeParameters_get("eosModeInit", eosModeString)
-  call RuntimeParameters_mapStrToInt(eosModeString,gr_eosModeInit)
-#else 
-  gr_eosMode = 1
-  gr_eosModeInit = 1
-#endif
-  gr_eosModeNow = gr_eosModeInit ! may change after initialization is done
-
 #ifdef FLASH_PARTICLES
   call RuntimeParameters_get('useParticles',gr_useParticles)
 #else
@@ -210,8 +198,8 @@ subroutine Grid_init()
 
   !Check if there are gravitational isolated boundary conditions
   !in order to determine which solvers to intialize.
-  call RuntimeParameters_get("grav_boundary_type", grav_boundary_type)
-  gr_isolatedBoundaries = (grav_boundary_type=="isolated")
+  ! Flash-MX has no self-gravity, so there are no gravitational isolated boundaries.
+  gr_isolatedBoundaries = .false.
 
 
   !! Now find the minimum cell size (gr_minCellSize)

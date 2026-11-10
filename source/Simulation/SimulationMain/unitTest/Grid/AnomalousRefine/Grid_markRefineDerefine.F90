@@ -46,7 +46,7 @@
 !! Every unit uses a few unit scope variables that are
 !! accessible to all routines within the unit, but not to the
 !! routines outside the unit. For Grid unit these variables begin with "gr_"
-!! like, gr_meshMe or gr_eosMode, and are stored in fortran
+!! like, gr_meshMe or gr_refine_var, and are stored in fortran
 !! module Grid_data (in file Grid_data.F90). The other variables
 !! are local to the specific routines and do not have the prefix "gr_"
 !!
@@ -67,8 +67,7 @@ subroutine Grid_markRefineDerefine()
                         gr_lrefineMaxRedDoByTime,&
                         gr_lrefineMaxRedDoByLogR,&
                         gr_lrefineCenterI,gr_lrefineCenterJ,gr_lrefineCenterK,&
-                        gr_imin,gr_imax,gr_jmin,gr_jmax,&
-                        gr_eosModeNow
+                        gr_imin,gr_imax,gr_jmin,gr_jmax
   use gr_interface,   ONLY : gr_markRefineDerefine
   use tree, ONLY : newchild, refine, derefine, stay, nodetype
   implicit none
@@ -80,8 +79,6 @@ subroutine Grid_markRefineDerefine()
   real :: ref_cut,deref_cut,ref_filter
   integer       :: l,i,iref
   logical,save :: gcMaskArgsLogged = .FALSE.
-  integer,save :: eosModeLast = 0
-  logical :: doEos=.true.
   integer,parameter :: maskSize = NUNK_VARS+NDIM*NFACE_VARS
   logical,dimension(maskSize) :: gcMask
   real, dimension(MAXBLOCKS) :: err
@@ -97,11 +94,6 @@ subroutine Grid_markRefineDerefine()
      call gr_setMaxRefineByTime()
   end if
 
-  if (gr_eosModeNow .NE. eosModeLast) then
-     gcMaskArgsLogged = .FALSE.
-     eosModeLast = gr_eosModeNow
-  end if
-
   ! that are implemented in this file need values in guardcells
 
   gcMask=.false.
@@ -115,12 +107,11 @@ subroutine Grid_markRefineDerefine()
 
 
   if (.NOT.gcMaskArgsLogged) then
-     call Logfile_stampVarMask(gcMask, .true., '[Grid_markRefineDerefine]', 'gcArgs')
+     call Logfile_stampVarMask(gcMask, '[Grid_markRefineDerefine]', 'gcArgs')
   end if
 
 !!$  force_consistency = .FALSE.
-  call Grid_fillGuardCells(CENTER_FACES,ALLDIR,doEos=.true.,&
-       maskSize=maskSize, mask=gcMask, makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskArgsLogged,&
+  call Grid_fillGuardCells(CENTER_FACES,ALLDIR,maskSize=maskSize, mask=gcMask, makeMaskConsistent=.true.,doLogMask=.NOT.gcMaskArgsLogged,&
        selectBlockType=ACTIVE_BLKS)
      gcMaskArgsLogged = .TRUE.
 !!$  force_consistency = .TRUE.

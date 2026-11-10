@@ -145,8 +145,8 @@ subroutine pt_setMask()
   print*,'pt_gcMaskForAdvance:',pt_gcMaskForAdvance
   print*,'pt_gcMaskForWrite:  ',pt_gcMaskForWrite
 #endif
-  call Logfile_stampVarMask(pt_gcMaskForAdvance, .FALSE., '[pt_setMask]', 'gcMaskForAdvance')
-  call Logfile_stampVarMask(pt_gcMaskForWrite, .FALSE., '[pt_setMask]', 'gcMaskForWrite')
+  call Logfile_stampVarMask(pt_gcMaskForAdvance, '[pt_setMask]', 'gcMaskForAdvance')
+  call Logfile_stampVarMask(pt_gcMaskForWrite, '[pt_setMask]', 'gcMaskForWrite')
 
 
 end subroutine pt_setMask

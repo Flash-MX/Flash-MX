@@ -99,13 +99,6 @@ Module Driver_interface
    end interface
 
    interface
-      subroutine Driver_finalizeSourceTerms(restart)
-         implicit none
-         logical, intent(in) :: restart
-      end subroutine Driver_finalizeSourceTerms
-   end interface
-
-   interface
       subroutine Driver_getDt(dt)
          implicit none
          real, intent(out) :: dt
@@ -169,30 +162,9 @@ Module Driver_interface
    end interface
 
    interface
-      subroutine Driver_initSourceTerms(restart)
-         implicit none
-         logical, intent(in) :: restart
-      end subroutine Driver_initSourceTerms
-   end interface
-
-   interface
       subroutine Driver_sendOutputData()
          implicit none
       end subroutine Driver_sendOutputData
-   end interface
-
-   interface
-      subroutine Driver_sourceTerms(dt, pass)
-         implicit none
-         real, intent(IN)    :: dt
-         integer, OPTIONAL, intent(IN):: pass
-      end subroutine Driver_sourceTerms
-   end interface
-
-   interface
-      subroutine Driver_verifyInitDt()
-         implicit none
-      end subroutine Driver_verifyInitDt
    end interface
 
    interface

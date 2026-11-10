@@ -36,9 +36,8 @@ subroutine gr_hypreInit()
   
   use RuntimeParameters_interface, ONLY : RuntimeParameters_get, &
                                           RuntimeParameters_mapStrToInt
-  use PhysicalConstants_interface, ONLY : PhysicalConstants_get
   use Logfile_interface,           ONLY : Logfile_stamp
-  use gr_hypreData, ONLY : gr_asol, gr_speedlt, gr_hypreSolverType,            &
+  use gr_hypreData, ONLY : gr_hypreSolverType,            &
                            gr_hypreNStep,                                      & 
                            gr_hyprePcType, gr_hypreRelTol, gr_hypreMaxIter,    & 
                            gr_hypreGridIsSetUp, gr_hyprePrintSolveInfo,        &
@@ -64,17 +63,10 @@ subroutine gr_hypreInit()
   character(len=HYPRE_MSG_LEN) :: hypreMsg
   integer :: i,j
   
-  real :: ssol
-  
   if (gr_minRefine /= gr_lrefineMax) then
        call Driver_abort("gr_hypreInit: lrefine_min and lrefine_max must be equal")
   end if
 
-  call PhysicalConstants_get("speed of light",gr_speedlt)
-  call PhysicalConstants_get("Stefan-Boltzmann",ssol)
-  
-  gr_asol    = 4.0 * ssol / gr_speedlt
-  
   gr_hypreSolverType   = HYPRE_PCG
   gr_hyprePcType       = HYPRE_AMG
   gr_hypreRelTol       = 1.0E-12

@@ -29,9 +29,9 @@
 !!
 !!  Typically RuntimeParameters_get should only be called in the
 !!  initialization routines for each unit (Driver_init, IO_init,
-!!  Hydro_init, Simulation_init etc).  In FLASH3 we get the runtime
+!!  Grid_init, Simulation_init etc).  In FLASH3 we get the runtime
 !!  parameters one time and store the values in the corresponding data
-!!  modules (Driver_data, IO_data, Hydro_data, Simulation_data, etc.)
+!!  modules (Driver_data, IO_data, Grid_data, Simulation_data, etc.)
 !!
 !! ARGUMENTS
 !!

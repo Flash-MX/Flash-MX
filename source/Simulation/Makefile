@@ -1,4 +1,4 @@
-Simulation += Simulation_initSpecies.o Simulation_mapIntToStr.o \
+Simulation += Simulation_mapIntToStr.o \
               Simulation_mapParticlesVar.o Simulation_defineDomain.o \
               Simulation_mapStrToInt.o Simulation_init.o \
               Simulation_initBlock.o Simulation_finalize.o \

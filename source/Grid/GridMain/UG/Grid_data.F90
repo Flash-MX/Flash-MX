@@ -74,8 +74,6 @@ Module Grid_data
   integer, save, dimension(MDIM) :: gr_dirGeom
   logical, save, dimension(MDIM) :: gr_dirIsAngular
   logical, save :: gr_geometryOverride
-  integer, save :: gr_eosMode
-  integer, save :: gr_eosModeInit, gr_eosModeNow
   logical, save :: gr_justExchangedGC, gr_useParticles, gr_isolatedBoundaries
 
   logical, save :: gr_useEnergyDeposition

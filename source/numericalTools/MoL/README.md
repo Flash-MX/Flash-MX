@@ -59,7 +59,7 @@ MOMX_RHS_INDS = [(i, i = MOMX_RHS_BEGIN, MOMX_RHS_END)]
 ```
 - An "active RHS" identifier in the range `[1, MOL_NRHS]` could be passed to the procedures responsible for calculating the RHS terms and used like:
 ```fortran
-subroutine Hydro_molExplicitRHS(t, activeRHS)
+subroutine MyPhysics_molExplicitRHS(t, activeRHS)
    use MoL_interface, only: MoL_getDataPtr, ...
    use hy_data, only: MOMX_RHS_INDS, ...
    ...
@@ -84,7 +84,7 @@ subroutine Hydro_molExplicitRHS(t, activeRHS)
    rhs(MOMX_RHS, i, j, k) = rhs(MOMX_RHS, i, j, k) + ...
 
    ...
-end subroutine Hydro_molExplicitRHS
+end subroutine MyPhysics_molExplicitRHS
 ```
 - There are times when some level of abtraction as to the type and stage that `activeRHS` corresponds to is beneficial, e.g. if a physics unit implements a "fast" RHS procedure, but if the ERK integrator is selected, there will be no specific "fast" RHS storage allocated, so this procedure will be called on to add its "fast" contribution to the same location as the explicit RHS terms
 - This type of evolved and RHS variable indexing could also simplify some of the internal `MoL` operations on these variables (e.g. linear combinations of intermediate state RHS terms) by removing the explicit need for indexing mapping between `UNK` and the current version of MoL's scratch memory

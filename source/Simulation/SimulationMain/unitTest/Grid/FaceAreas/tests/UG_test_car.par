@@ -37,6 +37,4 @@ zl_boundary_type = "outflow"
 zr_boundary_type = "outflow"
 
 ##### EoS CONFIGURATION
-eosMode     = "dens_ie"
-eosModeInit = "dens_temp"
 

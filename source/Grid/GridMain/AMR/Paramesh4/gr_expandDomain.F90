@@ -42,7 +42,7 @@
 
 subroutine gr_expandDomain (particlesInitialized)
 
-  use Grid_data, ONLY : gr_domainBC,gr_eosModeInit,gr_refineOnParticleCount,&
+  use Grid_data, ONLY : gr_domainBC,gr_refineOnParticleCount,&
        gr_meshMe,&
        gr_meshNumProcs, gr_lrefineMinInit, gr_gcellsUpToDate
   use Driver_data,         ONLY : dr_simGeneration
@@ -55,7 +55,6 @@ subroutine gr_expandDomain (particlesInitialized)
   use gr_specificData, ONLY : gr_finestExistingLevel
   use tree, ONLY : lrefine, lrefine_min, lrefine_max, grid_changed
   use paramesh_interfaces, ONLY : amr_refine_derefine, amr_restrict
-  use Eos_interface, ONLY : Eos_multiDim
 
 #include "Simulation.h"
 
@@ -184,21 +183,6 @@ subroutine gr_expandDomain (particlesInitialized)
 
      ! This is here for safety, in case the user did not take care to make things
      ! thermodynamically consistent in the initial state.- KW
-     call Timers_start("eos")
-     call Grid_getTileIterator(itor, nodetype=whichBlocks, tiling=.FALSE.)
-     do while(itor%isValid())
-        call itor%currentTile(tileDesc)
-
-        call tileDesc%getDataPtr(solnData, CENTER)
-        call Eos_multiDim(gr_eosModeInit, tileDesc%limits, tileDesc%blkLimitsGC(LOW,:),  solnData)
-        call tileDesc%releaseDataPtr(solnData, CENTER)
-
-        call itor%next()
-     end do
-     call Grid_releaseTileIterator(itor)
-
-     call Timers_stop("eos")
-
      if(gr_refineOnParticleCount ) then
 
         !!   This loop initializes the particle positions if
@@ -223,7 +207,7 @@ subroutine gr_expandDomain (particlesInitialized)
      end if
      dr_simGeneration = dr_simGeneration + 1
      if (ntimes .le. lrefine_max+1) then
-        ! Guard cell filling and Eos_multiDim are done in Grid_markRefineDerefine as needed.
+        ! Guard cell filling is done in Grid_markRefineDerefine as needed.
         call Grid_markRefineDerefine()
         grid_changed_anytime = max(grid_changed, grid_changed_anytime)
         grid_changed = 0              ! will be 1 after amr_refine_derefine if the grid actually changed

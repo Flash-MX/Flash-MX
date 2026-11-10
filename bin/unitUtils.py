@@ -412,19 +412,19 @@ class UnitList:
       Return a list of variant directories requested by Config, like
       (typical case)
           [
-           'physics/Eos/EosMain/Gamma/GPU',
-           'physics/Eos/EosMain/Gamma/Null'
+           'physics/Foo/FooMain/Bar/GPU',
+           'physics/Foo/FooMain/Bar/Null'
           ]
       or (showing additional possibilities)
           [
-           'physics/Eos/EosMain/GPU',
-           'physics/Eos/EosMain/Null',
-           'physics/Eos/EosMain/Gamma/GPU',
-           'physics/Eos/EosMain/Gamma/Null',
+           'physics/Foo/FooMain/GPU',
+           'physics/Foo/FooMain/Null',
+           'physics/Foo/FooMain/Bar/GPU',
+           'physics/Foo/FooMain/Bar/Null',
            '/even/some/absolute/path/GPU',
            '/even/some/absolute/path/Null'
           ]
-      which might result from a physics/Eos/EosMain/Gamma/Config file that
+      which might result from a physics/Foo/FooMain/Bar/Config file that
       contains
 
           VARIANTS GPU Null
@@ -742,7 +742,7 @@ class UnitList:
         varInfo = VarInfo(**kw)
         for (unitname,unit) in list(self.units.items()):
             # Add all variables
-            for (var,(attr,eos1,eos2)) in list(unit['VARIABLE'].items()):
+            for (var,(attr,)) in list(unit['VARIABLE'].items()):
                 var = var.lower()
                 varcomment = unit['D'].get("%s_variable" % var,"")
                 varInfo.addVar(var,type="Variable", location=unitname,

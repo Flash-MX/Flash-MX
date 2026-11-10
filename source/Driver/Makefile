@@ -10,18 +10,14 @@ Driver += main.o \
 	Driver_putTimeStamp.o \
 	Driver_evolvePhysics.o \
 	Driver_evolveAll.o \
-	Driver_finalizeSourceTerms.o \
 	Driver_init.o \
 	Driver_initAll.o \
 	Driver_initNumericalTools.o \
 	Driver_initParallel.o \
 	Driver_sendOutputData.o \
 	Driver_computeDt.o \
-	Driver_initSourceTerms.o \
-	Driver_sourceTerms.o \
 	Driver_getDt.o \
 	Driver_getNStep.o \
-	Driver_verifyInitDt.o \
 	Driver_interface.o \
 	Driver_superTimeStep.o \
 	Driver_checkMPIErrorCode.o \

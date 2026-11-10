@@ -41,9 +41,6 @@ subroutine gr_solversInit()
   call Grid_setSolverDbgContextInfo()
 
 
-  ! Multipole
-  call gr_mpoleInit()
-
   call gr_hypreInit()
   call gr_amrexMultigridInit()
 

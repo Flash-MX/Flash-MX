@@ -75,7 +75,7 @@ subroutine gr_updateRefinement( gridChanged,force_rebalance)
 
 #include "Simulation.h"
   use Grid_data, ONLY :  gr_convertToConsvdForMeshCalls,&
-       gr_convertToConsvdInMeshInterp, gr_eosMode, gr_meshMe, gr_gcellsUpToDate
+       gr_convertToConsvdInMeshInterp, gr_meshMe, gr_gcellsUpToDate
   use gr_specificData, ONLY : gr_finestExistingLevel
   use Timers_interface, ONLY : Timers_start, Timers_stop
   use Grid_interface, ONLY : Grid_getTileIterator, Grid_releaseTileIterator, &
@@ -87,7 +87,6 @@ subroutine gr_updateRefinement( gridChanged,force_rebalance)
 #endif
   use paramesh_interfaces, ONLY : amr_refine_derefine, &
                                   amr_prolong
-  use Eos_interface, ONLY : Eos_multiDim
   use Grid_iterator, ONLY : Grid_iterator_t
   use Grid_tile,     ONLY : Grid_tile_t
   use Driver_interface, ONLY: Driver_notifyGridChange
@@ -250,18 +249,6 @@ subroutine gr_updateRefinement( gridChanged,force_rebalance)
   ! be sure that there are no blocks where (a) or (b) applies.
 
   if (grid_changed .NE. 0) then
-     call Timers_start("eos")
-     call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
-     do while (itor%isValid())
-        call itor%currentTile(tileDesc)
-        call tileDesc%getDataPtr(solnData, CENTER)
-        call Eos_multiDim(gr_eosMode, tileDesc%limits,tileDesc%blkLimitsGC(LOW,:), solnData)
-        call tileDesc%releaseDataPtr(solnData, CENTER)
-
-        call itor%next()
-     end do
-     call Grid_releaseTileIterator(itor)
-     call Timers_stop("eos")
      call Timers_start("updateParticleRefinement")
      call Particles_updateRefinement(oldLocalNumBlocks)
      call Timers_stop("updateParticleRefinement")

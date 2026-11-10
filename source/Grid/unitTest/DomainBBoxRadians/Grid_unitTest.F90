@@ -21,9 +21,7 @@ subroutine Grid_unitTest(fileUnit, perfect)
                                       Grid_releaseTileIterator
     use Grid_data,             ONLY : gr_meshMe, &
                                       gr_dirIsAngular, &
-                                      gr_globalDomain, &
-                                      gr_eosMode, &
-                                      gr_eosModeInit
+                                      gr_globalDomain
     use Grid_iterator,         ONLY : Grid_iterator_t
     use Grid_tile,             ONLY : Grid_tile_t
     use ut_testDriverMod
@@ -616,14 +614,6 @@ subroutine Grid_unitTest(fileUnit, perfect)
        call itor%next()
     end do
     call Grid_releaseTileIterator(itor)
-
-#if defined(FLASH_EOS) || !defined(FLASH_GRID_UG)
-    !!!!! CONFIRM EoS SETUP
-    call assertEqual(gr_eosMode, MODE_DENS_EI, &
-                     "Incorrect eosMode")
-    call assertEqual(gr_eosModeInit, MODE_DENS_TEMP, &
-                     "Incorrect eosModeInit")
-#endif
 
     perfect = finish_test_run()
 

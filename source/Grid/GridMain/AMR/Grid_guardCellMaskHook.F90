@@ -17,8 +17,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Grid_guardCellMaskHook(logical(INOUT)  :: ccmask,
-!!                              logical(IN)  :: needeos)
+!!  call Grid_guardCellMaskHook(logical(INOUT)  :: ccmask)
 !!
 !! DESCRIPTION
 !! Hook for masked filling of guardcells 
@@ -27,23 +26,18 @@
 !!
 !!   ccmask : the mask
 !!
-!!   needeos : switch for the need of Eos
-!!
 !!
 !!
 !!***
 
-subroutine Grid_guardCellMaskHook(ccMask, needEos)
-  use Burn_interface, ONLY: Burn_guardCellMaskHook
+subroutine Grid_guardCellMaskHook(ccMask)
   use gr_specificData, ONLY: gr_enableMaskedGCFill
   implicit none
   logical,intent(INOUT) :: ccMask(*)
-  logical,intent(IN)    :: needEos
 
   if (gr_enableMaskedGCFill) then
 
-     call Burn_guardCellMaskHook(ccMask,needEos)
-     call Simulation_guardCellMaskHook(ccMask,needEos)
+     call Simulation_guardCellMaskHook(ccMask)
 
      ! ... add calls to other units if necessary ...
 

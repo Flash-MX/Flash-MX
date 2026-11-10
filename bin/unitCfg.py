@@ -234,45 +234,28 @@ class FlashUnit(dict,preProcess):
             
     @staticmethod
     def initparseFACEVAR():
-        strEosRE  = r'(\s+EOSMAP:\s*(?P<eosmap>' + GVars.strEos + r')\s*$)?'
-        return {},r'FACEVAR\s+(?P<varname>\w+)' + strEosRE
+        return {},r'FACEVAR\s+(?P<varname>\w+)'
 
     def parseFACEVAR(self,mobj):
         facevar = mobj.group("varname")
-        eosmap = mobj.group("eosmap")
-        if not eosmap: eosmap = "NONEXISTENT"
         if facevar in self['FACEVAR']:
            raise SetupError('FACEVAR %s already declared'%facevar)
-        self['FACEVAR'][facevar] = (eosmap.upper(),eosmap.upper())
+        self['FACEVAR'][facevar] = ()
 
     @staticmethod
     def initparseVARIABLE():
-        #Order is important.  Only Type then Eos is valid.
 #        strTypeRE = '(\s+TYPE:\s*(?P<type>GENERIC|PER_VOLUME|PER_MASS))?'
         strTypeRE = r'TYPE:\s*(?P<type>GENERIC|PER_VOLUME|PER_MASS)'
-        strEosmapRE  = r'EOSMAP(INOUT)?:\s*(?P<eosmap>' + GVars.strEos + r')|EOSMAPIN:\s*(?P<eosmapin>' + GVars.strEos + r')|EOSMAPOUT:\s*(?P<eosmapout>' + GVars.strEos + r')'
-        strEosRE  = r'(\s+EOSMAP:\s*(?P<eosmap>' + GVars.strEos + r')\s*$)?'
-#        return {},'VARIABLE\s+(?P<varname>\w+)' + strTypeRE + strEosRE
-        return {},r'VARIABLE\s+(?P<varname>\w+)(\s+)?(?:(' + strTypeRE + r'|' + strEosmapRE + r')\s*)*\s*$'
-#        return {}, r'MASS_SCALAR\s+(?P<msname>\w+)(\s+)?(?:(NORENORM|RENORM:(?P<gpname>\S*)|' + strEosmapRE
+        return {},r'VARIABLE\s+(?P<varname>\w+)(\s+)?(?:(' + strTypeRE + r')\s*)*\s*$'
 
     def parseVARIABLE(self, mobj):
         variable = mobj.group("varname").lower()
         vartype = mobj.group("type")
-        eosmap = mobj.group("eosmap")
-        eosmapin = mobj.group("eosmapin")
-        eosmapout = mobj.group("eosmapout")
-        if eosmapin and eosmapout and eosmap and (eosmap != eosmapin) and (eosmapout != eosmap):
-            raise SetupError('VARIABLE %s has EOSMAP as well as EOSMAPIN and EOSMAPOUT mappings, what gives?'%variable)
-        if not eosmapin: eosmapin = eosmap
-        if not eosmapout: eosmapout = eosmap
-        if not eosmapin: eosmapin = "NONEXISTENT"
-        if not eosmapout: eosmapout = "NONEXISTENT"
 
         if not vartype: vartype = "GENERIC"
         if variable in self['VARIABLE']:
             raise SetupError('VARIABLE %s already declared'%variable)
-        self['VARIABLE'][variable] = (vartype.upper(), eosmapin.upper(), eosmapout.upper())
+        self['VARIABLE'][variable] = (vartype.upper(),)
 
     @staticmethod
     def initparseEVOLVEDVAR():
@@ -325,25 +308,19 @@ class FlashUnit(dict,preProcess):
                 
     @staticmethod
     def initparseSCRATCHVAR():
-        strEosRE  = r'(\s+EOSMAP:\s*(?P<eosmap>' + GVars.strEos + r')\s*$)?'
-        return {},r'SCRATCHVAR\s+(?P<varname>\w+)' +  strEosRE
+        return {},r'SCRATCHVAR\s+(?P<varname>\w+)'
 
     def parseSCRATCHVAR(self, mobj):
         variable = mobj.group("varname")
-        eosmap = mobj.group("eosmap")
-        if not eosmap: eosmap = "NONEXISTENT"
-        self['SCRATCHVAR'][variable] = (eosmap.upper(),eosmap.upper())
+        self['SCRATCHVAR'][variable] = ()
 
     @staticmethod
     def initparseSCRATCHCENTERVAR():
-        strEosRE  = r'(\s+EOSMAP:\s*(?P<eosmap>' + GVars.strEos + r')\s*$)?'
-        return {},r'SCRATCHCENTERVAR\s+(?P<varname>\w+)' +  strEosRE
+        return {},r'SCRATCHCENTERVAR\s+(?P<varname>\w+)'
 
     def parseSCRATCHCENTERVAR(self, mobj):
         variable = mobj.group("varname")
-        eosmap = mobj.group("eosmap")
-        if not eosmap: eosmap = "NONEXISTENT"
-        self['SCRATCHCENTERVAR'][variable] = (eosmap.upper(),eosmap.upper())
+        self['SCRATCHCENTERVAR'][variable] = ()
 
     @staticmethod
     def initparseNSCRATCHCENTERVARS():
@@ -357,36 +334,27 @@ class FlashUnit(dict,preProcess):
 
     @staticmethod
     def initparseSCRATCHFACEXVAR():
-        strEosRE  = r'(\s+EOSMAP:\s*(?P<eosmap>' + GVars.strEos + r')\s*$)?'
-        return {},r'SCRATCHFACEXVAR\s+(?P<varname>\w+)' +  strEosRE
+        return {},r'SCRATCHFACEXVAR\s+(?P<varname>\w+)'
 
     def parseSCRATCHFACEXVAR(self, mobj):
         variable = mobj.group("varname")
-        eosmap = mobj.group("eosmap")
-        if not eosmap: eosmap = "NONEXISTENT"
-        self['SCRATCHFACEXVAR'][variable] = (eosmap.upper(),eosmap.upper())
+        self['SCRATCHFACEXVAR'][variable] = ()
 
     @staticmethod
     def initparseSCRATCHFACEYVAR():
-        strEosRE  = r'(\s+EOSMAP:\s*(?P<eosmap>' + GVars.strEos + r')\s*$)?'
-        return {},r'SCRATCHFACEYVAR\s+(?P<varname>\w+)' +  strEosRE
+        return {},r'SCRATCHFACEYVAR\s+(?P<varname>\w+)'
 
     def parseSCRATCHFACEYVAR(self, mobj):
         variable = mobj.group("varname")
-        eosmap = mobj.group("eosmap")
-        if not eosmap: eosmap = "NONEXISTENT"
-        self['SCRATCHFACEYVAR'][variable] = (eosmap.upper(),eosmap.upper())
+        self['SCRATCHFACEYVAR'][variable] = ()
 
     @staticmethod
     def initparseSCRATCHFACEZVAR():
-        strEosRE  = r'(\s+EOSMAP:\s*(?P<eosmap>' + GVars.strEos + r')\s*$)?'
-        return {},r'SCRATCHFACEZVAR\s+(?P<varname>\w+)' +  strEosRE
+        return {},r'SCRATCHFACEZVAR\s+(?P<varname>\w+)'
 
     def parseSCRATCHFACEZVAR(self, mobj):
         variable = mobj.group("varname")
-        eosmap = mobj.group("eosmap")
-        if not eosmap: eosmap = "NONEXISTENT"
-        self['SCRATCHFACEZVAR'][variable] = (eosmap.upper(),eosmap.upper())
+        self['SCRATCHFACEZVAR'][variable] = ()
 
     @staticmethod
     def initparseSPECIES():
@@ -409,24 +377,13 @@ class FlashUnit(dict,preProcess):
 
     @staticmethod
     def initparseMASS_SCALAR():
-#        strEosRE  = '(\s+EOSMAP:\s*(?P<eosmap>' + GVars.strEos + ')\s*$)?'
-        strEosmapRE  = r'EOSMAP(INOUT)?:\s*(?P<eosmap>' + GVars.strEos + r')|EOSMAPIN:\s*(?P<eosmapin>' + GVars.strEos + r')|EOSMAPOUT:\s*(?P<eosmapout>' + GVars.strEos + r')'
-        return {}, r'MASS_SCALAR\s+(?P<msname>\w+)(\s+)?(?:(NORENORM|RENORM:(?P<gpname>\S*)|' + strEosmapRE + r')\s*)*\s*$'
+        return {}, r'MASS_SCALAR\s+(?P<msname>\w+)(\s+)?(?:(NORENORM|RENORM:(?P<gpname>\S*))\s*)*\s*$'
 
     def parseMASS_SCALAR(self, mobj):
         msname = mobj.group("msname")
         gpname = mobj.group("gpname")
         if gpname: gpname = str(gpname).upper()
-        eosmap = mobj.group("eosmap")
-        eosmapin = mobj.group("eosmapin")
-        eosmapout = mobj.group("eosmapout")
-        if eosmapin and eosmapout and eosmap and (eosmap != eosmapin) and (eosmapout != eosmap):
-            raise SetupError('MASS_SCALAR %s has EOSMAP as well as EOSMAPIN and EOSMAPOUT mappings, what gives?'%msname)
-        if not eosmapin: eosmapin = eosmap
-        if not eosmapout: eosmapout = eosmap
-        if not eosmapin: eosmapin = "NONEXISTENT"
-        if not eosmapout: eosmapout = "NONEXISTENT"
-        self['MASS_SCALAR'][msname] = (gpname, eosmapin.upper(), eosmapout.upper())
+        self['MASS_SCALAR'][msname] = (gpname,)
 ##        print "self['MASS_SCALAR'][" + msname + "] <-", self['MASS_SCALAR'][msname] 
 
 
@@ -732,29 +689,19 @@ class UnitUnion(dict):
  
             self["NONREP"].update(unit["NONREP"])
             
-            for name,(group,eos1,eos2) in list(unit["MASS_SCALAR"].items()):
+            for name,(group,) in list(unit["MASS_SCALAR"].items()):
                 try:
                   prevTriple = self["MASS_SCALARS"][name]
                   prevgrp    = prevTriple[0]
                   gotval = True
                 except KeyError:
-                  self["MASS_SCALARS"][name] = (group, eos1, eos2)
+                  self["MASS_SCALARS"][name] = (group,)
                   gotval = False
 
                 if gotval and (prevgrp != group): # different groups specified
                    msg = ['MASS SCALAR [%s] has two groups: ' % name]
                    msg.append('    %s in %s' % (prevgrp,unit.name))
                    msg.append('    %s in %s' % (group,mscalarlocs[name]))
-                   raise SetupError("\n".join(msg))
-                if gotval and (prevTriple[1] != eos1): # different EOS IN mappings specified
-                   msg = ['MASS SCALAR [%s] has two mappings to EOS input:' % name]
-                   msg.append('    %s in %s' % (prevTriple[1],unit.name))
-                   msg.append('    %s in %s' % (eos1,mscalarlocs[name]))
-                   raise SetupError("\n".join(msg))
-                if gotval and (prevTriple[2] != eos2): # different EOS OUT mappings specified
-                   msg = ['MASS SCALAR [%s] has two mappings from EOS output:' % name]
-                   msg.append('    %s in %s' % (prevTriple[2],unit.name))
-                   msg.append('    %s in %s' % (eos2,mscalarlocs[name]))
                    raise SetupError("\n".join(msg))
                 # everything is fine now
                 mscalarlocs[name] = unit.name # store where it was defined
@@ -864,9 +811,7 @@ class UnitUnion(dict):
         self["variable"] = self["evolvedvar"] + [v for v in self["variable"] if v not in self["evolvedvar"]]
 
         tmpList = [ self['VARIABLE'][var] for var in self['variable'] ]
-        self['var_types'] = [x for (x,y,z) in tmpList] # list of corresponding TYPES
-        self['eosmapin_unkvars'] = [y for (x,y,z) in tmpList] # list of Eos_map roles
-        self['eosmapout_unkvars'] = [z for (x,y,z) in tmpList] # list of Eos_map roles
+        self['var_types'] = [x for (x,) in tmpList] # list of corresponding TYPES
 
         self['nparticletypes'] = len(self['PARTICLETYPE'])
         #Add a quick sense check.  Check that a simulation having 0 particle
@@ -943,12 +888,6 @@ class UnitUnion(dict):
         self['nmassscalars'] = len(self['MASS_SCALARS'])
         self['massscalars'] = list(self['MASS_SCALARS'].keys())
         self['massscalars'].sort()
-        tmpList = [ self['MASS_SCALARS'][var] for var in self['massscalars'] ]
-##        print 'tmpList is',tmpList
-        self['eosmapin_ms'] = [y for (x,y,z) in tmpList] # list of corresponding EOSMAPINs
-        self['eosmapout_ms'] = [z for (x,y,z) in tmpList] # list of Eos_map roles for EOSMAPOUTs
-##        print "self['eosmapin_ms'] is", self['eosmapin_ms'] 
-##        print "self['eosmapout_ms'] is", self['eosmapout_ms'] 
         msg = list(self['MASS_SCALAR_GROUPS'].keys())
         msg.sort()
 ##        print 'msg is', msg
@@ -956,7 +895,7 @@ class UnitUnion(dict):
         self['massscalars_group_map'] = {}
 
 ##        print "self['MASS_SCALARS'].items() is",self['MASS_SCALARS'].items()
-        for name,(group,eos1,eos2) in list(self['MASS_SCALARS'].items()):
+        for name,(group,) in list(self['MASS_SCALARS'].items()):
             if not group: continue
 ##            print 'group is', group
             self['massscalars_map'][name] = msg.index(group)+1 # index return 0 based, our groups start at 1
@@ -968,10 +907,6 @@ class UnitUnion(dict):
         self['nfacevars'] = len(self['FACEVAR'])
         self['facevar'] = list(self['FACEVAR'].keys())
         self['facevar'].sort()
-#        self['eos_facevars'] = [ self['FACEVAR'][var] for var in self['facevar'] ] # list of Eos_map roles.
-        tmpList = [ self['FACEVAR'][var] for var in self['facevar'] ]
-        self['eosmapin_facevars'] = [ x for (x,y) in tmpList ] # list of Eos_map roles.
-        self['eosmapout_facevars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
 
         self['flux'] = list(self['FLUX'].keys())
@@ -980,10 +915,6 @@ class UnitUnion(dict):
 
         self['scratchvar'] = list(self['SCRATCHVAR'].keys())
         self['scratchvar'].sort()
-#        self['eos_scratchvars'] = [ self['SCRATCHVAR'][var] for var in self['scratchvar'] ] # list of Eos_map roles.
-        tmpList = [ self['SCRATCHVAR'][var] for var in self['scratchvar'] ]
-        self['eosmapin_scratchvars'] = [ x for (x,y) in tmpList ] # list of Eos_map roles.
-        self['eosmapout_scratchvars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
 
         self['scratchcentervar'] = list(self['SCRATCHCENTERVAR'].keys())
@@ -1014,38 +945,26 @@ class UnitUnion(dict):
                     molscratch = [rhsname.format(v,i) for i in range(self["nmolscratch"]) for v in self["evolvedvar"]]
 
             for v in rhsvars:
-                self['SCRATCHCENTERVAR'][v] = ("NONEXISTENT","NONEXISTENT")
+                self['SCRATCHCENTERVAR'][v] = ()
 
             for v in initvars:
-                self['SCRATCHCENTERVAR'][v] = ("NONEXISTENT","NONEXISTENT")
+                self['SCRATCHCENTERVAR'][v] = ()
 
             for v in molscratch:
-                self['SCRATCHCENTERVAR'][v] = ("NONEXISTENT","NONEXISTENT")
+                self['SCRATCHCENTERVAR'][v] = ()
 
             self["scratchcentervar"] = rhsvars + initvars + molscratch + self["scratchcentervar"]
 
-        tmpList = [ self['SCRATCHCENTERVAR'][var] for var in self['scratchcentervar'] ]
-        self['eosmapin_scratchcentervars'] = [ x for (x,y) in tmpList ] # list of Eos_map roles.
-        self['eosmapout_scratchcentervars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
 
         self['scratchfacexvar'] = list(self['SCRATCHFACEXVAR'].keys())
         self['scratchfacexvar'].sort()
-        tmpList = [ self['SCRATCHFACEXVAR'][var] for var in self['scratchfacexvar'] ]
-        self['eosmapin_scratchfacexvars'] = [ x for (x,y) in tmpList ] # list of Eos_map roles.
-        self['eosmapout_scratchfacexvars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
         self['scratchfaceyvar'] = list(self['SCRATCHFACEYVAR'].keys())
         self['scratchfaceyvar'].sort()
-        tmpList = [ self['SCRATCHFACEYVAR'][var] for var in self['scratchfaceyvar'] ]
-        self['eosmapin_scratchfaceyvars'] = [ x for (x,y) in tmpList ] # list of Eos_map roles.
-        self['eosmapout_scratchfaceyvars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
         self['scratchfacezvar'] = list(self['SCRATCHFACEZVAR'].keys())
         self['scratchfacezvar'].sort()
-        tmpList = [ self['SCRATCHFACEZVAR'][var] for var in self['scratchfacezvar'] ]
-        self['eosmapin_scratchfacezvars'] = [ x for (x,y) in tmpList ] # list of Eos_map roles.
-        self['eosmapout_scratchfacezvars'] = [ y for (x,y) in tmpList ] # list of Eos_map roles.
 
 
         self['nvar'] = self['nspecies'] + self['nmassscalars'] + len(self['variable'])

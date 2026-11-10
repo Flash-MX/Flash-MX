@@ -1,4 +1,0 @@
-
-monitors/Profiler/ProfilerMain
-    profileEvolutionOnly [BOOLEAN] [TRUE]
-

@@ -18,8 +18,6 @@
 !!  call Grid_fillGuardCells(integer(IN) :: gridDataStruct,
 !!                           integer(IN) :: idir,
 !!                 optional, integer(IN) :: minLayers,
-!!                 optional, integer(IN) :: eosMode,
-!!                 optional, logical(IN) :: doEos,
 !!                 optional, integer(IN) :: maskSize,
 !!                 optional, logical(IN),dimension(:) :: mask(maskSize),
 !!                 optional, logical(IN) :: makeMaskConsistent,
@@ -32,13 +30,6 @@
 !!  in accord with the given mask parameters and that are of the indicated grid
 !!  data structure type.
 !!
-!!  Specifically, this routine
-!!    (1) converts all primitive form leaf data to conserved form,
-!!    (2) restricts data from leaf blocks down to all ancestors,
-!!    (3) fills all guardcells at all levels,
-!!    (4) reverts conserved form leaf data to primitive form where
-!!        necessary, and
-!!    (5) runs EoS on cell-centered leaf block guardcells if so desired.
 !!
 !!  Note that steps (1) and (4) are skipped if the runtime parameters
 !!  convertToConsvdInMeshInterp and convertToConsvdForMeshCalls indicate that
@@ -48,39 +39,6 @@
 !!  conservative linear interpolation algorithm for guardcells at fine/coarse
 !!  boundaries.
 !!
-!! ARGUMENTS
-!!  gridDataStruct - integer constant that indicates which grid data structure
-!!                   variable's guardcells to fill.  Valid values are
-!!                     CENTER             cell-centered data only
-!!                     FACES              All face-centered data only
-!!                     CENTER_FACES       cell-centered and all face-centered
-!!                   The following values are not supported in this implementation
-!!                   for the Amrex Grid:
-!!                     FACEX              X face-centered data only [Not Supported]
-!!                     FACEY              Y face-centered data only [Not Supported]
-!!                     FACEZ              Z face-centered data only [Not Supported]
-!!  idir - For AMReX, the only valid value is ALLDIR, which does the fill along
-!!         all directions.
-!!  minLayers - number of guardcell layers requested for all directions.
-!!  eosMode  - The mode in which eos is to be applied.  If not given, then
-!!             EoS will be run in the mode given by the eosMode runtime parameter.
-!!  doEos    - run EoS on leaf block guardcells
-!!  maskSize - the size of the mask array.
-!!  mask - an array whose indices correspond to variables in the grid data
-!!          structures.  The guardcell data for each variable will be filled if
-!!          the corresponding element in mask is set to .TRUE.  If the runtime
-!!          parameter enableMaskedGCFill is .FALSE., then the routine performs
-!!          the fill as if all elements in mask are set to .TRUE.  Note
-!!          that the presence of this variable requires that maskSize also be
-!!          given.
-!!  makeMaskConsistent - If .TRUE., then the mask is altered so that the fill
-!!          is also done for all quantities on which unmasked quanitities
-!!          depend.  If doEos is .TRUE., it is also determined if the contents
-!!          of mask require that EoS be run.  Note that the presence of
-!!          this variable requires that mask also be given.
-!!  doLogMask - log masking information if given.
-!!  selectBlockType - IGNORED
-!!  unitReadsMeshDataOnly - it is an error to give this parameter.
 !!
 !!***
 
@@ -93,7 +51,6 @@
 
 subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                                minLayers, &
-                               eosMode, doEos, &
                                maskSize, mask, makeMaskConsistent, doLogMask, &
                                selectBlockType, &
                                unitReadsMeshDataOnly)
@@ -107,7 +64,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use Grid_interface, ONLY: Grid_getTileIterator, &
                             Grid_releaseTileIterator
   use Grid_data, ONLY: gr_justExchangedGC, &
-                       gr_eosMode, &
                        gr_enableMaskedGCFill, &
                        gr_convertToConsvdForMeshCalls, &
                        gr_convertToConsvdInMeshInterp, &
@@ -118,7 +74,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
                        gr_interpolator, gr_interpolatorFace, &
                        lo_bc_amrex, hi_bc_amrex, &
                        lo_bc_amrexFace, hi_bc_amrexFace
-  use Eos_interface, ONLY: Eos_guardCells
   use Driver_interface, ONLY: Driver_abort
   use Timers_interface, ONLY: Timers_start, Timers_stop
   use Logfile_interface, ONLY: Logfile_stampMessage, &
@@ -145,8 +100,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   integer, intent(IN)           :: gridDataStruct
   integer, intent(IN)           :: idir
   integer, intent(IN), optional :: minLayers
-  integer, intent(IN), optional :: eosMode
-  logical, intent(IN), optional :: doEos
   integer, intent(IN), optional :: maskSize
   logical, intent(IN), optional :: mask(:)
   logical, intent(IN), optional :: makeMaskConsistent
@@ -156,7 +109,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
   logical, dimension(NUNK_VARS) :: gcell_on_cc
   logical, dimension(MDIM, NFACE_VARS) :: gcell_on_fc
-  integer :: guard, gcEosMode
+  integer :: guard
   integer, dimension(MDIM) :: layers, returnLayers
   real, pointer :: solnData(:, :, :, :)
 
@@ -165,7 +118,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
   integer :: ierr, dir
 
-  logical :: needEos
   logical :: needConversionGlobal
   logical :: needConversionInner
 
@@ -208,14 +160,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
 
   skipThisGcellFill = .FALSE.   ! for now
 
-  if (present(eosMode)) then
-     gcEosMode = eosMode
-  else
-     gcEosMode = gr_eosMode
-  end if
-
-  needEos = .true.
-
   if (.NOT. gr_enableMaskedGCFill) then
 
     !! If masking is disabled then a warning is issued and all masking related
@@ -246,9 +190,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
            if (present(makeMaskConsistent)) then
               if (makeMaskConsistent) then
                 !! if the caller routine is asking for a consistency check
-                !! then mask may be modified, and also determine if eos needs
-                !! to be applied based upon the mask consistency
-                 call gr_makeMaskConsistent_gen(gridDataStruct, gcEosMode, needEos, gcell_on_cc)
+                !! then mask may be modified
+                 call gr_makeMaskConsistent_gen(gridDataStruct, gcell_on_cc)
               end if
            end if
         else  !! if mask is present without the maskSize, abort
@@ -301,15 +244,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
               else
                  tagext = ''
               end if
-              if (present(doEos)) then
-                 if (doEos) then
-                    call Logfile_stampVarMask(gcell_on_cc, needEos, '[Grid_fillGuardCells]'//tagext, 'gcSet')
-                 else
-                    call Logfile_stampVarMask(gcell_on_cc, needEos, '[Grid_fillGuardCells]'//tagext, 'gcSet[no doEos]')
-                 end if
-              else
-                 call Logfile_stampVarMask(gcell_on_cc, needEos, '[Grid_fillGuardCells]'//tagext, 'gcSet[nop doEos]')
-              end if
+              call Logfile_stampVarMask(gcell_on_cc, '[Grid_fillGuardCells]'//tagext, 'gcSet')
            end if
         end if
      end if
@@ -393,89 +328,9 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      end do
     !!!!! FINALIZE CELL-CENTERED DATA
      ! Clean data to account for possible unphysical values caused by
-     ! interpolation, revert to primitive form if needed, and
-     ! run EoS if needed
+     ! interpolation, revert to primitive form if needed
 #ifndef DRIVER_INCOMP
-     if (present(doEos)) then
-        needEos = (needEos .AND. doEos)
-     else
-        needEos = .FALSE.
-     end if
-
-     if (needEos .AND. needConversionGlobal) then
-        call Timers_start("c2p+eos gc")
-        call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
-        do while (itor%isValid())
-           call itor%currentTile(tileDesc)
-           call tileDesc%getDataPtr(solnData, CENTER)
-
-           call gr_cleanDensityData(gr_smallrho, &
-                                    tileDesc%grownLimits(LOW, :), &
-                                    tileDesc%grownLimits(HIGH, :), &
-                                    solnData, &
-                                    tileDesc%blkLimitsGC(LOW, :), &
-                                    tileDesc%blkLimitsGC(HIGH, :), &
-                                    NUNK_VARS)
-           call gr_conserveToPrimitive(tileDesc%grownLimits(LOW, :), &
-                                       tileDesc%grownLimits(HIGH, :), &
-                                       solnData, &
-                                       tileDesc%blkLimitsGC(LOW, :), &
-                                       tileDesc%blkLimitsGC(HIGH, :), &
-                                       NUNK_VARS, &
-                                       UNK_VARS_BEGIN, NUNK_VARS)
-           call gr_cleanEnergyData(gr_smalle, &
-                                   tileDesc%grownLimits(LOW, :), &
-                                   tileDesc%grownLimits(HIGH, :), &
-                                   solnData, &
-                                   tileDesc%blkLimitsGC(LOW, :), &
-                                   tileDesc%blkLimitsGC(HIGH, :), &
-                                   NUNK_VARS)
-
-           ! This call disallows the use of tiling
-           call Eos_guardCells(gcEosMode, solnData, corners=.true., &
-                               layers=returnLayers, &
-                               blockDesc=tileDesc)
-
-           call tileDesc%releaseDataPtr(solnData, CENTER)
-           call itor%next()
-        end do
-        call Grid_releaseTileIterator(itor)
-        call Timers_stop("c2p+eos gc")
-     else if (needEos .AND. (.NOT. needConversionGlobal)) then
-        call Timers_start("eos gc")
-        call Grid_getTileIterator(itor, LEAF, tiling=.FALSE.)
-        do while (itor%isValid())
-           call itor%currentTile(tileDesc)
-           call tileDesc%getDataPtr(solnData, CENTER)
-
-           if (.NOT. needConversionInner) then
-              call gr_cleanDensityData(gr_smallrho, &
-                                       tileDesc%grownLimits(LOW, :), &
-                                       tileDesc%grownLimits(HIGH, :), &
-                                       solnData, &
-                                       tileDesc%blkLimitsGC(LOW, :), &
-                                       tileDesc%blkLimitsGC(HIGH, :), &
-                                       NUNK_VARS)
-              call gr_cleanEnergyData(gr_smalle, &
-                                      tileDesc%grownLimits(LOW, :), &
-                                      tileDesc%grownLimits(HIGH, :), &
-                                      solnData, &
-                                      tileDesc%blkLimitsGC(LOW, :), &
-                                      tileDesc%blkLimitsGC(HIGH, :), &
-                                      NUNK_VARS)
-           end if
-
-           ! This call disallows the use of tiling
-           call Eos_guardCells(gcEosMode, solnData, corners=.true., &
-                               layers=returnLayers, &
-                               blockDesc=tileDesc)
-
-           call tileDesc%releaseDataPtr(solnData, CENTER)
-           call itor%next()
-        end do
-        call Grid_releaseTileIterator(itor)
-        call Timers_stop("eos gc")
-     else if (needConversionGlobal) then
+     if (needConversionGlobal) then
         call Timers_start("c2p")
         call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
         do while (itor%isValid())

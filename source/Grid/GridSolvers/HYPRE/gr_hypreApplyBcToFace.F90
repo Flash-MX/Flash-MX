@@ -82,7 +82,7 @@
 subroutine gr_hypreApplyBcToFace(blkLimits,blkLimitsGC,part,var,bcType,direction, &
                                  bcValue, del, Lower, tileDesc)
   
-  use gr_hypreData,   ONLY : gr_hypreLower, gr_hypreUpper,gr_speedlt,gr_asol, &
+  use gr_hypreData,   ONLY : gr_hypreLower, gr_hypreUpper, &
                              gr_hypreMatA, gr_hypreVecB
   use Grid_data,      ONLY : gr_meshMe, gr_geometry, gr_meshComm                            
   use Grid_interface,   ONLY : GRID_PDE_BND_PERIODIC,  &
@@ -209,7 +209,7 @@ end subroutine gr_hypreApplyBcToFace
 subroutine gr_hypreApplyBcToFace_VecB(blkLimits,blkLimitsGC,part,var,bcType,direction, &
                                  bcValue, del, Lower, tileDesc)
   
-  use gr_hypreData,   ONLY : gr_hypreLower, gr_hypreUpper,gr_speedlt,gr_asol, &
+  use gr_hypreData,   ONLY : gr_hypreLower, gr_hypreUpper, &
                              gr_hypreMatA, gr_hypreVecB
   use Grid_data,      ONLY : gr_meshMe, gr_geometry, gr_meshComm                            
   use Grid_interface,   ONLY : GRID_PDE_BND_PERIODIC,  &

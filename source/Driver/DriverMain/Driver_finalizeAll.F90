@@ -29,26 +29,20 @@
 
 subroutine Driver_finalizeAll()
 
-  use Eos_interface, ONLY : Eos_finalize
-  use Driver_interface, ONLY : Driver_finalizeSourceTerms
   use RuntimeParameters_interface, ONLY : RuntimeParameters_finalize
-  use Multispecies_interface, ONLY : Multispecies_finalize
   use Particles_interface, ONLY : Particles_finalize
   use Grid_interface, ONLY : Grid_finalize
   use Orchestration_interface, ONLY : Orchestration_finalize
-  use Hydro_interface, ONLY : Hydro_finalize
   use Driver_data, ONLY: dr_globalMe, dr_restart
   use Simulation_interface, ONLY : Simulation_finalize
   use IO_interface, ONLY : IO_finalize
   use Timers_interface, ONLY: Timers_finalize
-  use Gravity_interface, ONLY: Gravity_finalize
   use IncompNS_interface, ONLY: IncompNS_finalize
   use Multiphase_interface, ONLY: Multiphase_finalize
   use HeatAD_interface, ONLY: HeatAD_finalize
   use Stencils_interface, ONLY: Stencils_finalize
   use ImBound_interface, ONLY: ImBound_finalize
   use MoL_interface, ONLY: MoL_finalize
-  use Spacetime_interface, ONLY: Spacetime_finalize
   use Heater_interface, ONLY: Heater_finalize
   use Inlet_interface, ONLY: Inlet_finalize
   use Outlet_interface, ONLY: Outlet_finalize
@@ -63,10 +57,6 @@ implicit none
 !!$  
   call RuntimeParameters_finalize()
 
-  call Multispecies_finalize()
-
-  call Driver_finalizeSourceTerms( dr_restart )
-
   ! Must finalize before Grid
   call Orchestration_finalize()
 
@@ -74,14 +64,6 @@ implicit none
  
   call Particles_finalize()       ! Particles
   
-  call Hydro_finalize()           ! Hydrodynamics
-  
-  call Eos_finalize()             ! Equation of State
-
-  call Spacetime_finalize()       ! Spacetime
-
-  call Gravity_finalize()         ! Gravity
-
   call IncompNS_finalize()        ! IncompNS
  
   call Multiphase_finalize()      ! Multiphase

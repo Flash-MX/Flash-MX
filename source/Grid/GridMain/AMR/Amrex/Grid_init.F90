@@ -91,9 +91,6 @@
 !!   Cutoff value for velocity
 !! smallx [REAL]  
 !!   Cutoff value for abundances
-!! eosMode[STRING]
-!!   determines which variables to calculate from the ones
-!!   defined. Possible values are "dens_ie", "dens_pres" and "dens_temp"
 !! interpol_order [INTEGER]
 !!   Order of interpolation, used in Paramesh2 "monotonic" interpolation
 !!   for mesh prolongation
@@ -164,7 +161,6 @@ subroutine Grid_init()
   character(len=MAX_STRING_LENGTH) :: xl_bcString, xr_bcString
   character(len=MAX_STRING_LENGTH) :: yl_bcString, yr_bcString
   character(len=MAX_STRING_LENGTH) :: zl_bcString, zr_bcString
-  character(len=MAX_STRING_LENGTH) :: eosModeString
   character(len=MAX_STRING_LENGTH) :: interpolatorString
   integer :: refVar
   integer :: nonrep
@@ -403,12 +399,6 @@ subroutine Grid_init()
 
 !  call RuntimeParameters_get("min_particles_per_blk",gr_minParticlesPerBlk)
 !  call RuntimeParameters_get("max_particles_per_blk",gr_maxParticlesPerBlk)
-
-  call RuntimeParameters_get("eosMode", eosModeString)
-  call RuntimeParameters_mapStrToInt(eosModeString, gr_eosMode)
-
-  call RuntimeParameters_get("eosModeInit", eosModeString)
-  call RuntimeParameters_mapStrToInt(eosModeString, gr_eosModeInit)
 
 !  call RuntimeParameters_get("earlyBlockDistAdjustment", gr_earlyBlockDistAdjustment)
   gr_justExchangedGC = .FALSE.

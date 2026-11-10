@@ -96,7 +96,6 @@ subroutine gr_bcMapBcType(bcTypeToApply,bcTypeFromGrid,varIndex,gridDataStruct, 
 #include "constants.h"
   
   use Driver_interface, ONLY : Driver_abort
-  use Hydro_interface, ONLY : Hydro_mapBcType
   use gr_hgInterface, ONLY : gr_hgMapBcType
   use gr_mgInterface, ONLY : gr_mgMapBcType
   use gr_bicgInterface, ONLY : gr_bicgMapBcType  
@@ -141,8 +140,6 @@ subroutine gr_bcMapBcType(bcTypeToApply,bcTypeFromGrid,varIndex,gridDataStruct, 
 
 !  write(*,*) 'bcType before hg=',bcType
 
-  call Hydro_mapBcType(bcTypeMapped,bcType,varIndex,gridDataStruct,axis,face,idest)
-  if (bcTypeMapped .NE. 0) bcType = bcTypeMapped
 
   call gr_hgMapBcType(bcTypeMapped,bcType,varIndex,gridDataStruct,axis,face,idest)
   if (bcTypeMapped .NE. 0) bcType = bcTypeMapped

@@ -12,7 +12,8 @@ on:
 
   push:
     branches:
-      - adhruv/development
+      - main
+      - staged
     paths-ignore:
       - '**.md'
       - 'docs/**'

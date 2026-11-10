@@ -18,23 +18,19 @@
 !! SYNOPSIS
 !!
 !!  Logfile_stampVarMask(logical(IN),dimension(:) :: unkvarmask(NUNK_VARS),
-!!                       logical(IN)              :: willcalleos,
 !!                       character(len=*)(IN)  :: tag,
 !!                       character(len=*)(IN)  :: masktag)
 !!
 !! DESCRIPTION
 !!
 !!  Generates a line in the log file that displays an unk mask (as used for
-!!  masking in variables in Grid_fillGuardCells calls) and the state of the
-!!  willcalleos flag.
+!!  masking in variables in Grid_fillGuardCells calls).
 !!
 !! ARGUMENTS
 !!
 !!   unkvarmask : A logicall array. For each true element, the logged string has the
 !!                first letter of the corresponding variable. For each flase element,
 !!                the logged string has the character '-'.
-!!
-!!   willcalleos : A flag. if true, the line logged has the characters '+Eos' appended.
 !!
 !!   tag : A string that will appear at the beginning of the log line.
 !!
@@ -47,13 +43,12 @@
 !!
 !!***
 
-subroutine Logfile_stampVarMask(unkVarMask, willCallEos, tag, maskTag)
+subroutine Logfile_stampVarMask(unkVarMask, tag, maskTag)
 
   implicit none
 #include "Simulation.h"
 
   logical, intent(in) :: unkVarMask(:)
-  logical, intent(in) :: willCallEos
   character(len=*),intent(in) :: tag, maskTag
 
   return

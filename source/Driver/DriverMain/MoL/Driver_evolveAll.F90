@@ -51,7 +51,7 @@ subroutine Driver_evolveAll()
                           dr_useSTSforDiffusion, &
                           dr_tstepChangeFactor, &
                           dr_allowDtSTSDominate, dr_meshComm
-   use Driver_interface, ONLY: Driver_sourceTerms, Driver_computeDt, &
+   use Driver_interface, ONLY: Driver_computeDt, &
                                Driver_superTimeStep, &
                                Driver_logMemoryUsage, &
                                Driver_driftUnk, &
@@ -67,11 +67,7 @@ subroutine Driver_evolveAll()
                              Grid_getMaxRefinement
 
 #include "Simulation.h"
-   use Hydro_interface, ONLY: Hydro, &
-                              Hydro_gravPotIsAlreadyUpdated
-   use Gravity_interface, ONLY: Gravity_potential
    use IO_interface, ONLY: IO_output, IO_outputFinal
-   use RadTrans_interface, ONLY: RadTrans
    use Simulation_interface, ONLY: Simulation_adjustEvolution
    use Profiler_interface, ONLY: Profiler_start, Profiler_stop
 
@@ -181,49 +177,6 @@ subroutine Driver_evolveAll()
       dr_simTime = dr_simTime + dr_dt
       dr_simGeneration = 0
 
-      ! 2. Hydro/MHD
-#ifdef DEBUG_DRIVER
-      print *, 'going into Hydro/MHD'  ! DEBUG
-      print *, 'going into hydro myPE=', dr_globalMe
-#endif
-     !!ChageForAMRex -- Here is where we put in the iterator and extract the relevant metadata
-     !!ChageForAMRex -- from the iterator and then use the case statement to transfer control to the
-     !!ChageForAMRex -- right implementation.
-
-     !! Guardcell filling routine - the call has been moved into Hydro.
-!!$     call Grid_fillGuardCells(CENTER,ALLDIR)
-
-      call Hydro(dr_simTime, dr_dt, dr_dtOld)
-#ifdef DEBUG_DRIVER
-      print *, 'returned from hydro myPE=', dr_globalMe
-#endif
-
-#ifndef DRIVER_DIFFULAST
-      ! 3. Diffusive processes:
-      call RadTrans(dr_dt)
-#ifdef DEBUG_DRIVER
-      print *, 'returned from RadTrans myPE=', dr_globalMe
-#endif
-#endif
-
-      ! 4. Add source terms:
-      call Timers_start("sourceTerms")
-      call Driver_sourceTerms(dr_dt)
-      call Timers_stop("sourceTerms")
-#ifdef DEBUG_DRIVER
-      print *, 'returned from sourceTerms myPE=', dr_globalMe
-#endif
-
-      ! If DRIVER_DIFFULAST is defined, do diffusion advance AFTER source terms.
-#ifdef DRIVER_DIFFULAST
-      ! 3. Diffusive processes: *** CHANGED ORDER !!! ***
-      !    Radiation, viscosity, conduction, & magnetic registivity
-      call RadTrans(dr_dt)
-#ifdef DEBUG_DRIVER
-      print *, 'return from Diffuse'
-#endif
-#endif
-
       ! #. Advance Particles
       call Timers_start("Particles_advance")
       call Particles_advance(dr_dtOld, dr_dt)
@@ -232,18 +185,6 @@ subroutine Driver_evolveAll()
 #ifdef DEBUG_DRIVER
       print *, 'return from Particles_advance '  ! DEBUG
 #endif
-
-      !Allows evolution of gravitational potential for Spark Hydro
-      ! #. Calculate gravitational potentials
-      if (.NOT. Hydro_gravPotIsAlreadyUpdated()) then
-         call Timers_start("Gravity potential")
-         call Gravity_potential()
-         call Driver_driftUnk(__FILE__, __LINE__, driftUnk_flags)
-         call Timers_stop("Gravity potential")
-#ifdef DEBUG_DRIVER
-         print *, 'return from Gravity_potential '  ! DEBUG
-#endif
-      end if
 
      !! This will notify MoL-evolved physics units that timestep is complete
       call dr_molPostTimeStep(dr_simTime)

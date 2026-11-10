@@ -101,7 +101,6 @@ subroutine Grid_init()
     character(len=MAX_STRING_LENGTH) :: xl_bcString, xr_bcString
     character(len=MAX_STRING_LENGTH) :: yl_bcString, yr_bcString
     character(len=MAX_STRING_LENGTH) :: zl_bcString, zr_bcString
-    character(len=MAX_STRING_LENGTH) :: eosModeString
     character(len=MAX_STRING_LENGTH) :: ccInterpolatorString
 
     integer :: nBlocksX, nBlocksY, nBlocksZ
@@ -525,12 +524,6 @@ subroutine Grid_init()
     CALL RuntimeParameters_get("smallx", gr_smallx)
     CALL RuntimeParameters_get("smalle", gr_smalle)
     CALL RuntimeParameters_get("smlrho", gr_smallrho)
-
-    CALL RuntimeParameters_get("eosMode", eosModeString)
-    CALL RuntimeParameters_mapStrToInt(eosModeString, gr_eosMode)
-
-    CALL RuntimeParameters_get("eosModeInit", eosModeString)
-    CALL RuntimeParameters_mapStrToInt(eosModeString, gr_eosModeInit)
 
     call RuntimeParameters_get('useOrchestration',gr_useOrchestration)
 

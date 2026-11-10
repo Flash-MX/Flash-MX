@@ -18,23 +18,19 @@
 !! SYNOPSIS
 !!
 !!  Logfile_stampVarMask(logical(IN),dimension(:) :: unkvarmask(NUNK_VARS),
-!!                       logical(IN)              :: willcalleos,
 !!                       character(len=*)(IN)  :: tag,
 !!                       character(len=*)(IN)  :: masktag)
 !!
 !! DESCRIPTION
 !!
 !!  Generates a line in the log file that displays an unk mask (as used for
-!!  masking of variables for Grid_fillGuardCells calls) and the state of the
-!!  willcalleos flag.
+!!  masking of variables for Grid_fillGuardCells calls).
 !!
 !! ARGUMENTS
 !!
 !!   unkvarmask : A logicall array. For each true element, the logged string has the
 !!                first letter of the corresponding variable. For each false element,
 !!                the logged string has the character '-'.
-!!
-!!   willcalleos : A flag. if true, the line logged has the characters '+Eos' appended.
 !!
 !!   tag : A string that will appear at the beginning of the log line.
 !!
@@ -50,14 +46,13 @@
 #include "Simulation.h"
 #include "constants.h"
 
-subroutine Logfile_stampVarMask(unkVarMask, willCallEos, tag, maskTag)
+subroutine Logfile_stampVarMask(unkVarMask, tag, maskTag)
 
   use Logfile_interface, ONLY : Logfile_stamp
   use Logfile_data, ONLY :  log_enableGcMaskLogging
   implicit none
 
   logical, intent(in) :: unkVarMask(:)
-  logical, intent(in) :: willCallEos
   character(len=*),intent(in)    :: tag, maskTag
 
   character(len=size(unkVarMask)+5) :: string
@@ -66,18 +61,17 @@ subroutine Logfile_stampVarMask(unkVarMask, willCallEos, tag, maskTag)
 
   if (.NOT. log_enableGcMaskLogging) return
 
-  call log_formatMaskString(unkVarMask, string, willCallEos)
+  call log_formatMaskString(unkVarMask, string)
   call Logfile_stamp( maskTag//'='//string, tag)
 
 contains
 
-  subroutine log_formatMaskString(unkVarMask, string, willCallEos)
+  subroutine log_formatMaskString(unkVarMask, string)
     use Simulation_interface, ONLY : Simulation_mapIntToStr
     implicit none
 
     logical, intent(in) :: unkVarMask(:)
     character(len=size(unkVarMask)+5), intent(out) :: string
-    logical, intent(in) :: willCallEos
     integer :: i,j
 
     string = ' '
@@ -105,11 +99,6 @@ contains
     end do
     end if
 #endif
-    if (willCallEos) then
-       string(i:i+3) = '+Eos'
-    else
-       string(i:i+3) = '    '
-    end if
   end subroutine log_formatMaskString
 
 end subroutine Logfile_stampVarMask

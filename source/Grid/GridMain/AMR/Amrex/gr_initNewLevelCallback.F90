@@ -33,8 +33,6 @@
 !!   (4) runs EoS on the interiors and GCs of all blocks to make the initial
 !!       data thermodynamically consistent.
 !!
-!!  Note that all EoS runs are done in the mode specified by the eosModeInit
-!!  runtime parameter.
 !!
 !!  This routine should only be invoked by AMReX.
 !!
@@ -82,13 +80,11 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     use Simulation_interface,      ONLY : Simulation_initBlock
     use Grid_interface,            ONLY : Grid_getTileIterator, &
                                           Grid_releaseTileIterator
-    use Grid_data,                 ONLY : gr_eosModeInit, &
-                                          gr_doFluxCorrection, &
+    use Grid_data,                 ONLY : gr_doFluxCorrection, &
                                           gr_interpolator, gr_interpolatorFace, &
                                           lo_bc_amrex, hi_bc_amrex, &
                                           lo_bc_amrexFace, hi_bc_amrexFace, &
                                           gr_meshMe
-    use Eos_interface,             ONLY : Eos_multiDim
     use Logfile_interface,         ONLY : Logfile_stamp
     use Timers_interface,          ONLY : Timers_start, Timers_stop
     use Particles_interface, ONLY :  Particles_createDataStructs
@@ -326,20 +322,6 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
     call Logfile_stamp(lev+1, &
           '[gr_initNewLevelCallback] GC fill')
 
-    ! Run EoS on interiors and GCs in preparation for refinement check
-    call Timers_start("eos initNewLevel")
-    call Grid_getTileIterator(itor, ALL_BLKS, level=lev+1, tiling=.TRUE.)
-    do while (itor%isValid())
-       call itor%currentTile(tileDesc)
-
-       call tileDesc%getDataPtr(initData, CENTER)
-       call Eos_multiDim(gr_eosModeInit, tileDesc%grownLimits,tileDesc%blkLimitsGC(LOW,:), initData)
-       call tileDesc%releaseDataPtr(initData, CENTER)
-
-       call itor%next()
-    end do
-    call Grid_releaseTileIterator(itor)
-    call Timers_stop("eos initNewLevel")
 
     if(.not.isPtDataStructCreated) then
         call Particles_createDataStructs()

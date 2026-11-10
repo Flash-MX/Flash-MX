@@ -39,8 +39,7 @@
 !!  refinement/derefinement.  Upon termination, this routine only guarantees
 !!  correct data on the interiors and guardcells of leaf blocks.
 !!
-!!  Note that all EoS runs are done in the mode specified by the eosMode
-!!  runtime parameter.  Note also that a step qualifies as a refinement step 
+!!  Note that a step qualifies as a refinement step 
 !!  if the given step number is a multiple of the nrefs runtime parameter.
 !!
 !!  AMReX has FLASH identify blocks requiring refinement via the 
@@ -86,7 +85,6 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
 !                                        gr_maxRefine, &
                                         gr_refine_var, &
                                         gr_numRefineVars, &
-                                        gr_eosMode, &
                                         gr_convertToConsvdForMeshCalls, &
                                         gr_convertToConsvdInMeshInterp, &
                                         gr_smallrho, &
@@ -107,7 +105,6 @@ subroutine Grid_updateRefinement(nstep, time, gridChanged)
   use gr_leafBlockInfo,          ONLY : gr_leafBlockInfoUpdate
   use Grid_iterator,             ONLY : Grid_iterator_t
   use Grid_tile,                 ONLY : Grid_tile_t
-  use Eos_interface,             ONLY : Eos_multiDim
   use Timers_interface,          ONLY : Timers_start, Timers_stop
   use Particles_interface,       ONLY : Particles_updateRefinement
   use Logfile_interface, ONLY:  Logfile_stampMessage
@@ -270,7 +267,6 @@ include "Flashx_mpi.h"
                                   tileDesc%blkLimitsGC(HIGH, :), &
                                   NUNK_VARS)
 
-          call Eos_multiDim(gr_eosMode, tileDesc%grownLimits, tileDesc%blkLimitsGC(LOW,:),solnData)
  
           call tileDesc%releaseDataPtr(solnData, CENTER)
           call itor%next()
@@ -299,7 +295,6 @@ include "Flashx_mpi.h"
                                   NUNK_VARS)
           end if
 
-          call Eos_multiDim(gr_eosMode, tileDesc%grownLimits, tileDesc%blkLimitsGC(LOW,:),solnData)
 
           call tileDesc%releaseDataPtr(solnData, CENTER)
           call itor%next()
@@ -311,29 +306,8 @@ include "Flashx_mpi.h"
      gr_amrexDidRefinement = .FALSE.
      call amrex_regrid(0, time)
 
-     ! Rerun EoS on interiors+GC of all leaf blocks if callbacks report that
-     !   1) a new level was created,
-     !   2) an existing level was remade, or
-     !   3) a level was removed completely
-     ! as there will be new leaf blocks.  We iterate over all leaf blocks
-     ! as we do not know which leaf blocks are new.
-     !
-     ! We run EoS here rather than in the callbacks as these would not
-     ! run EoS on blocks that were parents but that are now leaves due
-     ! to the removal of a level.
+     ! Update the particle-block association if the grid changed.
      if (gr_amrexDidRefinement) then
-       call Grid_getTileIterator(itor, LEAF, tiling=.TRUE.)
-       do while (itor%isValid())
-          call itor%currentTile(tileDesc)
-
-          call tileDesc%getDataPtr(solnData, CENTER)
-          call Eos_multiDim(gr_eosMode, tileDesc%grownLimits, tileDesc%blkLimitsGC(LOW,:),solnData)
-          call tileDesc%releaseDataPtr(solnData, CENTER)
-
-          call itor%next()
-       end do
-       call Grid_releaseTileIterator(itor)
-
      !Devnote: call Particles_update refinement in case particle-block association changed
      call Particles_updateRefinement(i)
      end if

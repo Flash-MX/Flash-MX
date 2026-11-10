@@ -108,7 +108,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
   if(.not.restart) then
      call gr_createDomain()
      call gr_expandDomain(particlesInitialized)
-     gr_eosModeNow = gr_eosMode !may be different from gr_eosModeInit
      call gr_updateData()
   else if (restart) then
      call gr_recreateDomain()
@@ -116,7 +115,6 @@ subroutine Grid_initDomain(restart,particlesInitialized)
           gr_domainBC(LOW,IAXIS),gr_domainBC(HIGH,IAXIS), &
           gr_domainBC(LOW,JAXIS),gr_domainBC(HIGH,JAXIS), &
           gr_domainBC(LOW,KAXIS),gr_domainBC(HIGH,KAXIS))
-     gr_eosModeNow = gr_eosMode
 
      ! Save the local number of blocks as is has been set when the checkpoint was read,
      ! before it might get modified by mesh changes. - KW
@@ -165,15 +163,10 @@ subroutine Grid_initDomain(restart,particlesInitialized)
 !!     call gr_checkGridConsistency()
 #endif
 
-      ! We used to call Eos_multiDim here, both before and after the
-      ! guardcell filling.  Not any more, since those calls may
-      ! (depending on the Eos implementation) introduce small
-      ! data differences.
-      ! The guardcell filling, on the other hand, MAY still be necessary
-      ! here to ensure that all later Eos calls, in Hydro etc., operate
-      ! on valid data (even though those units should not make such
-      ! assumptions about the state of data in the guardcells).
-      ! Or may be necessary in no_permanent_guardcells mode.
+      ! Guardcell filling may still be necessary here so that later
+      ! steps operate on valid data (even though units should not make
+      ! assumptions about the state of data in the guardcells), or in
+      ! no_permanent_guardcells mode.
       ! However, we skip it if the old way of converting to conserved
       ! form is in effect, otherwise the global back/forth conversion of
       ! unk data introduces small differences that make restart

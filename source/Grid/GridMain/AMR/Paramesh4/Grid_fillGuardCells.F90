@@ -19,8 +19,6 @@
 !!  call Grid_fillGuardCells(integer(IN) :: gridDataStruct,
 !!                           integer(IN) :: idir,
 !!                  optional,integer(IN) :: minLayers,
-!!                  optional,integer(IN) :: eosMode,
-!!                  optional,logical(IN) :: doEos,
 !!                  optional,integer(IN) :: maskSize,
 !!                  optional,logical(IN),dimension(:) :: mask(maskSize),
 !!                  optional,logical(IN) :: makeMaskConsistent,
@@ -28,8 +26,6 @@
 !!                  optional,integer(IN) :: selectBlockType,
 !!                  optional,logical(IN) :: unitReadsMeshDataOnly)
 !!
-!!
-!!  
 !! DESCRIPTION
 !!
 !!  This routine fills the guardcells of the specified data structure of 
@@ -39,15 +35,6 @@
 !!  levels of refinement, then in addition to copying, there will be 
 !!  restriction or prolongation.
 !!
-!!  For performance reasons, users may choose to use masking in filling the
-!!  guardcells, which is a feature supported only with Paramesh4 and Amrex. They can
-!!  do so by using the optional arguments mask, maskSize, and makeMaskConsistent.
-!!  However, users should exercise extreme caution in using masking. Please see
-!!  the NOTES section for potential side effects. If masking is present, and
-!!  both makeMaskConsistent and doEos are true, the Eos calculation is applied only
-!!  if at least one of the variables selected in the mask is potentially an output
-!!  of the Eos calculation. A local routine gr_makeMaskConsistent handles this
-!!  processing.
 !!
 !!  The argument "gridDataStruct" can take one of several valid values to determine
 !!  a specific grid data structure (or combination of data structures) on which to
@@ -62,21 +49,6 @@
 !!  The user can also choose to fill guard cells either in a single direction,
 !!  or all of them. For the Flash-X solvers supplied as of 2023,
 !!  guard cell are filled in all directions.
-!!
-!!  The optional arguments related to the Eos calls are provided because if
-!!  a solver relies on a call to Eos to establish thermodynamic equilibrium
-!!  in various variables, then either the solver can call Eos explicitly itself,
-!!  or more conveniently, it can instruct the gcfill process to do it. This 
-!!  feature is especially useful when mesh quantities are used to derive,
-!!  for example, tracer particle attributes. If the user opts to enable doEos,
-!!  they will not have to determine whether or where an Eos call is needed, the
-!!  code will do it for them. Note that Eos calls via Grid_fillGuardCells will
-!!  only be applied to guard cells, and potentially only to guard cell regions
-!!  where the data in those guard cells may be the result of either
-!!  interpolation or cell averaging, because a block boundary coincides with or
-!!  touches a fine/coarse boundary.
-!!  
-!!
 !!
 !! ARGUMENTS 
 !!  
@@ -129,21 +101,6 @@
 !!              The caller must therefore not rely on some guardcells
 !!              remaining unchanged.
 !!
-!!   eosMode -  the EOS mode being used by the solver that is calling the 
-!!              routine. Some of the valid values are :
-!!              MODE_DENS_EI     density and energy input, pressure and temp output
-!!              MODE_DENS_PRES   density/pressure input, temperature/energy output
-!!              MODE_DENS_TEMP   density/temperature input, pressure/energy output
-!!              Other values may be supported by specific Eos implementations.
-!!              When this optional argument is not present in a call, the behavior
-!!              is the same as when the default Eos mode that is being used by the
-!!              Grid unit is specified; the latter will usually be determined by
-!!              a runtime parameter such as eosModeInit or eosMode.
-!!
-!!  doEos    - a logical variable indicating if the calling routine wants the
-!!             gcfill process to also make sure that Eos is applied to achieve
-!!             thermodynamically consistent values of all variables.
-!! 
 !!  maskSize - the size of the mask array. 
 !! 
 !!  mask -  It is a one-dimensional logical array 
@@ -153,15 +110,6 @@
 !!          false.
 !!          The mask is always ignored if the runtime parameter
 !!          enableMaskedGCFill is set .FALSE.
-!!  
-!! makeMaskConsistent - If true when mask is applied, it is made sure that for
-!!          all the selected variables in the mask, the ones they are dependent
-!!          on are true too. It is also determined whether there is a need to 
-!!          apply Eos if doEos argument is true.
-!!
-!! doLogMask - If present and true when mask is applied, stamp some information
-!!          about masking (and whether Eos is or would be called) to the Logfile.
-!!          Ignored in implementations that do not support variable masking.
 !!
 !!  selectBlockType - selects the blocks whose guard cells must be filled
 !!            by block type.
@@ -259,11 +207,11 @@
 #include "Simulation.h"
 
 subroutine Grid_fillGuardCells(gridDataStruct, idir, &
-     minLayers, eosMode, doEos, maskSize, mask, makeMaskConsistent,&
+     minLayers, maskSize, mask, makeMaskConsistent,&
      doLogMask,selectBlockType,unitReadsMeshDataOnly)
 
   use Grid_data, ONLY :  gr_justExchangedGC, &
-        gr_eosModeNow, gr_meshMe, gr_meshComm, &
+        gr_meshMe, gr_meshComm, &
        gr_gcellsUpToDate,gr_convertToConsvdInMeshInterp
   use gr_specificData, ONLY : gr_enableMaskedGCFill
   use Logfile_interface, ONLY : Logfile_stampMessage, Logfile_stampVarMask
@@ -276,7 +224,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   use physicaldata, ONLY : gcell_on_cc,gcell_on_fc, no_permanent_guardcells
   use paramesh_interfaces, ONLY : amr_guardcell, amr_restrict
   use paramesh_mpi_interfaces, ONLY: mpi_amr_comm_setup
-  use Eos_interface, ONLY : Eos_guardCells
   use Grid_iterator, ONLY : Grid_iterator_t
   use Grid_tile,     ONLY : Grid_tile_t
 
@@ -285,8 +232,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   integer, intent(in) :: gridDataStruct
   integer, intent(in) :: idir
   integer, optional,intent(in) :: minLayers
-  integer, optional, intent(in) :: eosMode
-  logical, optional,intent(IN) :: doEos
   integer, optional, intent(IN) :: maskSize
   logical, optional, dimension(:),intent(IN) :: mask
   logical, optional,intent(IN) :: makeMaskConsistent
@@ -294,7 +239,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   integer, optional,intent(IN) :: selectBlockType
   logical, optional, intent(IN) :: unitReadsMeshDataOnly
   
-  integer :: iopt,guard, i,offset,gcEosMode
+  integer :: iopt,guard, i,offset
   integer,dimension(MDIM) :: layers, returnLayers
   integer :: maxNodetype_gcWanted
   integer :: nlayers_transverse
@@ -306,7 +251,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   logical :: lcc, lfc, lec, lnc, lguard, lprolong, lflux, ledge, lrestrict, lfulltree
   integer :: ierr
 
-  logical :: needEos
 
   logical, save :: maskWarningDone = .FALSE.
   logical :: skipThisGcellFill, skipNextGcellFill
@@ -338,16 +282,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
   end if
 
 
-  if(present(eosMode)) then
-     gcEosMode=eosMode
-  else
-     gcEosMode=gr_eosModeNow
-  end if
-
-  !! If masking is not done then Eos should be applied since it is not known
-  !! which variables are of interest
-  needEos=.true.
-
   if (ndim<2) gcell_on_fc(KAXIS,:) = .false.
 
   if (.NOT. gr_enableMaskedGCFill) then
@@ -374,9 +308,8 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
            if(present(makeMaskConsistent))then
               if(makeMaskConsistent) then
                  !! if the caller routine is asking for a consistency check
-                 !! then mask may be modified, and also determine if eos needs
-                 !! to be applied based upon the mask consistency
-                 call gr_makeMaskConsistent(gridDataStruct,gcEosMode,needEos)
+                 !! then mask may be modified
+                 call gr_makeMaskConsistent(gridDataStruct)
               end if
            end if
         else  !! if mask is present without the maskSize, abort
@@ -413,15 +346,7 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
               else
                  tagext = ''
               end if
-              if (present(doEos)) then
-                 if (doEos) then
-                    call Logfile_stampVarMask(gcell_on_cc, needEos, '[Grid_fillGuardCells]'//tagext, 'gcSet')
-                 else
-                    call Logfile_stampVarMask(gcell_on_cc, needEos, '[Grid_fillGuardCells]'//tagext, 'gcSet[no doEos]')
-                 end if
-              else
-                 call Logfile_stampVarMask(gcell_on_cc, needEos, '[Grid_fillGuardCells]'//tagext, 'gcSet[nop doEos]')
-              end if
+              call Logfile_stampVarMask(gcell_on_cc, '[Grid_fillGuardCells]'//tagext, 'gcSet')
            end if
         end if
      end if
@@ -535,25 +460,6 @@ subroutine Grid_fillGuardCells(gridDataStruct, idir, &
      if (ndim==2 .AND. l2p5d==1) gcell_on_fc(KAXIS,:) = .false.
   end if
 
-  if(present(doEos)) then
-     if(doEos.and.needEos) then
-        call Timers_start("eos gc")
-        call Grid_getTileIterator(itor, listBlockType, tiling=.FALSE.)
-        do while (itor%isValid())
-                call itor%currentTile(tileDesc)
-
-                call tileDesc%getDataPtr(solnData, CENTER)
-                call Eos_guardCells(gcEosMode, solnData, corners=.true., &
-                                    layers=returnLayers, skipSrl=.TRUE., &
-                                    blockDesc=tileDesc)
-                call tileDesc%releaseDataPtr(solnData, CENTER)
-
-                call itor%next()
-        end do
-        call Grid_releaseTileIterator(itor)
-        call Timers_stop("eos gc")
-     end if
-  end if
 
 
   !We now test whether we can skip the next guard cell fill.

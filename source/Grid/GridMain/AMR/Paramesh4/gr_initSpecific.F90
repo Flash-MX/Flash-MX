@@ -92,9 +92,6 @@
 !!   Cutoff value for velocity
 !! smallx [REAL]  
 !!   Cutoff value for abundances
-!! eosMode[STRING]
-!!   determines which variables to calculate from the ones
-!!   defined. Possible values are "dens_ie", "dens_pres" and "dens_temp"
 !! interpol_order [INTEGER]
 !!   Order of interpolation, used in Paramesh2 "monotonic" interpolation
 !!   for mesh prolongation

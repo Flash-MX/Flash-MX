@@ -174,13 +174,8 @@ subroutine Driver_initParallel ()
 
         !Add Absoft compiler specific code.  The same loop iteration is
         !executed by multiple threads in parallel do loops that have 1 loop
-        !iteration!  This bug happens when compiling the following test
-        !problem with Absoft 64-bit Pro Fortran 11.1.4 on code.uchicago.edu.
-        !
-        !./setup unitTest/Multipole -auto -geometry=cartesian -3d -maxblocks=1 \
-        !  +newMpole +noio threadBlockList=True -nxb=64 -nyb=64 -nzb=64
-        !
-        ! Set lrefine_min = lrefine_max = 1 in the flash.par.
+        !iteration!  This bug happens with Absoft 64-bit Pro Fortran 11.1.4
+        !on code.uchicago.edu.
 # ifdef __ABSOFT__
         print *, ""
         print *, "WARNING!!!! Absoft compiler OpenMP bug!!!!"

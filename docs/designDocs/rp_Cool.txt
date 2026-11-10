@@ -1,4 +1,0 @@
-
-physics/sourceTerms/Cool
-    useCool [BOOLEAN] [FALSE]
-        Runtime control for turning off cooling

@@ -13,9 +13,6 @@ IF useAmrexFlashFluxreg
    PPDEFINE USE_AMREX_FLASHFLUXREGISTER
 ENDIF
 
-IF withHydro
-   REQUIRES physics/Hydro/HydroMain/amrexAux
-ENDIF
 
 # We need to use the Fortran 2003 module named iso_c_binding in
 # the FLASH I/O unit.  This is not an extra dependency

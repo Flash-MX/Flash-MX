@@ -219,7 +219,7 @@ subroutine gr_remakeLevelCallback(lev, time, pba, pdm) bind(c)
     end if
 
     !!!!! REBUILD MFABS AT LEVEL AND FILL FROM BUFFERS
-    ! If GC are not copied, then Hydro_computeDt fails
+    ! If GC are not copied, later steps that read guard cells fail
     call gr_clearLevelCallback(lev)
 
     ! cell-centered data

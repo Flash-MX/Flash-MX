@@ -73,7 +73,7 @@ subroutine io_readData()
    use gr_amrexInterface, ONLY: gr_fillPhysicalBC, gr_preinterpolationWork, &
                                 gr_postinterpolationWork
    use Grid_data, ONLY: gr_globalNumBlocks, gr_globalDomain, gr_interpolator, &
-                        lo_bc_amrex, hi_bc_amrex, gr_eosModeInit, &
+                        lo_bc_amrex, hi_bc_amrex, &
                         gr_maxRefine, gr_doFluxCorrection
    use Grid_iterator, ONLY: Grid_iterator_t
    use Grid_tile, ONLY: Grid_tile_t

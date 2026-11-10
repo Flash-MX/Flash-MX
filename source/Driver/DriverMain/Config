@@ -1,15 +1,3 @@
-DEFAULT Unsplit
-
-USESETUPVARS SplitDriver
-IF SplitDriver
-  DEFAULT Split
-ENDIF
-
-USESETUPVARS Incomp
-IF Incomp
-  DEFAULT Incomp
-ENDIF
-
 USESETUPVARS AsyncHDF5
 IF AsyncHDF5
   PPDEFINE FLASH_IO_ASYNC_HDF5
@@ -20,13 +8,11 @@ IF Milhoja
   REQUESTS Driver/DriverMain/GPU
 ENDIF
 
-EXCLUSIVE Split Unsplit Incomp
 
 REQUIRES RuntimeParameters
 REQUIRES TimeAdvance
 REQUESTS Grid
 REQUESTS monitors/Logfile
-REQUESTS PhysicalConstants
 REQUESTS flashUtilities/system/memoryUsage
 
 

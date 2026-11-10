@@ -58,9 +58,6 @@ subroutine Logfile_create ()
     RuntimeParameters_getAllInt, RuntimeParameters_getAllReal, RuntimeParameters_getAllStr, & 
     RuntimeParameters_getAllLog, RuntimeParameters_stampIgnored
   use Logfile_interface, ONLY : Logfile_close, Logfile_break, Logfile_stampMessage
-  use PhysicalConstants_interface, ONLY : &
-    PhysicalConstants_listUnits, PhysicalConstants_list
-  use Multispecies_interface, ONLY : Multispecies_list
 
 #include "Flashx_mpi_implicitNone.fh"
 
@@ -386,31 +383,10 @@ subroutine Logfile_create ()
         call Logfile_break("=")
         call Logfile_break(" ")
 
-        write (log_lun,*) 'Known units of measurement:'
-        call Logfile_break(" ")
-
-        !write physical constants units
-        call PhysicalConstants_listUnits(log_lun)
-
-        call Logfile_break(" ")
-        write (log_lun,*) 'Known physical constants:'
-        call Logfile_break(" ")
-
-        !write physical constants
-        call PhysicalConstants_list(log_lun)
         call Logfile_break("=")
 
 
         call Logfile_break(" ")
-#ifdef FLASH_MULTISPECIES
-        write (log_lun,*) 'Multifluid database contents:'
-        call Logfile_break(" ")
-
-        !write multispecies
-        call Multispecies_list(log_lun)
-#else
-        call Logfile_stampMessage('Multifluid database: not configured in')
-#endif
 
         call Logfile_break(" ")
         call Logfile_break("=")

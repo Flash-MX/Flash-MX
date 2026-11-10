@@ -3,8 +3,6 @@ DEFAULT constDens
 
 PPDEFINE INCOMPNS_MAIN
 
-CONFLICTS physics/Hydro/HydroMain
-
 REQUIRES physics/IncompNS/localAPI
 REQUIRES numericalTools/Stencils/StencilsAdvection
 REQUIRES numericalTools/Stencils/StencilsDiffusion

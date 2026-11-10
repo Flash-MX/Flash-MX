@@ -145,10 +145,10 @@ subroutine Particles_updateAttributes()
   !! so fill guardcell in preparation for updating the attributes.
   if (ANY(pt_gcMaskForWrite)) then
      if (pt_reduceGcellFills) then
-        call Grid_fillGuardCells(CENTER_FACES,ALLDIR, doEos=.true.,&
+        call Grid_fillGuardCells(CENTER_FACES,ALLDIR, &
              unitReadsMeshDataOnly=.true.)
      else
-        call Grid_fillGuardCells(CENTER_FACES,ALLDIR, doEos=.true.,&
+        call Grid_fillGuardCells(CENTER_FACES,ALLDIR, &
              maskSize=pt_gcMaskSizeForWrite,mask=pt_gcMaskForWrite,&
              makeMaskConsistent=.true.)
      end if

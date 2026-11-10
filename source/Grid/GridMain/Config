@@ -1,7 +1,6 @@
 #Config file for Grid/GridMain
 
 # Check for 3T simulation ...
-USESETUPVARS ThreeT
 
 # Requires use of the Grid SetupVariable
 USESETUPVARS Grid
@@ -134,44 +133,6 @@ IF Incomp
 ELSE
    PARAMETER gr_bcEnableApplyMixedGds BOOLEAN TRUE
 ENDIF
-
-D eosMode determines how to operate on thermodynamic quantities.
-D & Possible values are "dens_ie", where density and internal energy
-D & are supplied and pressure and temperature are returned;
-D & "dens_pres", where density and pressure are given and energy and
-D & temperature are computed;  and "dens_temp", where density and temperature 
-D & are given and pressure and energy are computed.
-D & Other values may also be available as, depending
-D & on whether a multiTemp Eos is used and on implementation of
-D & additional physics. For 3T simulations, the best choice is 
-D & "dens_ie_recal_gather", since this mode will ensure that 
-D & total energy is conserved when refinement changes occur.
-
-IF ThreeT
-# This if-statement just checks whether the +3t setup shortcut has been used. 
-# If it has, then the default value of eosMode is changed from dens_ie to 
-# dens_ie_recal_gather
-PARAMETER eosMode STRING "dens_ie_recal_gather"["dens_ie","dens_pres","dens_temp","dens_ie_all","dens_ie_scatter","dens_ie_gather","dens_ie_sele_gather","dens_temp_equi","dens_temp_all","dens_temp_gather","dens_ie_recal_gather","dens_ie_mat_gather_pradscale"]
-ELSE
-PARAMETER eosMode STRING "dens_ie"["dens_ie","dens_pres","dens_temp","dens_ie_all","dens_ie_scatter","dens_ie_gather","dens_ie_sele_gather","dens_temp_equi","dens_temp_all","dens_temp_gather","dens_ie_recal_gather"]
-ENDIF
-
-
-D eosModeInit determines how to operate on thermodynamic quantities
-D & for the initial conditions.  A call to Simulation_initBlock sets
-D & initial conditions on each block, and an eos call follows which
-D & ensures the initial values are thermodynamically consistent.  The
-D & value of eosModeInit determines the mode in which these eos calls
-D & operate.  Possible values are "dens_ie", where density and
-D & internal energy are supplied and pressure and temperature are
-D & returned; "dens_pres", where density and pressure are given and
-D & energy and temperature are computed; and "dens_temp", where
-D & density and temperature are given and pressure and energy are
-D & computed.  Other values may also be available as, depending
-D & on whether a multiTemp Eos is used and on implementation of
-D & additional physics.
-
-PARAMETER eosModeInit STRING "dens_ie"["dens_ie","dens_pres","dens_temp","dens_ie_all","dens_ie_scatter","dens_ie_gather","dens_temp_equi","dens_temp_all","dens_temp_gather","eos_nop"]
 
 
 D smallx            Cutoff value for abundances

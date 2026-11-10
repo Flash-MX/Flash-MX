@@ -19,8 +19,6 @@
 !!  call Grid_fillGuardCells(integer(IN) :: gridDataStruct,
 !!                           integer(IN) :: idir,
 !!                  optional,integer(IN) :: minLayers,
-!!                  optional,integer(IN) :: eosMode,
-!!                  optional,logical(IN) :: doEos,
 !!                  optional,integer(IN) :: maskSize,
 !!                  optional,logical(IN) :: mask(maskSize),
 !!                  optional,logical(IN) :: makeMaskConsistent,
@@ -80,8 +78,6 @@
 !!
 !!  minLayers - number of guardcell layers requested for all directions.
 !!
-!!   eosMode  - The mode in which eos is to be applied
-!!   doEos    - the UG implementation does not act upon this argument
 !!   maskSize - the size of the mask array. 
 !! 
 !!  mask -  It is a one-dimensional logical array 
@@ -133,7 +129,7 @@
 #endif
 
 
-subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
+subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers&
      &, maskSize, mask, makeMaskConsistent, doLogMask,selectBlockType, &
      unitReadsMeshDataOnly)
 
@@ -154,8 +150,6 @@ subroutine Grid_fillGuardCells( gridDataStruct,idir,minLayers,eosMode,doEos&
   integer, intent(in) :: gridDataStruct
   integer, intent(in) :: idir
   integer, optional,intent(in) :: minLayers
-  integer, optional,intent(in) :: eosMode
-  logical, optional,intent(in) :: doEos
   integer, optional, intent(IN) :: maskSize
   logical, optional, dimension(:),intent(IN) :: mask
   logical, optional,intent(IN) :: makeMaskConsistent

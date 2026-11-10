@@ -33,22 +33,6 @@
 !!  solnData  -        pointer to solution data
 !!  blockDesc -        describes the block to initialize
 !!
-!! PARAMETERS
-!!
-!!  eosModeInit -     after this routine sets up initial conditions,
-!!                    the grid package calls Eos to insure the
-!!                    values are thermodynamically consistent.  This
-!!                    parameter controls the mode of application of
-!!                    the Eos.  Its default is "dens_ie", and it can
-!!                    be one of "dens_ie", "dens_pres", "dens_temp".
-!!                    Setting this value to dens_temp, for instance,
-!!                    would make it possible to leave this routine
-!!                    having just initialized density and temperature,
-!!                    leaving Eos to calculate the rest.
-!!
-!! SEE ALSO
-!!
-!!  Eos_multiDim
 !!***
 
 subroutine Simulation_initBlock(solnData, tileDesc)

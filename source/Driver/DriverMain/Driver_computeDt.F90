@@ -83,12 +83,8 @@ subroutine Driver_computeDt(nbegin, nstep, &
                                Grid_getMaxRefinement, &
                                Grid_getTileIterator, &
                                Grid_releaseTileIterator
-  use Hydro_interface, ONLY : Hydro_computeDt, Hydro_consolidateCFL
-  use Burn_interface, ONLY : Burn_computeDt
-  use RadTrans_interface, ONLY : RadTrans_computeDt
   use Particles_interface, ONLY: Particles_computeDt
   use IncompNS_interface, ONLY: IncompNS_computeDt
-  use Spacetime_interface, ONLY: Spacetime_computeDt
 
   use Grid_iterator, ONLY : Grid_iterator_t
   use Grid_tile,     ONLY : Grid_tile_t 
@@ -227,7 +223,6 @@ subroutine Driver_computeDt(nbegin, nstep, &
   
   call Grid_getMaxRefinement(maxLev,mode=1) !mode=1 means lrefine_max, which does not change during sim.
 
-  call Hydro_consolidateCFL()
   do level=1,maxLev
      call Grid_getTileIterator(itor, LEAF, level=level, tiling=.FALSE.)
      do while(itor%isValid())
@@ -299,47 +294,6 @@ subroutine Driver_computeDt(nbegin, nstep, &
         uxgrid(:) = 0
         uygrid(:) = 0
         uzgrid(:) = 0
-        
-        ! hydro
-#ifdef DEBUG_DRIVER
-        print*,'going to call Hydro timestep'
-#endif
-        !extraHydroInfo = 0.
-        call Hydro_computeDt (tileDesc, &
-             xCenter, dx, uxgrid, &
-             yCenter, dy, uygrid, &
-             zCenter, dz, uzgrid, &
-             tileDesc%limits, tileDesc%blkLimitsGC,  &
-             solnData,      &
-             dtLocal(1,HYDRO), lminloc(:,HYDRO), &
-             extraInfo=extraHydroInfo )
-        
-        !! Extra CFL information
-        if (extraHydroInfo .ne. 0.) then
-           if (extraHydroInfo <= extraHydroInfoMin) then
-              extraHydroInfoMin = extraHydroInfo
-           endif
-           if (lminloc(4,HYDRO) == level) then
-              extraHydroInfoApp = extraHydroInfo
-           endif
-        else !if extraHydroInfo == 0.
-           extraHydroInfoMin = 0.0
-           extraHydroInfoApp = 0.0
-        endif
-        
-        
-#ifdef DEBUG_DRIVER
-        print*,'returned from hydro timestep'
-#endif
-
-        call Burn_computeDt( tileDesc, solnData, &
-             dtLocal(1,BURN), lminloc(:,BURN) )
-
-        call RadTrans_computeDt(tileDesc, solnData, &
-             dtLocal(1,RADTRANS), lminloc(:,RADTRANS) )
-
-         call Spacetime_computeDt(tileDesc, solnData, &
-             dtLocal(1,SPACETIME), lminloc(:,SPACETIME) )
         
 #ifndef FIXEDBLOCKSIZE
         deallocate(xCenter)

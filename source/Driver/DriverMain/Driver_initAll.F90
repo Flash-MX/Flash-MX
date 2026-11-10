@@ -57,14 +57,10 @@ subroutine Driver_initAll()
 
 
   use Driver_interface, ONLY : Driver_init, &
-    Driver_initSourceTerms, &
-    Driver_verifyInitDt, Driver_abort, Driver_setupParallelEnv, &
+    Driver_abort, Driver_setupParallelEnv, &
     Driver_initNumericalTools
   use RuntimeParameters_interface, ONLY : RuntimeParameters_init, RuntimeParameters_get
   use Logfile_interface, ONLY : Logfile_init
-  use PhysicalConstants_interface, ONLY : PhysicalConstants_init
-  use Gravity_interface, ONLY : Gravity_init, &
-    Gravity_potential
   use Timers_interface, ONLY : Timers_init, Timers_start, Timers_stop
   use TimeAdvance_interface, ONLY : TimeAdvance_init
 
@@ -72,12 +68,8 @@ subroutine Driver_initAll()
   use Orchestration_interface, ONLY : Orchestration_init
 
 #include "Simulation.h"
-  use Multispecies_interface, ONLY : Multispecies_init
   use Particles_interface, ONLY : Particles_init,Particles_initData,Particles_initForces
 
-  use Eos_interface, ONLY : Eos_init
-  use Hydro_interface, ONLY : Hydro_init
-  use Burn_interface, ONLY : Burn_init
   use Simulation_interface, ONLY : Simulation_init, Simulation_freeUserArrays
   use IO_interface, ONLY :IO_init, IO_outputInitial
   use Profiler_interface, ONLY : Profiler_init
@@ -85,7 +77,6 @@ subroutine Driver_initAll()
   use Multiphase_interface, ONLY: Multiphase_init
   use HeatAD_interface, ONLY: HeatAD_init
   use ImBound_interface, ONLY: ImBound_init
-  use Spacetime_interface, ONLY: Spacetime_init
   use Heater_interface, ONLY: Heater_init
   use Inlet_interface, ONLY: Inlet_init
   use Outlet_interface, ONLY: Outlet_init
@@ -128,13 +119,6 @@ subroutine Driver_initAll()
   !! Right now this can go anywhere (NF)
   call Driver_initNumericalTools ()
 
-  !PhysicalConstants init and Multispecies init must come before Logfile
-  !since their values are stamped to the logfile
-  call PhysicalConstants_init()
-
-  !must come before EOS
-  call Multispecies_init()
-
   call Logfile_init()
   call Grid_init()
   call Profiler_init()
@@ -165,11 +149,7 @@ subroutine Driver_initAll()
 
      call Driver_init()
 
-     !Eos must come before Grid
-     call Eos_init()
 
-     call Driver_initSourceTerms(dr_restart)
-     if(dr_globalMe==MASTER_PE)print*,'Source terms initialized'
 
      !must come before Grid since simulation specific values must go on the Grid
 
@@ -186,10 +166,7 @@ subroutine Driver_initAll()
 
      call Driver_init()
 
-     call Eos_init()
 
-     call Driver_initSourceTerms(dr_restart)
-     if(dr_globalMe==MASTER_PE)print*,'Source terms initialized'
 
      call Simulation_init()
      dr_particlesInitialized=.true.
@@ -197,11 +174,6 @@ subroutine Driver_initAll()
      if (dr_globalMe==MASTER_PE) print *, ' Finished with Grid_initDomain, restart'
 
   end if
-
-  !Hydro_init must go before Driver
-  if(dr_globalMe==MASTER_PE) print *, 'Ready to call Hydro_init'
-  call Hydro_init()           ! Hydrodynamics, MHD, RHD
-  if(dr_globalMe==MASTER_PE)print*,'Hydro initialized'
 
   ! Stencils unit initialization
   call Stencils_init()
@@ -221,22 +193,7 @@ subroutine Driver_initAll()
   ! Outlet source term
   call Outlet_init()
 
-  ! Dynamic spacetime solver unit
-  call Spacetime_init()
-  
-  call Gravity_init()         ! Gravity
-  if(dr_globalMe==MASTER_PE)print*,'Gravity initialized'
-
-  call Driver_verifyInitDt()
-  if(dr_globalMe==MASTER_PE)print*,'Initial dt verified'
-
-  !For active particle simulations we must initialize particle
-  !positions before the call to Gravity_potential.
   call Particles_initData(dr_restart,dr_particlesInitialized)
-
-  if(.not. dr_restart) then
-     call Gravity_potential()
-  end if
 
   ! If we want to free any arrays created during simulation
   ! initialization that are no longer needed, do it here.

@@ -84,10 +84,8 @@ contains
 
         use milhoja_types_mod,    ONLY : MILHOJA_INT
 
-        use Grid_data,            ONLY : gr_eosModeInit
         use Grid_tile,            ONLY : Grid_tile_t, &
                                          Grid_tile_fromMilhojaTilePtr
-        use Eos_interface,        ONLY : Eos_multiDim
         use Simulation_interface, ONLY : Simulation_initBlock
 
         type(C_PTR),          intent(IN), value :: C_dataItemPtr
@@ -121,7 +119,6 @@ contains
             end do
 
             CALL Simulation_initBlock(initData, tileDesc)
-            CALL Eos_multiDim(gr_eosModeInit, tileDesc%grownLimits,tileDesc%blkLimitsGC(LOW,:), initData)
 
             CALL tileDesc%releaseDataPtr(initData, CENTER)
         end associate

@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridSolvers/Multipole_new/Grid_solvePoisson
+!!****f* source/Grid/Grid_finalizePoisson
 !! NOTICE
 !!  Copyright 2022 UChicago Argonne, LLC and contributors
 !!

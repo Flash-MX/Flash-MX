@@ -34,8 +34,6 @@
 !!
 !!***
 subroutine dr_molExplicitRHS(t, activeRHS, dtWeight)
-   use Hydro_interface, only: Hydro_molExplicitRHS
-   use RadTrans_interface, only: RadTrans_molExplicitRHS
    use Simulation_interface, only: Simulation_molExplicitRHS
 
    implicit none
@@ -44,7 +42,5 @@ subroutine dr_molExplicitRHS(t, activeRHS, dtWeight)
    integer, intent(in) :: activeRHS
    real, intent(in) :: dtWeight
 
-   call Hydro_molExplicitRHS(t, activeRHS, dtWeight)
-   call RadTrans_molExplicitRHS(t, activeRHS, dtWeight)
    call Simulation_molExplicitRHS(t, activeRHS, dtWeight)
 end subroutine dr_molExplicitRHS

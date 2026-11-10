@@ -9,7 +9,6 @@ eintSwitch = 1e-4 # Common eos parameters
 
 [Grid]
 geometry = "cartesian"
-eosMode = "dens_ie"
 convertToConsvdInMeshInterp = true
 xmin = 0.0
 xmax = 1.0

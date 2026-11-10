@@ -56,7 +56,6 @@ VarnameTypeFilename     = 'Simulation_getVarnameType.F90'
 Pm3RPFilename           = 'amr_runtime_parameters'
 SuccessFilename         = ".success"
 SimParticleTypeFilename = 'Particles_specifyMethods.F90'
-EosMapFilename          = 'eos_variableMap.F90'
 
 # Names of template files. Usually located in bin directory
 MakefileTemplate        = 'Makefile.tpl'
@@ -71,7 +70,6 @@ RenormGroupTemplate     = 'GetRenormGroup.F90.tpl'
 VarnameTypeTemplate     = 'GetVarnameType.F90.tpl'
 Pm3RPTemplate           = 'amr_runtime_parameters.tpl'
 SimParticleTypeTemplate = 'Particles_specifyMethods.F90.tpl'
-EosMapTemplate          = 'eos_variableMap.F90.tpl'
 
 # List of prefixes for files created by setup. files with following prefixes 
 # should not be touched by noClobber
@@ -91,12 +89,11 @@ simulationPrefix = "Simulation/SimulationMain"
 
 # unit keywords for load unit specific modules and enforcing
 # tomlfile design. New units should be registered here.
-UNIT_KEYWORDS = ["Eos","Hydro","Inlet","Outlet","Simulation","Grid",
-                 "Driver","IncompNS","HeatAD","Multiphase","Hydro",
-                 "SolidMechanics","ImBound","Gravity","RadTrans",
-                 "Spacetime","TimeAdvance","IO","Particles",
-                 "PhysicalConstants","Logfile","Timers","Profiler",
-                 "Burn","Deleptonize","Orchestration","Heater","Stir"]
+UNIT_KEYWORDS = ["Inlet","Outlet","Simulation","Grid",
+                 "Driver","IncompNS","HeatAD","Multiphase",
+                 "SolidMechanics","ImBound","IO","Particles","TimeAdvance",
+                 "Logfile","Timers","Profiler",
+                 "Orchestration","Heater"]
 
 ######## Class for SetupError Exception
 class SetupError(Exception):
@@ -265,8 +262,6 @@ class GVarsClass:
     particleMethods = {}
     particlesUnitIncluded = False
     nonexistent = "NONEXISTENT"
-    eosStaticList = ['PRES','DENS','EINT','TEMP','GAMC','GAME','ENER','VELX','VELY','VELZ','SUMY','YE','ENTR','PRES1','PRES2','PRES3','EINT1','EINT2','EINT3','TEMP1','TEMP2','TEMP3','E1','E2','E3','SELE','SRAD']
-    strEos = ''.join([x.lower()+'|'+x.upper()+'|' for x in eosStaticList])[:-1]
     macroOnly = False
     tomlfile = None
     tomlDict = {}

@@ -36,9 +36,6 @@ subroutine gr_solversFinalize()
 
   implicit none 
 
-  ! Multipole
-  call gr_mpoleFinalize()
-
   call gr_hypreFinalize()
 
   call gr_amrexMultigridFinalize()

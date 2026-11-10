@@ -32,15 +32,11 @@
 !!
 !!***
 subroutine dr_molPostTimeStep(t)
-   use Hydro_interface, only: Hydro_molPostTimeStep
-   use RadTrans_interface, only: RadTrans_molPostTimeStep
    use Simulation_interface, only: Simulation_molPostTimeStep
 
    implicit none
 
    real, intent(in) :: t
 
-   call Hydro_molPostTimeStep(t)
-   call RadTrans_molPostTimeStep(t)
    call Simulation_molPostTimeStep(t)
 end subroutine dr_molPostTimeStep

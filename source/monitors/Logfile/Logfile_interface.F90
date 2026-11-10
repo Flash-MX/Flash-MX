@@ -117,9 +117,8 @@ Module Logfile_interface
   end interface
 
   interface
-     subroutine Logfile_stampVarMask(unkVarMask, willCallEos, tag, maskTag)
+     subroutine Logfile_stampVarMask(unkVarMask, tag, maskTag)
        logical, intent(in) :: unkVarMask(:)
-       logical, intent(in) :: willCallEos
        character(len=*),intent(in) :: tag, maskTag
      end subroutine Logfile_stampVarMask
   end interface

@@ -34,8 +34,6 @@
 !!
 !!***
 subroutine dr_molFastRHS(t, activeRHS, dtWeight)
-   use Hydro_interface, only: Hydro_molFastRHS
-   use RadTrans_interface, only: RadTrans_molFastRHS
    use Simulation_interface, only: Simulation_molFastRHS
 
    implicit none
@@ -44,7 +42,5 @@ subroutine dr_molFastRHS(t, activeRHS, dtWeight)
    integer, intent(in) :: activeRHS
    real, intent(in) :: dtWeight
 
-   call Hydro_molFastRHS(t, activeRHS, dtWeight)
-   call RadTrans_molFastRHS(t, activeRHS, dtWeight)
    call Simulation_molFastRHS(t, activeRHS, dtWeight)
 end subroutine dr_molFastRHS

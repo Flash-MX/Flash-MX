@@ -48,24 +48,6 @@ module gr_isoInterface
   end interface
 
   interface
-     subroutine gr_isoMpoleInit
-     end subroutine gr_isoMpoleInit
-  end interface
-
-  interface
-     subroutine gr_isoMpoleMoments (idensvar)
-       integer, intent(IN)   :: idensvar
-     end subroutine gr_isoMpoleMoments
-  end interface
-
-  interface
-     subroutine gr_isoMpolePotential (ipotvar, poisfact)
-       integer, intent(IN)   :: ipotvar
-       real, intent(IN)      :: poisfact
-     end subroutine gr_isoMpolePotential
-  end interface
-
-  interface
      subroutine gr_isoSumLocal (lsum, nsum, blockID, idensvar)
        integer,intent(IN) :: blockID, idensvar, nsum
        real,intent(OUT)    :: lsum(nsum)

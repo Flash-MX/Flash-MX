@@ -31,15 +31,11 @@
 !!
 !!***
 subroutine dr_molPreEvolve(t)
-   use Hydro_interface, only: Hydro_molPreEvolve
-   use RadTrans_interface, only: RadTrans_molPreEvolve
    use Simulation_interface, only: Simulation_molPreEvolve
 
    implicit none
 
    real, intent(in) :: t
 
-   call Hydro_molPreEvolve(t)
-   call RadTrans_molPreEvolve(t)
    call Simulation_molPreEvolve(t)
 end subroutine dr_molPreEvolve

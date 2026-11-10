@@ -34,7 +34,6 @@
 !!
 !!***
 subroutine dr_molImplicitRHS(t, activeRHS, dtWeight)
-   use RadTrans_interface, only: RadTrans_molImplicitRHS
    use Simulation_interface, only: Simulation_molImplicitRHS
 
    implicit none
@@ -43,6 +42,5 @@ subroutine dr_molImplicitRHS(t, activeRHS, dtWeight)
    integer, intent(in) :: activeRHS
    real, intent(in) :: dtWeight
 
-   call RadTrans_molImplicitRHS(t, activeRHS, dtWeight)
    call Simulation_molImplicitRHS(t, activeRHS, dtWeight)
 end subroutine dr_molImplicitRHS
