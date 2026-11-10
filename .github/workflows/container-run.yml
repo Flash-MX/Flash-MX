@@ -189,7 +189,8 @@ jobs:
   #
   # Website repo layout: main holds site content (never touched here); the
   # dev-results branch holds only dev/<label>/{latest,passing}/ and dev/index.html
-  # and is force-pushed as a single orphan commit. Its deploy workflow combines both.
+  # and is force-pushed as a single orphan commit. The website's deploy workflow
+  # (started explicitly by the last step) combines both branches.
   #
   # Requires a repository secret WEBSITE_DEPLOY_TOKEN with write access
   # (contents: write) to Flash-MX/flash-mx.github.io.
@@ -322,3 +323,16 @@ jobs:
           git commit -q -m "Update ${LABEL} test results (${GITHUB_SHA::8})" \
                      -m "Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           git push --force origin publish:dev-results
+
+      # A push to dev-results cannot start the website's deploy workflow (that
+      # workflow file lives on main, not on dev-results), so start it explicitly
+      # on main. The token needs Actions: Read and write on the website repo.
+      - name: Trigger website deploy
+        env:
+          TOKEN: ${{ secrets.WEBSITE_DEPLOY_TOKEN }}
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${WEBSITE_REPO}/actions/workflows/deploy.yml/dispatches" \
+            -d '{"ref":"main"}'
