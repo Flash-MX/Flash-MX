@@ -53,7 +53,8 @@ subroutine Driver_initAll()
 
   use Driver_data, ONLY: dr_globalComm, dr_globalMe, dr_globalNumProcs, dr_nbegin, &
        dr_initialSimTime, dr_elapsedWCTime, &
-       dr_initialWCTime, dr_restart, dr_dtInit, dr_redshift,dr_particlesInitialized
+       dr_initialWCTime, dr_restart, dr_dtInit, dr_redshift,dr_particlesInitialized, &
+       dr_dt, dr_dtOld, dr_dtAdvect, dr_dtDiffuse, dr_dtHeatExch
 
 
   use Driver_interface, ONLY : Driver_init, &
@@ -192,6 +193,20 @@ subroutine Driver_initAll()
 
   ! Outlet source term
   call Outlet_init()
+
+  ! Initial time step.  A fresh run starts from the user-specified initial
+  ! step; there is no CFL limit from other physics to check it against.
+  ! (This used to be done in Driver_verifyInitDt.)
+  if (.not. dr_restart) then
+     dr_dt = dr_dtInit
+     dr_dtOld = dr_dt
+     dr_dtAdvect   = huge(dr_dtAdvect)
+     dr_dtDiffuse  = huge(dr_dtDiffuse)
+     dr_dtHeatExch = huge(dr_dtHeatExch)
+  else
+     dr_dtAdvect  = dr_dt
+     dr_dtDiffuse = dr_dt
+  end if
 
   call Particles_initData(dr_restart,dr_particlesInitialized)
 
