@@ -141,34 +141,36 @@ autocmd BufNewFile,BufRead *.F90-mc set filetype=fortran
 
 These workflows are located in `.github/workflows` and are not part of default testing framework. Please refer to `.github/workflows/README.md` and `sites/container/README.md` for details on containerization with **Flash-MX**
 
+### Container test suite results
+
+The test suites in `sites/container/testsuites` are run by the `container-run`
+workflow on every push to `main` and `staged`. Results are published at:
+
+**https://flash-mx.github.io/dev**
+
+For each branch the page shows the latest run and, if the latest run did not pass,
+the last fully passing run. Each run links to:
+
+- **Run details**: the FlashTestView-style webview of build/test logs and comparisons.
+- **Commit / workflow run**: the commit tested and its GitHub Actions run.
+- **Full outputs**: the `TestResults-<suite>` workflow artifacts. These hold
+  everything that is too large to publish on the website, such as `flash_output`,
+  HDF5 checkpoint and plot files, and setup/build directories. Downloading them
+  requires a GitHub sign-in, and they are only available until the artifact
+  retention period ends (the expiry date is shown next to each link).
+
+All runs, including those not on the website, are listed under the repository's
+[Actions → container-run](https://github.com/Flash-MX/Flash-MX/actions/workflows/container-run.yml)
+tab. Each run's summary page has the same artifact download links.
+
 ## Tests
 Test specifications for individual simulations are included under ``*/tests/tests.yaml`` files in each simulation directory under ``source/Simulation/SimulationMain``. New tests should be added as enteries in the prescribed YAML format before including it as a part of suites on different platforms.
 
 Testing and maintainence of the code is implemented using command line tools available in Flash-X-Test repository: https://github.com/Flash-X/Flash-X-Test
 
-Please refer to the instructions there to setup your own testing infrastructure. Also take a look at ``sites/ganon_jenkins/UnitTests.suite`` for an example of publicly available test suite which can be edited to enable code coverage for new modules.
-
-Testing servers:
-
-- Argonne, GCE:
-
-  FlashTest server for running tests on `staged` branch
-
-  - GCC   - https://jenkins.cels.anl.gov/job/Flash-X-staged_GCC
-  - Intel - https://jenkins.cels.anl.gov/job/Flash-X-staged_Intel
-
-  FlashTestView
-
-  - GCC - https://web.cels.anl.gov/projects/FLASH5/testsuite/home.py?target_dir=/nfs/pub_html/gce/projects/FLASH5/output/staged_gcc
-  - Intel - https://web.cels.anl.gov/projects/FLASH5/testsuite/home.py?target_dir=/nfs/pub_html/gce/projects/FLASH5/output/staged_intel
-
-- Ganon:
-
-  FlashTest - http://ganon.device.utk.edu:8080 or http://ganon2.device.utk.edu:8080
-
-- Compatibility with AMReX
-
-  Testing with latest AMReX developments happens here - https://jenkins-gce.cels.anl.gov/job/Flash-X-amrex_GCC
+Please refer to the instructions there to setup your own testing infrastructure. The test suites run by
+Flash-MX CI are in ``sites/container/testsuites``, and their results are published at
+https://flash-mx.github.io/dev (see [Container test suite results](#container-test-suite-results)).
 
 ## Citation
 

@@ -1,6 +1,6 @@
 # Run the Flash-X test suite (flashxtest) inside the container image and compare
-# results against baked-in benchmarks. Mirrors sites/ganon_jenkins/Jenkinsfile,
-# but on GitHub Actions and using the sites/container Makefile.h (AMReX + HYPRE).
+# results against downloaded benchmarks, using the sites/container Makefile.h
+# (AMReX + HYPRE).
 #
 # A discover-suites job reads *.suite files from sites/container/testsuites/ and
 # builds the matrix dynamically — adding a new .suite file is enough to get a new
@@ -37,8 +37,45 @@ jobs:
           echo "suites=$suites" >> "$GITHUB_OUTPUT"
           echo "Found suites: $suites"
 
+  # Every run pulls ghcr.io/<owner>/flashx-container:latest. If that image is
+  # being rebuilt (container-update-image.yml, e.g. triggered by the same push
+  # that changed the Dockerfile, or a manual dispatch), wait for the build to
+  # finish so the tests use the new image rather than the stale one. If the
+  # build for this very commit failed, fail here instead of testing the old image.
+  wait-for-image:
+    name: "Wait for image build"
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      IMAGE_WORKFLOW: container-update-image.yml
+    steps:
+      - name: Wait for in-progress image builds
+        run: |
+          while :; do
+            active=$(gh run list --workflow "$IMAGE_WORKFLOW" --limit 50 \
+                       --json databaseId,status \
+                       --jq '[.[] | select(.status != "completed") | .databaseId] | join(" ")')
+            [ -z "$active" ] && break
+            echo "Image build(s) in progress: $active -- checking again in 60s"
+            sleep 60
+          done
+          echo "No image build in progress."
+
+      - name: Check image build for this commit
+        run: |
+          conclusion=$(gh run list --workflow "$IMAGE_WORKFLOW" --commit "$GITHUB_SHA" \
+                         --limit 1 --json conclusion --jq '.[0].conclusion // ""')
+          if [ -n "$conclusion" ] && [ "$conclusion" != "success" ]; then
+            echo "Image build for $GITHUB_SHA finished with '$conclusion'; not testing against a stale image."
+            exit 1
+          fi
+
   test-suite:
-    needs: discover-suites
+    needs: [discover-suites, wait-for-image]
     name: "test-suite / ${{ matrix.suite }}"
     runs-on: ubuntu-latest
     permissions:
@@ -97,9 +134,8 @@ jobs:
       # mount so artifacts survive on the host. --user flashx (uid 1001) matches
       # the runner uid, giving write access to the mounted workspace.
       # ViewArchive (-vv) is still written by run-suite --archive. Passing the
-      # suite file to run-suite (re)creates test.info first. -w WebView makes
-      # run-suite package a self-contained webview of TestResults when the run
-      # finishes, even if tests fail, so partial results are viewable.
+      # suite file to run-suite (re)creates test.info first. No per-suite webview
+      # is built here: publish-website packages one from the merged results.
       - name: Run suite
         env:
           SUITE: ${{ matrix.suite }}
@@ -119,7 +155,6 @@ jobs:
                 -a /home/mount/FlashX/LocalArchive \
                 -o /home/mount/FlashX/TestResults \
                 -vv /home/mount/FlashX/ViewArchive \
-                -w /home/mount/FlashX/WebView \
                 -mpi=mpirun -make="make -j" &&
               flashxtest run-suite --archive --skip-mainarchive "${SUITE}.suite"
             '
@@ -134,26 +169,14 @@ jobs:
             TestResults/**
           if-no-files-found: ignore
 
-      - name: Upload webview
-        id: upload-webview
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: WebView-${{ matrix.suite }}
-          path: WebView/**
-          if-no-files-found: ignore
-
-      # Render artifact download links as an emoji-icon row at the bottom of the
-      # job summary. artifact-url is empty when an upload was skipped (no files
-      # found), so each link is added only when its URL is present.
+      # Render the artifact download link at the bottom of the job summary.
+      # artifact-url is empty when the upload was skipped (no files found).
       - name: Render download links
         if: always()
         env:
-          WEBVIEW_URL: ${{ steps.upload-webview.outputs.artifact-url }}
           TESTRESULTS_URL: ${{ steps.upload-testresults.outputs.artifact-url }}
         run: |
           links=""
-          [ -n "$WEBVIEW_URL" ] && links="$links 🌐 [WebView]($WEBVIEW_URL) ·"
           [ -n "$TESTRESULTS_URL" ] && links="$links 📊 [TestResults]($TESTRESULTS_URL) ·"
           if [ -n "$links" ]; then
             {
@@ -192,6 +215,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      actions: read   # list this run's artifacts for links on the website
     # One publisher at a time so pushes to the website repo never race.
     concurrency:
       group: publish-website
@@ -262,6 +286,36 @@ jobs:
             -w /home/mount/work \
             "$IMAGE" \
             flashxtest webview --outdir pkg --results merged
+
+      # The website only carries the lightweight webview; the full outputs
+      # (flash_output, HDF5 checkpoint/plot files, build logs, ...) stay in the
+      # TestResults-* workflow artifacts. Record the run URL and a permanent link
+      # to each artifact in pkg/run.json so dev_index.py can link to them. The
+      # file travels with the run when it is kept as "passing", so the links
+      # always point at the run that produced those results. Artifacts expire
+      # after the repository's retention period; expires_at is recorded so the
+      # page can say when a link is no longer valid.
+      - name: Record run and artifact links
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" > artifacts.json
+          jq --arg server "$GITHUB_SERVER_URL" --arg repo "$GITHUB_REPOSITORY" \
+             --arg run_id "$GITHUB_RUN_ID" --arg sha "$GITHUB_SHA" --arg ref "$GITHUB_REF_NAME" '
+            ($server + "/" + $repo) as $base
+            | {
+                run_url: "\($base)/actions/runs/\($run_id)",
+                commit: $sha,
+                commit_url: "\($base)/commit/\($sha)",
+                ref: $ref,
+                artifacts: ([.artifacts[]
+                  | select(.name | startswith("TestResults-"))
+                  | select(.expired | not)
+                  | {name, size_in_bytes, expires_at,
+                     url: "\($base)/actions/runs/\($run_id)/artifacts/\(.id)"}]
+                  | sort_by(.name))
+              }' artifacts.json > pkg/run.json
+          cat pkg/run.json
 
       - name: Fetch current dev-results branch
         env:
