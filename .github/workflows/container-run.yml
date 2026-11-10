@@ -96,7 +96,10 @@ jobs:
       # The repo is mounted at /home/mount/FlashX; archive/outdir live on the
       # mount so artifacts survive on the host. --user flashx (uid 1001) matches
       # the runner uid, giving write access to the mounted workspace.
-      # ViewArchive (-vv) is still written by run-suite --archive; the webview below is built from TestResults instead.
+      # ViewArchive (-vv) is still written by run-suite --archive. Passing the
+      # suite file to run-suite (re)creates test.info first. -w WebView makes
+      # run-suite package a self-contained webview of TestResults when the run
+      # finishes, even if tests fail, so partial results are viewable.
       - name: Run suite
         env:
           SUITE: ${{ matrix.suite }}
@@ -116,29 +119,10 @@ jobs:
                 -a /home/mount/FlashX/LocalArchive \
                 -o /home/mount/FlashX/TestResults \
                 -vv /home/mount/FlashX/ViewArchive \
+                -w /home/mount/FlashX/WebView \
                 -mpi=mpirun -make="make -j" &&
-              flashxtest setup-suite --overwrite "${SUITE}.suite" &&
-              flashxtest run-suite --archive --skip-mainarchive
+              flashxtest run-suite --archive --skip-mainarchive "${SUITE}.suite"
             '
-
-      # Package a self-contained webview of this suite's TestResults. Needs no
-      # config, so it does not depend on the init directory or on ViewArchive.
-      # Runs even when flashxtest run-suite exits non-zero so partial results are
-      # viewable. --force-rewrite avoids flashxtest's interactive prompt before it
-      # replaces an existing output directory.
-      - name: Generate webview
-        if: always() && hashFiles('TestResults/**') != ''
-        run: |
-          docker run --rm \
-            --user flashx \
-            -e HOME=/home/flashx \
-            -v "${{ github.workspace }}:/home/mount/FlashX" \
-            -w /home/mount/FlashX \
-            "$IMAGE" \
-            flashxtest webview \
-              --outdir WebView \
-              --results TestResults \
-              --force-rewrite
 
       - name: Upload test results
         id: upload-testresults
@@ -267,7 +251,8 @@ jobs:
           find merged -maxdepth 3 -type d
 
       # flashxtest's only job: package a self-contained webview (with summary.json)
-      # of the merged results.
+      # of the merged results. --results needs no config; --force-rewrite is not
+      # needed since pkg does not exist yet.
       - name: Package webview
         run: |
           docker run --rm \
@@ -276,7 +261,7 @@ jobs:
             -v "${{ github.workspace }}:/home/mount/work" \
             -w /home/mount/work \
             "$IMAGE" \
-            flashxtest webview --outdir pkg --results merged --force-rewrite
+            flashxtest webview --outdir pkg --results merged
 
       - name: Fetch current dev-results branch
         env:
