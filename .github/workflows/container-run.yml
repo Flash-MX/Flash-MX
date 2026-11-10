@@ -19,14 +19,6 @@ on:
       - 'docs/**'
       - 'LICENSE'
 
-  pull_request:
-    branches:
-      - adhruv/development
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-
 jobs:
   discover-suites:
     name: "Discover test suites"
