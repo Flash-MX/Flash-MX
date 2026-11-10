@@ -2,13 +2,18 @@
 #
 # This is the one-time/cached setup (AMReX + HYPRE + flashxtest) consumed by the
 # container-run.yml and container-update-benchmarks.yml workflows. It only rebuilds when the
-# Dockerfile changes, or on manual dispatch.
+# Dockerfile changes on a push to main/staged, or on manual dispatch.
+# container-run.yml waits for any in-progress run of this workflow before
+# pulling the image.
 name: container-update-image
 
 on:
   workflow_dispatch:
 
   push:
+    branches:
+      - main
+      - staged
     paths:
       - 'sites/container/Dockerfile'
 
