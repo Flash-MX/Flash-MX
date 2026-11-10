@@ -1,0 +1,37 @@
+# Test suite file for the "container" site (GitHub Actions, AMReX + HYPRE).
+#
+# File containing details of test specifications for specific simulations that
+# reference keys defined in tests/tests.toml files in the simulation directories.
+# Modeled on tests/re3t/Tests.suite, restricted to the AMReX configurations
+# supported by the container image (sites/container/Makefile.h).
+#
+# Comments can be added using a `#` sign and individual test specs can be
+# defined with relevant options as shown below.
+#
+# List of options
+# --test, -t 		Desired test key/node from tests/tests.toml
+# --nprocs, -np		Number of MPI procs to be used
+# --env, -e		Environment variables, can be supplied multiple times
+# --debug, -debug	Flag to run test in debug
+# --cbase, -cbase 	Date string YYYY-MM-DD[_version]  (comparison baseline)
+# --rbase, -rbase 	Date string YYYY-MM-DD[_version]  (restart baseline)
+# --tolerance, -tol	Tolerance for SFOCU
+#
+# The -cbase / -rbase date (0000-00-00) refers to a baseline downloaded at
+# runtime into LocalArchive/0000-00-00/ (see README.md).
+# Update these dates when benchmarks are refreshed.
+
+# Simple unit tests (no benchmark comparison; assert divergence is machine zero, etc.)
+unitTest/Laplacian/Amrex -t "UnitTest/Laplacian/AMReX/3d" -np 1
+incompFlow/ChannelFlow   -t "UnitTest/incompFlow/ChanneFlow/2d/Periodic" -np 4
+incompFlow/RisingBubble  -t "UnitTest/RisingBubble/AMReX/2d" -np 3
+
+# Comparison tests against an approved benchmark baseline
+incompFlow/ChannelFlow  -t "Comparison/incompFlow/ChanneFlow/AMReX/2d" -np 4 -cbase 2026-06-20
+incompFlow/RisingBubble -t "Comparison/RisingBubble/AMReX/2d" -np 3 -cbase 2026-06-20
+incompFlow/RisingBubble -t "Comparison/RisingBubble/AMReXGCFill/2d" -np 3 -cbase 2026-06-20
+incompFlow/PoolBoiling  -t "Comparison/incompFlow/PoolBoiling/2d/AMReX" -np 4 -cbase 2026-06-20
+incompFlow/FlowBoiling  -t "Comparison/incompFlow/FlowBoiling/2d/AMReX" -np 4 -cbase 2026-06-20
+
+# Composite tests (assert divergence interpolation works across grid refinement)
+incompFlow/DeformingBubble -t "Composite/DeformingBubble/2d/AMReX" -np 4 -cbase 2026-06-20 -rbase 2026-06-20_2

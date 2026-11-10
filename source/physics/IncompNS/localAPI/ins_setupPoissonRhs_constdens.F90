@@ -12,8 +12,10 @@
 !!  limitations under the License.
 !!
 !!**
-subroutine ins_setupPoissonRhs_constdens(divu, dt)
+subroutine ins_setupPoissonRhs_constdens(divu, &
+                                         dt, dx, dy, dz, ix1, ix2, jy1, jy2, kz1, kz2)
    implicit none
    real, dimension(:, :, :), intent(inout) :: divu
-   real, intent(in) :: dt
+   integer, intent(in) :: ix1, ix2, jy1, jy2, kz1, kz2
+   real, intent(in) :: dt, dx, dy, dz
 end subroutine ins_setupPoissonRhs_constdens

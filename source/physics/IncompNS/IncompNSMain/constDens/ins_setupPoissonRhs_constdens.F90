@@ -15,9 +15,19 @@
 #include "Simulation.h"
 #include "constants.h"
 
-subroutine ins_setupPoissonRhs_constdens(divu, dt)
+subroutine ins_setupPoissonRhs_constdens(divu, dt, dx, dy, dz, ix1, ix2, jy1, jy2, kz1, kz2)
    implicit none
    real, dimension(:, :, :), intent(inout) :: divu
-   real, intent(in) :: dt
-   divu=divu/dt
+   integer, intent(in) :: ix1, ix2, jy1, jy2, kz1, kz2
+   real, intent(in) :: dt, dx, dy, dz
+
+   integer :: i, j, k
+
+   do k = kz1, kz2
+      do i = ix1, ix2
+         do j = jy1, jy2
+            divu(i, j, k) = (1/dt)*divu(i,j,k)
+         end do
+      end do
+   end do
 end subroutine ins_setupPoissonRhs_constdens

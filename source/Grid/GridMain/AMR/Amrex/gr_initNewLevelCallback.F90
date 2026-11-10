@@ -84,8 +84,9 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                           Grid_releaseTileIterator
     use Grid_data,                 ONLY : gr_eosModeInit, &
                                           gr_doFluxCorrection, &
-                                          gr_interpolator, &
+                                          gr_interpolator, gr_interpolatorFace, &
                                           lo_bc_amrex, hi_bc_amrex, &
+                                          lo_bc_amrexFace, hi_bc_amrexFace, &
                                           gr_meshMe
     use Eos_interface,             ONLY : Eos_multiDim
     use Logfile_interface,         ONLY : Logfile_stamp
@@ -265,6 +266,25 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                       amrex_geom(lev), gr_fillPhysicalBC, &
                                       time, &
                                       UNK_VARS_BEGIN, UNK_VARS_BEGIN, NUNK_VARS)
+
+#if NFACE_VARS > 0
+       call amrex_fillpatch(facevars(IAXIS, lev), time+1.0, facevars(IAXIS, lev), &
+                                                  time,     facevars(IAXIS, lev), &
+                                                  amrex_geom(lev), gr_fillPhysicalBC, &
+                                                  time, 1, 1, NFACE_VARS)       
+#if NDIM >= 2
+       call amrex_fillpatch(facevars(JAXIS, lev), time+1.0, facevars(JAXIS, lev), &
+                                                  time,     facevars(JAXIS, lev), &
+                                                  amrex_geom(lev), gr_fillPhysicalBC, &
+                                                  time, 1, 1, NFACE_VARS)       
+#endif
+#if NDIM == 3
+       call amrex_fillpatch(facevars(KAXIS, lev), time+1.0, facevars(KAXIS, lev), &
+                                                  time,     facevars(KAXIS, lev), &
+                                                  amrex_geom(lev), gr_fillPhysicalBC, &
+                                                  time, 1, 1, NFACE_VARS)       
+#endif
+#endif
     else
        call amrex_fillpatch(unk(lev), time+1.0, unk(lev-1), &
                                       time,     unk(lev-1), &
@@ -279,6 +299,28 @@ subroutine gr_initNewLevelCallback(lev, time, pba, pdm) bind(c)
                                       lo_bc_amrex, hi_bc_amrex, &
                                       gr_preinterpolationWork, &
                                       gr_postinterpolationWork)
+
+#if NFACE_VARS > 0
+       call amrex_fillpatch(facevars(:, lev), &
+                            time+1.0, facevars(:, lev-1), &
+                            time,     facevars(:, lev-1), &
+                            amrex_geom(lev-1), &
+                            gr_fillPhysicalBC, gr_fillPhysicalBC, &
+#if NDIM == MDIM
+       &                    gr_fillPhysicalBC, &
+#endif
+                            time+1.0, facevars(:,  lev), &
+                            time,     facevars(:,  lev), &
+                            amrex_geom(lev  ), &
+                            gr_fillPhysicalBC, gr_fillPhysicalBC, &
+#if NDIM == MDIM
+       &                    gr_fillPhysicalBC, &
+#endif
+                            time, 1, 1, NFACE_VARS, &
+                            amrex_ref_ratio(lev-1), gr_interpolatorFace, &
+                            lo_bc_amrexFace, hi_bc_amrexFace)
+
+#endif
     end if
 
     call Logfile_stamp(lev+1, &

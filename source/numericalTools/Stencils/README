@@ -1,0 +1,9 @@
+# Initializing a unit as a subtree
+git subtree split --prefix=source/numericalTools/Stencils -b subtree/numericalTools/Stencils --rejoin
+
+# Merging updates back to main branch from subtree
+git subtree merge --prefix=source/numericalTools/Stencils subtree/numericalTools/Stencils --squash
+
+# Pushing updates from main branch to subtree
+git subtree merge --prefix=source/numericalTools/Stencils subtree/numericalTools/Stencils --squash
+git subtree push --prefix=source/numericalTools/Stencils . subtree/numericalTools/Stencils

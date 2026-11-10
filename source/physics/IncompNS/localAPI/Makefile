@@ -3,7 +3,8 @@ IncompNS += ins_interface.o \
             ins_indicators.o \
             ins_divergence.o \
             ins_diffusion_vardens.o \
-            ins_corrector.o \
+            ins_corrector_constdens.o \
+            ins_corrector_vardens.o \
             ins_setupPoissonRhs_constdens.o \
             ins_setupPoissonRhs_vardens.o \
             ins_computeDtLocal.o \

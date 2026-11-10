@@ -59,7 +59,10 @@ subroutine IncompNS_corrector(solnData, facexData, faceyData, facezData, del, lo
                               faceyData(RHOF_FACE_VAR, :, :, :), &
                               facezData(RHOF_FACE_VAR, :, :, :), &
                               !------------------------------!
-                              solnData(PRES_VAR, :, :, :), &
+                              facexData(PGN0_FACE_VAR, :, :, :), &
+                              faceyData(PGN0_FACE_VAR, :, :, :), &
+                              facezData(PGN0_FACE_VAR, :, :, :), &
+                              !------------------------------!
                               ins_rhoGas, dt, del(DIR_X), del(DIR_Y), del(DIR_Z), &
                               lo(IAXIS), hi(IAXIS), &
                               lo(JAXIS), hi(JAXIS), &

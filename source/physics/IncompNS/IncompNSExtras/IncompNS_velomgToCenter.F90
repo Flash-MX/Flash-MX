@@ -96,9 +96,9 @@ allocate(facezData(VELC_FACE_VAR,1,1,1))
                           GRID_JLO_GC,GRID_JHI_GC,&
                           GRID_KLO_GC,GRID_KHI_GC)
 
-     call ins_omgToCenter(facexData(VELC_FACE_VAR,:,:,:),&
-                          faceyData(VELC_FACE_VAR,:,:,:),&
-                          facezData(VELC_FACE_VAR,:,:,:),&
+     call ins_omgToCenter(solnData(VELX_VAR,:,:,:),&
+                          solnData(VELY_VAR,:,:,:),&
+                          solnData(VELZ_VAR,:,:,:),&
                           solnData(OMGM_VAR,:,:,:),&
                           GRID_ILO_GC,GRID_IHI_GC,&
                           GRID_JLO_GC,GRID_JHI_GC,&

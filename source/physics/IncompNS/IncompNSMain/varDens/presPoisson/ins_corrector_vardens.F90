@@ -15,28 +15,15 @@
 #include "Simulation.h"
 #include "constants.h"
 
-subroutine ins_corrector_constdens(uni, vni, wni, pxn1, pyn1, pzn1, p, ix1, ix2, jy1, jy2, kz1, kz2, &
-                                   dt, dx, dy, dz)
-
-   ! This routine computes the corrected divergence-free velocities.
-
-   implicit none
-
-   INTEGER, INTENT(IN) :: ix1, ix2, jy1, jy2, kz1, kz2
-   REAL, INTENT(IN) :: dt, dx, dy, dz
-   REAL, DIMENSION(:, :, :), INTENT(IN) :: p
-   REAL, DIMENSION(:, :, :), INTENT(INOUT) :: uni, vni, wni, pxn1, pyn1, pzn1
-end subroutine ins_corrector_constdens
-
 subroutine ins_corrector_vardens(uni, vni, wni, sigx, sigy, sigz, pxn1, pyn1, pzn1, &
                                  pxn2, pyn2, pzn2, &
-                                 rhox, rhoy, rhoz, p, rhoGas, dt, dx, dy, dz, &
+                                 rhox, rhoy, rhoz, pxn0, pyn0, pzn0, rhoGas, dt, dx, dy, dz, &
                                  ix1, ix2, jy1, jy2, kz1, kz2)
 
    implicit none
    integer, intent(in) :: ix1, ix2, jy1, jy2, kz1, kz2
    real, intent(in) :: dt, dx, dy, dz, rhoGas
-   real, dimension(:, :, :), intent(in) :: p
+   real, dimension(:, :, :), intent(in) :: pxn0, pyn0, pzn0
    real, dimension(:, :, :), intent(in) :: rhox, rhoy, rhoz
    real, dimension(:, :, :), intent(in) :: sigx, sigy, sigz
    real, dimension(:, :, :), intent(inout) :: pxn1, pxn2, pyn1, pyn2, pzn1, pzn2
@@ -52,12 +39,12 @@ subroutine ins_corrector_vardens(uni, vni, wni, sigx, sigy, sigz, pxn1, pyn1, pz
          do i = ix1, ix2 + 1
             Mdens = rhox(i, j, k)
             uni(i, j, k) = uni(i, j, k) - &
-                           dt*invRhoGas*((p(i, j, k) - p(i - 1, j, k))/dx) + &
+                           dt*invRhoGas*pxn0(i, j, k) + &
                            dt*invRhoGas*sigx(i, j, k) - &
                            dt*(Mdens - invRhoGas)*(2*pxn1(i, j, k) - pxn2(i, j, k))
 
             pxn2(i, j, k) = pxn1(i, j, k)
-            pxn1(i, j, k) = (p(i, j, k) - p(i - 1, j, k))/dx - sigx(i, j, k)
+            pxn1(i, j, k) = pxn0(i, j, k) - sigx(i, j, k)
          end do
       end do
    end do
@@ -67,12 +54,12 @@ subroutine ins_corrector_vardens(uni, vni, wni, sigx, sigy, sigz, pxn1, pyn1, pz
          do i = ix1, ix2
             Mdens = rhoy(i, j, k)
             vni(i, j, k) = vni(i, j, k) - &
-                           dt*invRhoGas*((p(i, j, k) - p(i, j - 1, k))/dy) + &
+                           dt*invRhoGas*pyn0(i, j, k) + &
                            dt*invRhoGas*sigy(i, j, k) - &
                            dt*(Mdens - invRhoGas)*(2*pyn1(i, j, k) - pyn2(i, j, k))
 
             pyn2(i, j, k) = pyn1(i, j, k)
-            pyn1(i, j, k) = (p(i, j, k) - p(i, j - 1, k))/dy - sigy(i, j, k)
+            pyn1(i, j, k) = pyn0(i, j, k) - sigy(i, j, k)
          end do
       end do
    end do
@@ -83,12 +70,12 @@ subroutine ins_corrector_vardens(uni, vni, wni, sigx, sigy, sigz, pxn1, pyn1, pz
          do i = ix1, ix2
             Mdens = rhoz(i, j, k)
             wni(i, j, k) = wni(i, j, k) - &
-                           dt*invRhoGas*((p(i, j, k) - p(i, j, k - 1))/dz) + &
+                           dt*invRhoGas*pzn0(i, j, k) + &
                            dt*invRhoGas*sigz(i, j, k) - &
                            dt*(Mdens - invRhoGas)*(2*pzn1(i, j, k) - pzn2(i, j, k))
 
             pzn2(i, j, k) = pzn1(i, j, k)
-            pzn1(i, j, k) = (p(i, j, k) - p(i, j, k - 1))/dz - sigz(i, j, k)
+            pzn1(i, j, k) = pzn0(i, j, k) - sigz(i, j, k)
          end do
       end do
    end do

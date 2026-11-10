@@ -1,0 +1,258 @@
+# Regenerate Flash-X benchmarks for the "container" site and package them for
+# publishing. This is the supported way to UPDATE benchmarks (see README.md).
+#
+# It runs the suite with --archive to produce fresh baselines, stamps the suite
+# files with the new date, uploads the baseline tarball as an artifact, and opens
+# a PR carrying the bumped -cbase / -rbase dates. A maintainer then publishes the
+# tarball (e.g. to Box) and adds its direct-download URL to the
+# BENCHMARK_ARCHIVE_URLS GitHub environment variable.
+#
+# The testsuite input accepts "all" (benchmarks every *.suite file found in
+# sites/container/testsuites/), a single suite name without the .suite extension
+# (e.g. "gridsolver"), or a comma-separated list of suite names (e.g.
+# "gridsolver,incomp"). New suite files are automatically included when "all" is
+# selected without any changes to this workflow.
+name: container-update-benchmarks
+
+on:
+  workflow_dispatch:
+    inputs:
+      testsuite:
+        description: 'Suite(s) to benchmark: "all", a single name, or comma-separated names (e.g. "gridsolver,incomp")'
+        required: true
+        default: 'all'
+
+jobs:
+  update-benchmarks:
+    name: "Generate benchmarks (${{ github.event.inputs.testsuite }})"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # GHCR/Docker image names must be lowercase; the owner may contain uppercase.
+      - name: Compute image name
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "IMAGE=ghcr.io/${OWNER,,}/flashx-container:latest" >> "$GITHUB_ENV"
+
+      - name: Resolve suite pattern
+        id: suite
+        run: |
+          SUITE="${{ github.event.inputs.testsuite }}"
+          if [ "$SUITE" = "all" ]; then
+            echo "pattern=*.suite" >> "$GITHUB_OUTPUT"
+            echo "label=all" >> "$GITHUB_OUTPUT"
+            {
+              echo "add_paths<<EOF"
+              echo "sites/container/testsuites/*.suite"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            # Split on commas, trim whitespace from each name
+            IFS=',' read -ra RAW <<< "$SUITE"
+            NAMES=()
+            for s in "${RAW[@]}"; do
+              NAMES+=("$(echo "$s" | tr -d ' ')")
+            done
+            # Space-separated filenames (unquoted in shell → multiple args to flashxtest)
+            FILES=""
+            for s in "${NAMES[@]}"; do FILES="$FILES ${s}.suite"; done
+            echo "pattern=${FILES# }" >> "$GITHUB_OUTPUT"
+            # Hyphen-joined label (safe for branch/artifact names)
+            LABEL=$(IFS='-'; echo "${NAMES[*]}")
+            echo "label=$LABEL" >> "$GITHUB_OUTPUT"
+            # Newline-separated paths for create-pull-request add-paths
+            {
+              echo "add_paths<<EOF"
+              for s in "${NAMES[@]}"; do
+                echo "sites/container/testsuites/${s}.suite"
+              done
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve benchmark date
+        id: date
+        run: |
+          DATE="$(date +%F)"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          echo "Using benchmark date: $DATE"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        run: docker pull "$IMAGE"
+
+      # Download every benchmark archive listed in BENCHMARK_ARCHIVE_URLS into
+      # LocalArchive/ so that existing -cbase/-rbase entries are present before
+      # the generation runs.  Without this, suite files that still carry old tags
+      # would fail to find their reference comparison values.
+      # Each archive is extracted to a temp dir and then merged into LocalArchive/
+      # with cp -r so that multiple archives sharing the same date directory are
+      # combined rather than one overwriting the other.
+      - name: Download existing benchmark archives
+        run: |
+          mkdir -p "${{ github.workspace }}/LocalArchive/container"
+          ARCHIVE_URLS="${{ vars.BENCHMARK_ARCHIVE_URLS }}"
+          if [ -n "$ARCHIVE_URLS" ]; then
+            for url in $ARCHIVE_URLS; do
+              archive=$(mktemp)
+              echo "Downloading: $url"
+              curl -fsSL -o "$archive" "$url"
+              if ! file "$archive" | grep -qE "gzip compressed|tar archive"; then
+                echo "ERROR: $url did not return a tar archive (got: $(file "$archive"))"
+                rm -f "$archive"
+                exit 1
+              fi
+              tar xf "$archive" -C "${{ github.workspace }}/LocalArchive/container"
+              rm -f "$archive"
+            done
+          fi
+
+      # Generate fresh benchmarks into a mounted MainArchive, then restamp the
+      # suite files with the new date so future comparison runs use this baseline.
+      - name: Generate and archive benchmarks
+        env:
+          BENCH_DATE: ${{ steps.date.outputs.date }}
+          SUITE_PATTERN: ${{ steps.suite.outputs.pattern }}
+        run: |
+          docker run --rm \
+            --user flashx \
+            -e HOME=/home/flashx \
+            -e OMPI_MCA_btl_vader_single_copy_mechanism=none \
+            -e OMPI_ALLOW_RUN_AS_ROOT=1 \
+            -e OMPI_MCA_rmaps_base_oversubscribe=1 \
+            -e BENCH_DATE="$BENCH_DATE" \
+            -e SUITE_PATTERN="$SUITE_PATTERN" \
+            -v "${{ github.workspace }}:/home/mount/FlashX" \
+            -w /home/mount/FlashX/sites/container/testsuites \
+            "$IMAGE" \
+            bash -lc '
+              set -e
+              flashxtest init -z /home/mount/FlashX -s container \
+                -m /home/mount/FlashX/MainArchive \
+                -a /home/mount/FlashX/LocalArchive \
+                -o /home/mount/FlashX/TestResults \
+                -mpi=mpirun -make="make -j"
+              flashxtest setup-suite --overwrite $SUITE_PATTERN
+              # Benchmark generation is a two-pass process. The suite starts with
+              # no -cbase/-rbase tags, so each pass reports FAILURE (error.sh exit
+              # 5) for the baseline it has not generated yet -- that is expected
+              # here; the simulation output is archived to MainArchive regardless.
+              #
+              # Pass 1: comparison tests have no -cbase, so they fail. The run
+              # archives the comparison baselines.
+              flashxtest run-suite --archive \
+                || echo "run-suite: comparison baselines missing (expected on pass 1); archived, continuing"
+              # Guard against a genuinely broken run (build/setup failure leaves
+              # MainArchive empty) so we do not stamp/package an empty baseline.
+              if [ -z "$(ls -A /home/mount/FlashX/MainArchive 2>/dev/null)" ]; then
+                echo "MainArchive is empty after pass 1 -- benchmark generation failed" >&2
+                exit 1
+              fi
+              # Stamp -cbase and regenerate test.info so pass 2 compares against
+              # the comparison baselines just archived.
+              flashxtest add-cbase $SUITE_PATTERN "$BENCH_DATE"
+              flashxtest setup-suite --overwrite $SUITE_PATTERN
+              # Pass 2: comparison tests now pass; composite restart tests have no
+              # -rbase yet, so they fail. The run archives the restart baselines.
+              # FlashTest names each run dir by date, so this same-day second run
+              # lands in "<DATE>_2" (see backend flashTest.py); the restart
+              # baselines therefore live under that stamp.
+              flashxtest run-suite --archive \
+                || echo "run-suite: restart baselines missing (expected on pass 2); archived, continuing"
+              # Stamp -rbase with the pass-2 archive date (requires -cbase already
+              # present on the line).
+              flashxtest add-rbase $SUITE_PATTERN "${BENCH_DATE}_2"
+              flashxtest setup-suite --overwrite $SUITE_PATTERN
+              # Pass 3: unpack rbase tarballs from MainArchive into LocalArchive.
+              # Only composite (restart) tests require a third run; comparison-only
+              # suites already unpack cbase during pass 2.
+              if grep -qi "composite" test.info 2>/dev/null; then
+                flashxtest run-suite \
+                  || echo "run-suite: pass 3 complete; any failures are genuine test errors"
+              else
+                echo "No composite tests in suite; skipping pass 3"
+              fi
+            '
+
+      # Package the newly generated LocalArchive entries as a tarball for
+      # upload to Box.  flashxtest places unpacked baselines under
+      # LocalArchive/container/<date>/, so we preserve that layout so that
+      # extracting into LocalArchive/ on a future runner recreates the same path.
+      - name: Package baseline tarball
+        env:
+          BENCH_DATE: ${{ steps.date.outputs.date }}
+          SUITE_LABEL: ${{ steps.suite.outputs.label }}
+        run: |
+          mkdir -p archive_staging
+          for dir in "LocalArchive/container/$BENCH_DATE" "LocalArchive/container/${BENCH_DATE}_2"; do
+            [ -d "$dir" ] && cp -r "$dir" archive_staging/
+          done
+          tar czf "container-${SUITE_LABEL}-${BENCH_DATE}.tar.gz" \
+            -C archive_staging .
+
+      - name: Upload baseline tarball
+        id: upload-tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-${{ steps.suite.outputs.label }}-${{ steps.date.outputs.date }}
+          path: container-${{ steps.suite.outputs.label }}-${{ steps.date.outputs.date }}.tar.gz
+          if-no-files-found: error
+
+      # Render the tarball download link as an emoji-icon row at the bottom of
+      # the job summary.
+      - name: Render download links
+        if: always()
+        env:
+          TARBALL_URL: ${{ steps.upload-tarball.outputs.artifact-url }}
+        run: |
+          if [ -n "$TARBALL_URL" ]; then
+            {
+              echo "## 📦 Downloads"
+              echo ""
+              echo "📦 [Tarball]($TARBALL_URL)"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Open a PR carrying only the restamped suite files.  No image rebuild
+      # needed — baselines are downloaded at runtime into LocalArchive/ and
+      # tests find their baselines via -cbase/-rbase.
+      - name: Open PR with updated benchmark dates
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.WORKFLOW_PAT || secrets.GITHUB_TOKEN }}
+          base: ${{ github.ref_name }}
+          add-paths: ${{ steps.suite.outputs.add_paths }}
+          branch: update-container-benchmarks-${{ steps.suite.outputs.label }}-${{ steps.date.outputs.date }}
+          title: "Update container benchmarks (${{ steps.suite.outputs.label }}) to ${{ steps.date.outputs.date }}"
+          commit-message: "Update container benchmark baseline (${{ steps.suite.outputs.label }}) to ${{ steps.date.outputs.date }}"
+          body: |
+            Automated benchmark refresh for the `container` test site — suite: `${{ steps.suite.outputs.label }}`.
+
+            - Suite files restamped with `-cbase` = `${{ steps.date.outputs.date }}` (comparison
+              baselines from pass 1) and `-rbase` = `${{ steps.date.outputs.date }}_2` (restart
+              baselines from the same-day pass 2 archive).
+            - Baseline tarball uploaded as workflow artifact `container-${{ steps.suite.outputs.label }}-${{ steps.date.outputs.date }}`.
+              The tarball contains the date as its top-level directory, so extracting it into
+              `LocalArchive/` on the runner produces `LocalArchive/${{ steps.date.outputs.date }}/...`.
+
+            **Before merging**, a maintainer must:
+            1. Download the tarball artifact from this Actions run and upload it to Box.com.
+            2. Add the Box.com direct-download URL to the `BENCHMARK_ARCHIVE_URLS` GitHub
+               environment variable. Keep all prior URLs — each suite references its own
+               `-cbase`/`-rbase` date and needs the matching archive available in
+               `LocalArchive/` at runtime.
+            3. Merge this PR — no image rebuild required; `container-run.yml` downloads all
+               listed archives into `LocalArchive/` at runtime.

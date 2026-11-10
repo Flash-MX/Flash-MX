@@ -186,13 +186,13 @@ include "Flashx_mpi.h"
      end if
 
      if (needConversionInner) then
-        call gr_restrictAllLevels(CENTER, convertPtoC=.TRUE., &
-                                          convertCtoP=.TRUE.)
+        call gr_restrictAllLevels(CENTER_FACES, convertPtoC=.TRUE., &
+                                                convertCtoP=.TRUE.)
      else
      ! Restrict data from leaves to coarser blocks.  Leave in conservative
      ! form as this is potentially needed for interpolation with fillpatch
-        call gr_restrictAllLevels(CENTER, convertPtoC=needConversionGlobal, &
-                                       convertCtoP=.FALSE.)
+        call gr_restrictAllLevels(CENTER_FACES, convertPtoC=needConversionGlobal, &
+                                                convertCtoP=.FALSE.)
      end if
 
      !!!!! POPULATE GUARDCELLS IN ALL BLOCKS

@@ -1,4 +1,4 @@
-!!****if* source/physics/IncompNS/IncompNSMain/constdens/IncompNS_setupPoisson
+!!****if* source/physics/IncompNS/IncompNSMain/constDens/IncompNS_setupPoisson
 !! NOTICE
 !!  Copyright 2022 UChicago Argonne, LLC and contributors
 !!
@@ -33,13 +33,14 @@ subroutine IncompNS_setupPoisson(solnData, facexData, faceyData, facezData, del,
    real,dimension(MDIM),intent(IN) :: del
    integer, dimension(MDIM) :: lo, hi
 
-
    call Timers_start("IncompNS_setupPoisson")
 
    ! Poisson RHS source vector
-   call ins_setupPoissonRhs_constdens(solnData(DUST_VAR, :, :, :), dt)
-
-   ! Release pointers:
+   call ins_setupPoissonRhs_constdens(solnData(DUST_VAR, :, :, :), dt, &
+                                      del(DIR_X), del(DIR_Y), del(DIR_Z), &
+                                      lo(IAXIS), hi(IAXIS), &
+                                      lo(JAXIS), hi(JAXIS), &
+                                      lo(KAXIS), hi(KAXIS))
 
    call Timers_stop("IncompNS_setupPoisson")
 

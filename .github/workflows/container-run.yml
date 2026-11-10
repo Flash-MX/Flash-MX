@@ -1,0 +1,189 @@
+# Run the Flash-X test suite (flashxtest) inside the container image and compare
+# results against baked-in benchmarks. Mirrors sites/ganon_jenkins/Jenkinsfile,
+# but on GitHub Actions and using the sites/container Makefile.h (AMReX + HYPRE).
+#
+# A discover-suites job reads *.suite files from sites/container/testsuites/ and
+# builds the matrix dynamically — adding a new .suite file is enough to get a new
+# parallel job without editing this workflow.
+name: container-run
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - adhruv/development
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+
+  pull_request:
+    branches:
+      - adhruv/development
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+
+jobs:
+  discover-suites:
+    name: "Discover test suites"
+    runs-on: ubuntu-latest
+    outputs:
+      suites: ${{ steps.list.outputs.suites }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List suite files
+        id: list
+        run: |
+          suites=$(ls sites/container/testsuites/*.suite \
+            | xargs -n1 basename | sed 's/\.suite$//' \
+            | jq -R . | jq -sc .)
+          echo "suites=$suites" >> "$GITHUB_OUTPUT"
+          echo "Found suites: $suites"
+
+  test-suite:
+    needs: discover-suites
+    name: "test-suite / ${{ matrix.suite }}"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: ${{ fromJSON(needs.discover-suites.outputs.suites) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # GHCR/Docker image names must be lowercase; the owner may contain uppercase.
+      - name: Compute image name
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "IMAGE=ghcr.io/${OWNER,,}/flashx-container:latest" >> "$GITHUB_ENV"
+
+      - name: Pull image
+        run: docker pull "$IMAGE"
+
+      # Download every benchmark archive listed in BENCHMARK_ARCHIVE_URLS into
+      # LocalArchive/ (accessible to the container via the workspace mount at
+      # /home/mount/FlashX/LocalArchive).  Tests resolve -cbase/-rbase entries
+      # from LocalArchive via the -a flag passed to flashxtest init.
+      - name: Download benchmark archives
+        run: |
+          mkdir -p "${{ github.workspace }}/LocalArchive/container"
+          ARCHIVE_URLS=$(printf '%s' "${{ vars.BENCHMARK_ARCHIVE_URLS }}" | tr -d '\r')
+          if [ -n "$ARCHIVE_URLS" ]; then
+            for url in $ARCHIVE_URLS; do
+              tmp=$(mktemp)
+              echo "Downloading: $url"
+              curl -fsSL -o "$tmp" "$url"
+              if ! file "$tmp" | grep -qE "gzip compressed|tar archive"; then
+                echo "ERROR: $url did not return a tar archive (got: $(file "$tmp"))"
+                rm -f "$tmp"
+                exit 1
+              fi
+              tar xf "$tmp" -C "${{ github.workspace }}/LocalArchive/container"
+              rm -f "$tmp"
+            done
+          fi
+
+      # Initialize the testing environment and run the suite inside the container.
+      # The repo is mounted at /home/mount/FlashX; archive/outdir live on the
+      # mount so artifacts survive on the host. --user flashx (uid 1001) matches
+      # the runner uid, giving write access to the mounted workspace.
+      # ViewArchive (-vv) is the data source for flashxtest webview (see below).
+      - name: Run suite
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          docker run --rm \
+            --user flashx \
+            -e HOME=/home/flashx \
+            -e OMPI_MCA_btl_vader_single_copy_mechanism=none \
+            -e OMPI_ALLOW_RUN_AS_ROOT=1 \
+            -e OMPI_MCA_rmaps_base_oversubscribe=1 \
+            -e SUITE="$SUITE" \
+            -v "${{ github.workspace }}:/home/mount/FlashX" \
+            -w /home/mount/FlashX/sites/container/testsuites \
+            "$IMAGE" \
+            bash -lc '
+              flashxtest init -z /home/mount/FlashX -s container \
+                -a /home/mount/FlashX/LocalArchive \
+                -o /home/mount/FlashX/TestResults \
+                -vv /home/mount/FlashX/ViewArchive \
+                -mpi=mpirun -make="make -j" &&
+              flashxtest setup-suite --overwrite "${SUITE}.suite" &&
+              flashxtest run-suite --archive --skip-mainarchive
+            '
+
+      # Generate the static web dashboard from TestResults (the webview source).
+      # Runs even when flashxtest run-suite exits non-zero so partial results are viewable.
+      # webview must run from the same directory as init (testsuites) so it can
+      # find the config file written there.
+      - name: Generate webview
+        if: always()
+        run: |
+          docker run --rm \
+            --user flashx \
+            -e HOME=/home/flashx \
+            -v "${{ github.workspace }}:/home/mount/FlashX" \
+            -w /home/mount/FlashX/sites/container/testsuites \
+            "$IMAGE" \
+            bash -lc '
+              flashxtest webview \
+                --outdir /home/mount/FlashX/WebView \
+                --force-rewrite
+            '
+
+      - name: Upload test results
+        id: upload-testresults
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults-${{ matrix.suite }}
+          path: |
+            TestResults/**
+          if-no-files-found: ignore
+
+      - name: Upload webview
+        id: upload-webview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: WebView-${{ matrix.suite }}
+          path: |
+            WebView/**
+            ViewArchive/**
+          if-no-files-found: ignore
+
+      # Render artifact download links as an emoji-icon row at the bottom of the
+      # job summary. artifact-url is empty when an upload was skipped (no files
+      # found), so each link is added only when its URL is present.
+      - name: Render download links
+        if: always()
+        env:
+          WEBVIEW_URL: ${{ steps.upload-webview.outputs.artifact-url }}
+          TESTRESULTS_URL: ${{ steps.upload-testresults.outputs.artifact-url }}
+        run: |
+          links=""
+          [ -n "$WEBVIEW_URL" ] && links="$links 🌐 [WebView]($WEBVIEW_URL) ·"
+          [ -n "$TESTRESULTS_URL" ] && links="$links 📊 [TestResults]($TESTRESULTS_URL) ·"
+          if [ -n "$links" ]; then
+            {
+              echo "## 📦 Downloads"
+              echo ""
+              echo "${links% ·}"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

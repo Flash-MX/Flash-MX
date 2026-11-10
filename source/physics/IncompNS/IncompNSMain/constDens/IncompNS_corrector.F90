@@ -44,7 +44,9 @@ subroutine IncompNS_corrector(solnData, facexData, faceyData, facezData, del, lo
                                 facexData(PGN1_FACE_VAR, :, :, :), &
                                 faceyData(PGN1_FACE_VAR, :, :, :), &
                                 facezData(PGN1_FACE_VAR, :, :, :), &
-                                solnData(PRES_VAR, :, :, :), &
+                                facexData(PGN0_FACE_VAR, :, :, :), &
+                                faceyData(PGN0_FACE_VAR, :, :, :), &
+                                facezData(PGN0_FACE_VAR, :, :, :), &
                                 lo(IAXIS), hi(IAXIS), &
                                 lo(JAXIS), hi(JAXIS), &
                                 lo(KAXIS), hi(KAXIS), &

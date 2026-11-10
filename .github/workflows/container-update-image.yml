@@ -1,0 +1,50 @@
+# Build and publish the Flash-X "container" test image to GHCR.
+#
+# This is the one-time/cached setup (AMReX + HYPRE + flashxtest) consumed by the
+# container-run.yml and container-update-benchmarks.yml workflows. It only rebuilds when the
+# Dockerfile changes, or on manual dispatch.
+name: container-update-image
+
+on:
+  workflow_dispatch:
+
+  push:
+    paths:
+      - 'sites/container/Dockerfile'
+
+jobs:
+  build-image:
+    name: "Build and push image"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # GHCR/Docker image names must be lowercase; the owner may contain uppercase.
+      - name: Compute image name
+        id: image
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "name=ghcr.io/${OWNER,,}/flashx-container" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: sites/container
+          file: sites/container/Dockerfile
+          push: true
+          tags: ${{ steps.image.outputs.name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

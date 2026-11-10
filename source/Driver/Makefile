@@ -8,6 +8,7 @@ Driver += main.o \
 	Driver_getElapsedWCTime.o \
 	Driver_getTimeStamp.o \
 	Driver_putTimeStamp.o \
+	Driver_evolvePhysics.o \
 	Driver_evolveAll.o \
 	Driver_finalizeSourceTerms.o \
 	Driver_init.o \
