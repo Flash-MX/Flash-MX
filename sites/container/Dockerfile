@@ -27,7 +27,7 @@ RUN apt-get install -y python3 python3-pip gfortran build-essential \
 
 # Installation of python packages and the Flash-X-Test framework (flashxtest)
 RUN pip3 install numpy matplotlib h5py scipy configparser
-RUN pip3 install git+https://github.com/Flash-X/Flash-X-Test.git@2026.06
+RUN pip3 install git+https://github.com/Flash-X/Flash-X-Test.git@ce319881edbcdf4803dd119856c7ce973bce4b18
 RUN chmod 777 /usr/local/lib/python3.10/dist-packages/FlashXTest/backend/FlashTest/ERROR
 
 # Install bittree from source (needed for paramesh-based configs)
