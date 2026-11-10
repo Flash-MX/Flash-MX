@@ -19,14 +19,6 @@ on:
       - 'docs/**'
       - 'LICENSE'
 
-  pull_request:
-    branches:
-      - adhruv/development
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-
 jobs:
   discover-suites:
     name: "Discover test suites"
@@ -104,7 +96,7 @@ jobs:
       # The repo is mounted at /home/mount/FlashX; archive/outdir live on the
       # mount so artifacts survive on the host. --user flashx (uid 1001) matches
       # the runner uid, giving write access to the mounted workspace.
-      # ViewArchive (-vv) is the data source for flashxtest webview (see below).
+      # ViewArchive (-vv) is still written by run-suite --archive; the webview below is built from TestResults instead.
       - name: Run suite
         env:
           SUITE: ${{ matrix.suite }}
@@ -129,24 +121,24 @@ jobs:
               flashxtest run-suite --archive --skip-mainarchive
             '
 
-      # Generate the static web dashboard from TestResults (the webview source).
-      # Runs even when flashxtest run-suite exits non-zero so partial results are viewable.
-      # webview must run from the same directory as init (testsuites) so it can
-      # find the config file written there.
+      # Package a self-contained webview of this suite's TestResults. Needs no
+      # config, so it does not depend on the init directory or on ViewArchive.
+      # Runs even when flashxtest run-suite exits non-zero so partial results are
+      # viewable. --force-rewrite avoids flashxtest's interactive prompt before it
+      # replaces an existing output directory.
       - name: Generate webview
-        if: always()
+        if: always() && hashFiles('TestResults/**') != ''
         run: |
           docker run --rm \
             --user flashx \
             -e HOME=/home/flashx \
             -v "${{ github.workspace }}:/home/mount/FlashX" \
-            -w /home/mount/FlashX/sites/container/testsuites \
+            -w /home/mount/FlashX \
             "$IMAGE" \
-            bash -lc '
-              flashxtest webview \
-                --outdir /home/mount/FlashX/WebView \
-                --force-rewrite
-            '
+            flashxtest webview \
+              --outdir WebView \
+              --results TestResults \
+              --force-rewrite
 
       - name: Upload test results
         id: upload-testresults
@@ -164,9 +156,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: WebView-${{ matrix.suite }}
-          path: |
-            WebView/**
-            ViewArchive/**
+          path: WebView/**
           if-no-files-found: ignore
 
       # Render artifact download links as an emoji-icon row at the bottom of the
@@ -188,3 +178,147 @@ jobs:
               echo "${links% ·}"
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  # Publish test results to the "Dev" page of the public website
+  # (https://github.com/Flash-MX/flash-mx.github.io).
+  #
+  # Division of labour: flashxtest only packages a webview of a results directory.
+  # Everything else is decided here: which branches publish, that each branch label
+  # keeps its latest run plus the last fully passing run (when latest fails), where
+  # things are placed, and that the dev-results branch has no history.
+  #
+  # Website repo layout: main holds site content (never touched here); the
+  # dev-results branch holds only dev/<label>/{latest,passing}/ and dev/index.html
+  # and is force-pushed as a single orphan commit. Its deploy workflow combines both.
+  #
+  # Requires a repository secret WEBSITE_DEPLOY_TOKEN with write access
+  # (contents: write) to Flash-MX/flash-mx.github.io.
+  publish-website:
+    name: "Publish results to website"
+    needs: [discover-suites, test-suite]
+    if: >-
+      always()
+      && github.event_name != 'pull_request'
+      && (github.ref_name == 'main' || github.ref_name == 'staged')
+      && needs.discover-suites.result == 'success'
+      && needs.test-suite.result != 'skipped'
+      && needs.test-suite.result != 'cancelled'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    # One publisher at a time so pushes to the website repo never race.
+    concurrency:
+      group: publish-website
+      cancel-in-progress: false
+    env:
+      WEBSITE_REPO: Flash-MX/flash-mx.github.io
+      LABEL: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image name
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "IMAGE=ghcr.io/${OWNER,,}/flashx-container:latest" >> "$GITHUB_ENV"
+
+      - name: Pull image
+        run: docker pull "$IMAGE"
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: TestResults-*
+          path: artifacts
+
+      # Each matrix job produced <site>/<YYYY-MM-DD>/<build>/... plus invocation
+      # level "errors" and "flash_test.log". Combine them into a single
+      # invocation: builds are disjoint across suites, the two invocation-level
+      # files are concatenated so the overall status reflects every suite.
+      - name: Merge suite results
+        run: |
+          shopt -s nullglob
+          found=0
+          for inv in $(find artifacts -type d -regextype posix-extended \
+                         -regex '.*/[0-9]{4}-[0-9]{2}-[0-9]{2}' | sort); do
+            site=$(basename "$(dirname "$inv")")
+            dst="merged/$site/$(basename "$inv")"
+            mkdir -p "$dst"
+            for f in errors flash_test.log; do
+              [ -f "$inv/$f" ] && cat "$inv/$f" >> "$dst/$f"
+            done
+            cp -a --no-clobber "$inv/." "$dst/"
+            found=1
+          done
+          if [ "$found" = 0 ]; then
+            echo "No test results found; nothing to publish."
+            exit 1
+          fi
+          find merged -maxdepth 3 -type d
+
+      # flashxtest's only job: package a self-contained webview (with summary.json)
+      # of the merged results.
+      - name: Package webview
+        run: |
+          docker run --rm \
+            --user flashx \
+            -e HOME=/home/flashx \
+            -v "${{ github.workspace }}:/home/mount/work" \
+            -w /home/mount/work \
+            "$IMAGE" \
+            flashxtest webview --outdir pkg --results merged --force-rewrite
+
+      - name: Fetch current dev-results branch
+        env:
+          TOKEN: ${{ secrets.WEBSITE_DEPLOY_TOKEN }}
+        run: |
+          [ -n "$TOKEN" ] || { echo "WEBSITE_DEPLOY_TOKEN is not set"; exit 1; }
+          git init -q devsite
+          cd devsite
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${WEBSITE_REPO}.git"
+          if git ls-remote --exit-code --heads origin dev-results >/dev/null; then
+            git fetch -q --depth 1 origin dev-results
+            git checkout -q -B dev-results FETCH_HEAD
+          fi
+
+      # Keep the latest run, plus the last fully passing run while latest is not
+      # passing. A run passes when every site in its summary.json is green.
+      - name: Place results
+        run: |
+          passing() { jq -e 'length > 0 and all(.[]; .colour == "green")' "$1" >/dev/null; }
+          dest="devsite/dev/${LABEL}"
+          mkdir -p "$dest"
+          if passing pkg/summary.json; then
+            rm -rf "$dest/passing"                       # latest is the last success
+          elif [ -f "$dest/latest/summary.json" ] && passing "$dest/latest/summary.json"; then
+            rm -rf "$dest/passing"
+            mv "$dest/latest" "$dest/passing"            # previous latest passed: keep it
+          fi                                             # else keep the existing passing run
+          rm -rf "$dest/latest"
+          cp -a pkg "$dest/latest"
+          python3 .github/scripts/dev_index.py devsite/dev
+
+      - name: Commit and push (history purged)
+        working-directory: devsite
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet && git rev-parse -q --verify HEAD >/dev/null; then
+            echo "dev results already up to date."
+            exit 0
+          fi
+          git checkout -q --orphan publish
+          git add -A
+          git commit -q -m "Update ${LABEL} test results (${GITHUB_SHA::8})" \
+                     -m "Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          git push --force origin publish:dev-results
