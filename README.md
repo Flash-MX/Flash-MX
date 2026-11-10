@@ -137,9 +137,9 @@ syntax on
 autocmd BufNewFile,BufRead *.F90-mc set filetype=fortran
 ```
 
-## Containerization Workflows
+## Containerized Workflows
 
-These workflows are located in `.github/workflows` and are not part of default testing framework. Please refer to `.github/workflows/README.md` and `sites/container/README.md` for details on containerization with **Flash-MX**
+These workflows are located in `.github/workflows` and support testing. Please refer to `.github/workflows/README.md` and `sites/container/README.md` for details on containerization with **Flash-MX**
 
 ### Container test suite results
 
