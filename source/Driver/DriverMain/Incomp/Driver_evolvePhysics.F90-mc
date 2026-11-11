@@ -275,6 +275,10 @@ subroutine Driver_evolvePhysics()
    gcMask(iNormVar(JAXIS)) = .TRUE.
 #ifdef MULTIPHASE_EVAPORATION
    gcMask(iAlphVar) = .TRUE.
+   ! Temperature guard cells must be current before computing
+   ! interface heat fluxes (and hence mass transfer) in
+   ! Multiphase_thermalForcing
+   gcMask(iTempVar) = .TRUE.
 #endif
    gcMask(iSharpPfunVar) = .TRUE.
    gcMask(iSmearedPfunVar) = .TRUE.
