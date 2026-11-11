@@ -117,6 +117,13 @@ def cmd_review(args):
     (WORK / "results").mkdir(parents=True, exist_ok=True)
     run = json.loads((WORK / "run.json").read_text())
     (WORK / "context.md").write_text(briefing(WORK / "results", e["BASE"], e["SHA"], run, WORK / "failed-jobs.log"))
+    libs = WORK / "libraries.txt"
+    if libs.is_file() and libs.read_text(encoding="utf-8", errors="replace").strip():
+        with (WORK / "context.md").open("a", encoding="utf-8") as f:
+            fence = "```"
+            f.write("\n## Installed libraries (container image)\n\n" + fence + "\n"
+                    + libs.read_text(encoding="utf-8", errors="replace")
+                    + "\n" + fence + "\n")
     env, cleanup = agent_env(args.auth)
     try:
         print(f"Running Claude Code ({args.model}, up to {MAX_TURNS} turns)...", flush=True)

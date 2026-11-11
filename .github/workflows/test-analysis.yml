@@ -43,6 +43,7 @@ jobs:
     permissions:
       contents: read
       actions: read     # container-run's jobs, logs and artifacts
+      packages: read    # pull flashx-container from GHCR
     env:
       GH_TOKEN: ${{ github.token }}
       WORK: .test-analysis
@@ -100,6 +101,17 @@ jobs:
 
       - name: Pull image
         run: docker pull "$IMAGE"
+
+      - name: Capture installed library versions
+        continue-on-error: true
+        run: |
+          docker run --rm "$IMAGE" bash -lc '
+            echo "## flashxtest"; (flashxtest --version 2>&1 || true)
+            echo "## MPI"; (mpirun --version 2>&1 | head -5 || true)
+            echo "## Compilers"; (g++ --version 2>&1 | head -1 || true); (gfortran --version 2>&1 | head -1 || true)
+            echo "## AMReX/HYPRE (files)"; find / -path /proc -prune -o \( -iname "*amrex*" -o -iname "*hypre*" \) -print 2>/dev/null | grep -v "^/proc" | head -40
+          ' > "$WORK/libraries.txt" || true
+          echo "--- captured ---"; cat "$WORK/libraries.txt" 2>/dev/null || true
 
       - name: Merge suite results
         continue-on-error: true
