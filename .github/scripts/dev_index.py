@@ -146,11 +146,13 @@ def main(dev_dir):
         card.append("</div>")
         cards += card
 
+    review_tab = '<a href="review/index.html">Agent review</a>' if (dev_dir / "review" / "index.html").exists() else ""
+
     page = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dev – Flash-MX</title><style>{CSS}</style></head><body>
-<nav><a href="../index.html">Home</a><a href="../about/index.html">About</a><a href="index.html">Dev</a></nav>
+<nav><a href="../index.html">Home</a><a href="../about/index.html">About</a><a href="index.html">Dev</a>{review_tab}</nav>
 <h1>Development status</h1>
 <p>Latest automated test-suite run on each branch, and the last fully successful run when the latest did not pass.</p>
 <div class="cards">

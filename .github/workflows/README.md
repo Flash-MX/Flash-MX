@@ -11,3 +11,8 @@ inside a Docker container that has AMReX and HYPRE preinstalled, using the
   and publish results to https://flash-mx.github.io/dev, with links back to the run's
   `TestResults-*` artifacts (`flash_output`, HDF5 files, ...).
 - **`container-update-benchmarks.yml`** — regenerate and package benchmarks (manual dispatch).
+- **`test-analysis.yml`** — on request (manual dispatch): a Claude Code agent reviews the latest
+  `container-run` run on the branch (or `run_id`) against the changes since the last passing run, and
+  publishes the review to https://flash-mx.github.io/dev/review/. Auth: `ANTHROPIC_FEDERATION_*`
+  repository variables or the `ANTHROPIC_API_KEY` secret. Local run:
+  `python3 .github/scripts/test_analysis_agent.py local --results <dir>`.
