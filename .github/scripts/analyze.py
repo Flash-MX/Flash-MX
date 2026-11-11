@@ -5,7 +5,7 @@
           and the run's files in .test-analysis/; writes report.md, review.md, meta.json
   local   review a local FlashTest results directory with the local `claude` CLI
 
-Example: test_analysis_agent.py local --results DIR [--base REF] [--preview] [--dry-run]
+Example: analyze.py local --results DIR [--base REF] [--preview] [--dry-run]
 """
 import argparse
 import base64
@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from string import Template
 
-from test_analysis_context import briefing
+from analysis_context import briefing
 
 HERE = Path(__file__).resolve().parent
 WORK = Path(".test-analysis")
@@ -51,9 +51,19 @@ OIDC_REFRESH_SECONDS = 240  # GitHub OIDC tokens are short-lived; Claude Code re
 MAX_RESULT_FILE = 2 * 1024 * 1024  # local runs: skip large binaries (HDF5)
 
 
-def render_prompt(mode, sha, branch, base):
-    text = (HERE / "test_analysis_prompt.md").read_text(encoding="utf-8").split("-->", 1)[-1].lstrip()
-    return Template(text).substitute(CONTEXT=CONTEXT[mode], SHA=sha, BRANCH=branch, BASE=base, WORK=WORK)
+def render_prompt(mode, sha, branch, base, prompt=None, prompt_file=None):
+    if prompt_file:
+        raw = Path(prompt_file).read_text(encoding="utf-8")
+    elif prompt:
+        raw = prompt
+    elif os.environ.get("PROMPT_FILE"):
+        raw = Path(os.environ["PROMPT_FILE"]).read_text(encoding="utf-8")
+    elif os.environ.get("PROMPT"):
+        raw = os.environ["PROMPT"]
+    else:
+        raw = (HERE / "analysis_prompt.md").read_text(encoding="utf-8")
+    text = raw.split("-->", 1)[-1].lstrip() if "-->" in raw else raw
+    return Template(text).safe_substitute(CONTEXT=CONTEXT[mode], SHA=sha, BRANCH=branch, BASE=base, WORK=WORK)
 
 
 def summary(text):
@@ -171,7 +181,9 @@ def cmd_review(args):
     env, cleanup = agent_env(args.auth)
     try:
         print(f"Running Claude Code ({args.model}, up to {MAX_TURNS} turns)...", flush=True)
-        review = run_claude(render_prompt("review", e["SHA"], e["BRANCH"], e["BASE"]), args.model, env)
+        review = run_claude(render_prompt("review", e["SHA"], e["BRANCH"], e["BASE"],
+                                          prompt=getattr(args, "prompt", None),
+                                          prompt_file=getattr(args, "prompt_file", None)), args.model, env)
     finally:
         cleanup()
     repo = f"{e['GITHUB_SERVER_URL']}/{e['GITHUB_REPOSITORY']}"
@@ -206,7 +218,9 @@ def cmd_local(args):
         shutil.copy2(f, WORK / "results" / f.relative_to(results))
     run = {"url": "local run", "headBranch": branch, "conclusion": "n/a (local)"}
     (WORK / "context.md").write_text(briefing(WORK / "results", base, head, run))
-    prompt = render_prompt("local", head, branch, base)
+    prompt = render_prompt("local", head, branch, base,
+                           prompt=getattr(args, "prompt", None),
+                           prompt_file=getattr(args, "prompt_file", None))
     (WORK / "prompt.md").write_text(prompt)
     print(f"{len(files)} result files from {results}; comparing {base[:8]}..{head[:8]} on {branch}")
     print(f"Briefing: {WORK / 'context.md'}, prompt: {WORK / 'prompt.md'}")
@@ -222,7 +236,7 @@ def cmd_local(args):
     if args.preview:
         site = WORK / "site" / "dev"
         site.mkdir(parents=True)
-        subprocess.run([sys.executable, str(HERE / "review_page.py"), str(site),
+        subprocess.run([sys.executable, str(HERE / "pages.py"), "review", str(site),
                         str(WORK / "review.md"), str(WORK / "meta.json")], check=True)
         print(f"Preview: {site / 'review' / 'index.html'}")
 
@@ -233,6 +247,8 @@ def main():
     rv = sub.add_parser("review", help="run the agent in CI")
     rv.add_argument("--auth", choices=("auto", "federation", "api_key"), default="auto")
     rv.add_argument("--model", default=DEFAULT_MODEL)
+    rv.add_argument("--prompt", help="override the agent prompt text")
+    rv.add_argument("--prompt-file", help="read the agent prompt from a file")
     lo = sub.add_parser("local", help="review a local results directory")
     lo.add_argument("--results", required=True, help="FlashTest results directory")
     lo.add_argument("--base", help="commit to compare against (default: merge-base with origin/main)")
@@ -240,6 +256,8 @@ def main():
     lo.add_argument("--model", default=DEFAULT_MODEL)
     lo.add_argument("--preview", action="store_true", help="also render the website page")
     lo.add_argument("--dry-run", action="store_true", help="write briefing and prompt only")
+    lo.add_argument("--prompt", help="override the agent prompt text")
+    lo.add_argument("--prompt-file", help="read the agent prompt from a file")
     args = ap.parse_args()
     (cmd_review if args.cmd == "review" else cmd_local)(args)
 

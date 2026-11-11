@@ -15,4 +15,4 @@ inside a Docker container that has AMReX and HYPRE preinstalled, using the
   `container-run` run on the branch (or `run_id`) against the changes since the last passing run, and
   publishes the review to https://flash-mx.github.io/dev/review/. Auth: `ANTHROPIC_FEDERATION_*`
   repository variables or the `ANTHROPIC_API_KEY` secret. Local run:
-  `python3 .github/scripts/test_analysis_agent.py local --results <dir>`.
+  `python3 .github/scripts/analyze.py local --results <dir>`.

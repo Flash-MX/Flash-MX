@@ -290,7 +290,7 @@ jobs:
       # The website only carries the lightweight webview; the full outputs
       # (flash_output, HDF5 checkpoint/plot files, build logs, ...) stay in the
       # TestResults-* workflow artifacts. Record the run URL and a permanent link
-      # to each artifact in pkg/run.json so dev_index.py can link to them. The
+      # to each artifact in pkg/run.json so pages.py can link to them. The
       # file travels with the run when it is kept as "passing", so the links
       # always point at the run that produced those results. Artifacts expire
       # after the repository's retention period; expires_at is recorded so the
@@ -345,7 +345,7 @@ jobs:
           fi                                             # else keep the existing passing run
           rm -rf "$dest/latest"
           cp -a pkg "$dest/latest"
-          python3 .github/scripts/dev_index.py devsite/dev
+          python3 .github/scripts/pages.py dev devsite/dev
 
       - name: Commit and push (history purged)
         working-directory: devsite

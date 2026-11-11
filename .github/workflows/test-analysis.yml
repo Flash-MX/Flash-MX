@@ -4,7 +4,7 @@
 #
 # Auth ("auth" input): workload identity federation via the ANTHROPIC_FEDERATION_*
 # repository variables, or the ANTHROPIC_API_KEY secret. Publishing needs
-# WEBSITE_DEPLOY_TOKEN. Agent settings: .github/scripts/test_analysis_agent.py.
+# WEBSITE_DEPLOY_TOKEN. Agent settings: .github/scripts/analyze.py.
 name: test-analysis
 
 on:
@@ -40,6 +40,10 @@ on:
         type: boolean
         required: false
         default: true
+      prompt:
+        description: 'Optional override prompt for the agent (blank: default prompt)'
+        required: false
+        default: ''
 
 jobs:
   analyze:
@@ -110,7 +114,8 @@ jobs:
           ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
           ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
           ANTHROPIC_WORKSPACE_ID: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
-        run: python3 "$RUNNER_TEMP/scripts/test_analysis_agent.py" review --auth "$AUTH" --model "$MODEL"
+          PROMPT: ${{ inputs.prompt }}
+        run: python3 "$RUNNER_TEMP/scripts/analyze.py" review --auth "$AUTH" --model "$MODEL"
 
       - name: Upload analysis
         if: always()
@@ -157,8 +162,8 @@ jobs:
             git fetch -q --depth 1 origin dev-results && git checkout -q FETCH_HEAD
           fi
           mkdir -p dev
-          python3 ../.github/scripts/review_page.py dev ../analysis/review.md ../analysis/meta.json
-          python3 ../.github/scripts/dev_index.py dev
+          python3 ../.github/scripts/pages.py review dev ../analysis/review.md ../analysis/meta.json
+          python3 ../.github/scripts/pages.py dev dev
           git checkout -q --orphan publish && git add -A
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit -q -m "Update agent review ($(jq -r '.commit[:8]' ../analysis/meta.json))" \

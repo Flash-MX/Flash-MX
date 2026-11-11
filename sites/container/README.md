@@ -50,7 +50,7 @@ published run with the following fields:
 }
 ```
 
-`.github/scripts/dev_index.py` uses it to add a commit link, a workflow-run link,
+`.github/scripts/pages.py (dev subcommand)` uses it to add a commit link, a workflow-run link,
 and a "Full outputs" list of artifact download links to each run on the Dev page.
 `run.json` moves with a run when it is kept as the last passing run, so its links
 always point to the run that produced those results. Notes:
