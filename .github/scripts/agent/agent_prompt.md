@@ -125,6 +125,17 @@ Review the pipeline, stage by stage, but weighted to the tests:
   runner/MPI problems; keep separate from code-caused failures.
 
 What to produce:
+- Result change attribution (required in every report): state plainly whether
+  the tested commit changes the test result relative to the base commit, and
+  why. If it does change it, tie the changed outcome to the specific change(s)
+  and code path with file/line references and confidence; if it does not, explain
+  why the result is unchanged even though code may have changed (changed code not
+  on the exercised path, behind a runtime parameter the parfiles do not enable,
+  Paramesh-only code while the suite runs AMReX, cosmetic/refactor with no
+  behavioural effect, numerical tolerance absorbing small drift, image not rebuilt
+  so Dockerfile changes were not tested, base == tested commit so there is no
+  code change at all, environment/flakiness rather than code). Do not assume a
+  code change implies a result change, or vice versa.
 - If everything is green: explain why the changes did not break it. Map the
   changed files/units to the tests whose setups compile and exercise them
   (setup options, units pulled in by Config files, parfiles), say which
@@ -148,13 +159,16 @@ Return structured output: `status` (green, yellow, red, or incomplete),
 `headline` (one sentence), and `report` (GitHub-flavored Markdown). The
 report must use these sections in order:
 1. "Summary" — verdict in 2-4 sentences, including what a human learns
-   from this run.
+   from this run, and an explicit "Result change: changed/unchanged — <why>"
+   sentence.
 2. "Perspectives" — short subsections "Software engineering",
    "Domain science", "Numerics", "HPC" with the most important finding
    from each (omit a subsection if truly nothing to say).
 3. "Pipeline" — stage-by-stage outcomes.
 4. "Changes under test" — changed files grouped by area, with test coverage.
-5. "Results vs. changes" — per-test outcomes linked to changes.
+5. "Results vs. changes" — per-test outcomes linked to changes, plus the
+   result-change attribution (changed/unchanged vs. base and the causal
+   reasoning).
 6. "Performance" — timings/comparisons and regressions or improvements.
 7. "Patterns & relationships" — clustered failures, cross-test observations.
 8. "Directions to investigate" — concrete next steps (for a green run,

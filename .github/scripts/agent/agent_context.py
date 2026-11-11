@@ -124,9 +124,16 @@ def briefing(results, base, head, run, failed_log=None):
     doc.append(f"\n## Code changes\n\nRange: `{base}..{head}`\n")
     if base == head:
         doc.append("**No code changes in range** (tested commit = base). Differences in outcome point to "
-                   "the environment (image, benchmarks, runner) or flakiness.")
+                   "the environment (image, benchmarks, runner) or flakiness. "
+                   "Result change attribution: the commit cannot change the result because there is "
+                   "no code change; any difference is environmental or flaky.")
     else:
+        doc.append("Base commit is the reference (last passing container-run on the branch, or the "
+                   "merge-base with main, or the parent): its test result is the baseline against "
+                   "which 'result changed' is judged.")
         log = git("log", "--no-merges", "--format=%h %an %ad %s", "--date=short", f"{base}..{head}")
+        files = git("diff", "--name-only", f"{base}..{head}")
         doc += ["Commits:\n" + fence(log or "<none>"),
+                "Changed files:\n" + fence(files or "<none>"),
                 "Diff stat:\n" + fence(git("diff", "--stat=120", f"{base}..{head}") or "<none>")]
     return "\n".join(doc) + "\n"
