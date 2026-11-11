@@ -146,7 +146,7 @@ class DevIndex:
             card.append("</div>")
             cards += card
 
-        review_tab = '<a href="review/index.html">Agent review</a>' if (dev_dir / "review" / "index.html").exists() else ""
+        review_tab = '<a href="review/index.html">Review</a>' if (dev_dir / "review" / "index.html").exists() else ""
         page = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -191,18 +191,23 @@ class Review:
 
         data = json.dumps(report).replace("</", "<\\/")
 
+        webview_link = ""
+        if (dev_dir / "review" / "webview" / "index.html").exists():
+            webview_link = '<p><a href="webview/index.html">Full test results (flashxtest webview) &rarr;</a></p>'
+
         page = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent review – Flash-MX</title><style>{CSS}{EXTRA_CSS}</style></head><body>
-<nav><a href="../../index.html">Home</a><a href="../../about/index.html">About</a><a href="../index.html">Dev</a><a href="index.html">Agent review</a></nav>
-<h1>Agent review</h1>
-<p>Latest on-request analysis of a test-suite run against the code changes behind it, written by an AI agent (Claude).
+<title>Review – Flash-MX</title><style>{CSS}{EXTRA_CSS}</style></head><body>
+<nav><a href="../../index.html">Home</a><a href="../../about/index.html">About</a><a href="../index.html">Dev</a><a href="index.html">Review</a></nav>
+<h1>Review</h1>
+<p>Latest on-request analysis of a test-suite run against the code changes behind it, written by an automated review (Claude).
 It can be wrong: treat it as a starting point and verify before acting.</p>
 <div class="card">
 <h2><span class="badge {status}">{esc(status)}</span>{esc(meta.get("headline", ""))}</h2>
 <div class="meta">{" &middot; ".join(facts)}</div>
 <div class="meta">{when}</div>
+{webview_link}
 <div class="report" id="report"><pre>{esc(report)}</pre></div>
 </div>
 <script type="application/json" id="report-md">{data}</script>
@@ -217,8 +222,9 @@ try {{
 </body></html>
 """
         out = dev_dir / "review"
-        shutil.rmtree(out, ignore_errors=True)
-        out.mkdir(parents=True)
+        out.mkdir(parents=True, exist_ok=True)
+        for stale in ("index.html", "review.md", "meta.json"):
+            (out / stale).unlink(missing_ok=True)
         (out / "index.html").write_text(page, encoding="utf-8")
         (out / "review.md").write_text(report, encoding="utf-8")
         (out / "meta.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")

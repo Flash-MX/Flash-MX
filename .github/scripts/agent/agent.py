@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from string import Template
 
-from analysis_context import briefing
+from agent_context import briefing
 
 HERE = Path(__file__).resolve().parent
 WORK = Path(".test-analysis")
@@ -53,7 +53,7 @@ def render_prompt(mode, sha, branch, base, prompt=None, prompt_file=None):
     elif os.environ.get("PROMPT"):
         raw = os.environ["PROMPT"]
     else:
-        raw = (HERE / "analysis_prompt.md").read_text(encoding="utf-8")
+        raw = (HERE / "agent_prompt.md").read_text(encoding="utf-8")
     text = raw.split("-->", 1)[-1].lstrip() if "-->" in raw else raw
     return Template(text).safe_substitute(CONTEXT=CONTEXT[mode], SHA=sha, BRANCH=branch, BASE=base, WORK=WORK)
 

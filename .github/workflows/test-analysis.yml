@@ -3,7 +3,7 @@
 # run. Runs no tests. Publishes to the website's "Agent review" tab (dev/review/).
 #
 # Auth: the ANTHROPIC_API_KEY secret. Publishing needs WEBSITE_DEPLOY_TOKEN.
-# Agent settings: .github/scripts/analyze.py.
+# Agent settings: .github/scripts/agent/agent.py.
 name: test-analysis
 
 on:
@@ -86,8 +86,56 @@ jobs:
         with:
           run-id: ${{ env.RUN_ID }}
           github-token: ${{ github.token }}
-          pattern: TestResults-*
+          pattern: TestResults*
           path: ${{ env.WORK }}/results
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Compute image name
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: echo "IMAGE=ghcr.io/${OWNER,,}/flashx-container:latest" >> "$GITHUB_ENV"
+
+      - name: Pull image
+        run: docker pull "$IMAGE"
+
+      - name: Merge suite results
+        continue-on-error: true
+        run: |
+          shopt -s nullglob
+          found=0
+          for inv in $(find "$WORK/results" -type d -regextype posix-extended \
+                         -regex '.*/[0-9]{4}-[0-9]{2}-[0-9]{2}' | sort); do
+            site=$(basename "$(dirname "$inv")")
+            dst="$WORK/merged/$site/$(basename "$inv")"
+            mkdir -p "$dst"
+            for f in errors flash_test.log; do
+              [ -f "$inv/$f" ] && cat "$inv/$f" >> "$dst/$f"
+            done
+            cp -a --no-clobber "$inv/." "$dst/"
+            found=1
+          done
+          [ "$found" = 1 ] || echo "No test results to merge."
+
+      - name: Package webview
+        if: hashFiles(format('{0}/merged/**', env.WORK)) != ''
+        run: |
+          docker run --rm \
+            --user flashx \
+            -e HOME=/home/flashx \
+            -v "${{ github.workspace }}:/home/mount/FlashX" \
+            -w /home/mount/FlashX/sites/container \
+            "$IMAGE" \
+            bash -lc '
+              flashxtest init -z /home/mount/FlashX -s container \
+                -a /home/mount/FlashX/LocalArchive \
+                -o /home/mount/FlashX/TestResults \
+                -mpi=mpirun -make="make -j" &&
+              flashxtest webview --outdir /home/mount/FlashX/'"$WORK"'/webview \
+                --results /home/mount/FlashX/'"$WORK"'/merged
+            '
 
       # Called directly: anthropics/claude-code-action does not support push events.
       - name: Install Claude Code
@@ -99,7 +147,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PROMPT: ${{ inputs.prompt }}
-        run: python3 "$RUNNER_TEMP/scripts/analyze.py" review --auth api_key --model "$MODEL"
+        run: python3 "$RUNNER_TEMP/scripts/agent/agent.py" review --auth api_key --model "$MODEL"
 
       - name: Upload analysis
         if: always()
@@ -109,6 +157,7 @@ jobs:
           path: |
             ${{ env.WORK }}/*.md
             ${{ env.WORK }}/*.json
+            ${{ env.WORK }}/webview
           if-no-files-found: ignore
           include-hidden-files: true   # .test-analysis/ is a dot-directory
 
@@ -146,8 +195,13 @@ jobs:
             git fetch -q --depth 1 origin dev-results && git checkout -q FETCH_HEAD
           fi
           mkdir -p dev
-          python3 ../.github/scripts/pages.py review dev ../analysis/review.md ../analysis/meta.json
-          python3 ../.github/scripts/pages.py dev dev
+          WV=$(find ../analysis -type f -path '*webview*' -name 'index.html' | head -1)
+          if [ -n "$WV" ]; then
+            mkdir -p dev/review/webview
+            cp -a "$(dirname "$WV")"/. dev/review/webview/
+          fi
+          python3 ../.github/scripts/ci/pages.py review dev ../analysis/review.md ../analysis/meta.json
+          python3 ../.github/scripts/ci/pages.py dev dev
           git checkout -q --orphan publish && git add -A
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit -q -m "Update agent review ($(jq -r '.commit[:8]' ../analysis/meta.json))" \
