@@ -185,42 +185,42 @@ jobs:
             --out "$WORK/context.md"
           wc -c "$WORK/context.md"
 
-      - name: Prepare agent settings
-        id: agent
+      # Same Claude Code version as anthropics/claude-code-action; called directly
+      # because the action does not support push events.
+      - name: Install Claude Code
+        env:
+          CLAUDE_CODE_VERSION: "2.1.322"
+        run: |
+          for i in 1 2 3; do
+            curl -fsSL https://claude.ai/install.sh | bash -s -- "$CLAUDE_CODE_VERSION" && break
+            sleep 10
+          done
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Run analysis agent
         env:
           SHA: ${{ steps.run.outputs.sha }}
           BRANCH: ${{ steps.run.outputs.branch }}
+          ANTHROPIC_API_KEY: ${{ steps.auth.outputs.auth == 'api_key' && secrets.ANTHROPIC_API_KEY || '' }}
+          ANTHROPIC_FEDERATION_RULE_ID: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_FEDERATION_RULE_ID || '' }}
+          ANTHROPIC_ORGANIZATION_ID: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_ORGANIZATION_ID || '' }}
+          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_SERVICE_ACCOUNT_ID || '' }}
+          ANTHROPIC_WORKSPACE_ID: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_WORKSPACE_ID || '' }}
         run: |
-          python3 "$RUNNER_TEMP/scripts/test_analysis_agent.py" ci \
+          claude --version
+          python3 "$RUNNER_TEMP/scripts/test_analysis_agent.py" review \
             --mode review --sha "$SHA" --branch "$BRANCH" --base "$BASE" \
-            --work .test-analysis >> "$GITHUB_OUTPUT"
-
-      - name: Run analysis agent
-        id: claude
-        uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_federation_rule_id: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_FEDERATION_RULE_ID || '' }}
-          anthropic_organization_id: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_ORGANIZATION_ID || '' }}
-          anthropic_service_account_id: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_SERVICE_ACCOUNT_ID || '' }}
-          anthropic_workspace_id: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_WORKSPACE_ID || '' }}
-          anthropic_api_key: ${{ steps.auth.outputs.auth == 'api_key' && secrets.ANTHROPIC_API_KEY || '' }}
-          github_token: ${{ github.token }}
-          claude_args: |
-            --model ${{ env.MODEL }}
-            --max-turns ${{ steps.agent.outputs.max_turns }}
-            --allowedTools "${{ steps.agent.outputs.tools }}"
-            --json-schema '${{ steps.agent.outputs.schema }}'
-          prompt: ${{ steps.agent.outputs.prompt }}
+            --work .test-analysis --model "$MODEL"
 
       - name: Publish report
         if: always()
         env:
-          OUTPUT: ${{ steps.claude.outputs.structured_output }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ steps.run.outputs.id }}
           SHA: ${{ steps.run.outputs.sha }}
           BRANCH: ${{ steps.run.outputs.branch }}
           ANALYSIS_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          OUTPUT=$(cat "$WORK/review.json" 2>/dev/null || true)
           if [ -z "$OUTPUT" ]; then
             echo "The agent produced no report." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
@@ -257,6 +257,7 @@ jobs:
             ${{ env.WORK }}/context.md
             ${{ env.WORK }}/review.md
             ${{ env.WORK }}/meta.json
+            ${{ env.WORK }}/claude-output.json
           if-no-files-found: ignore
 
   # Same concurrency group as container-run's publisher, so pushes never race.
