@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Test-analysis agent settings (prompt, tools, schema, limits), shared by CI and local runs.
+"""Test-analysis agent: prompt, tools, schema and limits shared by CI and local runs.
 
-  review run the agent in CI (test-analysis.yml); with ANTHROPIC_FEDERATION_RULE_ID
-         set, authenticates via workload identity federation (GitHub OIDC token)
-  local  review a local FlashTest results directory with the local `claude` CLI;
-         writes to .test-analysis/, publishes nothing
+  review  CI (test-analysis.yml): reads RUN_ID, SHA, BRANCH, BASE from the environment
+          and the run's files in .test-analysis/; writes report.md, review.md, meta.json
+  local   review a local FlashTest results directory with the local `claude` CLI
 
 Example: test_analysis_agent.py local --results DIR [--base REF] [--preview] [--dry-run]
 """
 import argparse
+import base64
 import json
 import os
 import shutil
@@ -21,14 +21,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from string import Template
 
+from test_analysis_context import briefing
+
 HERE = Path(__file__).resolve().parent
+WORK = Path(".test-analysis")
 DEFAULT_MODEL = "claude-opus-5-5"
 MAX_TURNS = 60
-ALLOWED_TOOLS = ",".join([
-    "Read", "Glob", "Grep",
-    "Bash(git log:*)", "Bash(git diff:*)", "Bash(git show:*)",
-    "Bash(git blame:*)", "Bash(git status:*)",
-])
+ALLOWED_TOOLS = ",".join(["Read", "Glob", "Grep"] + [f"Bash(git {c}:*)" for c in ("log", "diff", "show", "blame", "status")])
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -39,56 +38,71 @@ SCHEMA = {
     "required": ["status", "headline", "report"],
     "additionalProperties": False,
 }
-MODE_NOTES = {
+CONTEXT = {
     "review": "a completed container-run run on GitHub Actions",
-    "local": "a local review of FlashTest results from this machine; there are no "
-             "GitHub job results, and the working tree may contain uncommitted "
-             "changes (see git status and git diff)",
+    "local": "a local review of FlashTest results from this machine; there are no GitHub job "
+             "results, and the working tree may contain uncommitted changes (see git status/diff)",
 }
-# Skip large binaries (HDF5 checkpoints/plots).
-MAX_RESULT_FILE = 2 * 1024 * 1024
+FEDERATION_VARS = ("ANTHROPIC_FEDERATION_RULE_ID", "ANTHROPIC_ORGANIZATION_ID",
+                   "ANTHROPIC_SERVICE_ACCOUNT_ID", "ANTHROPIC_WORKSPACE_ID")
+GITHUB_SECRETS = ("GH_TOKEN", "GITHUB_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_URL")
 OIDC_AUDIENCE = "https://api.anthropic.com"
-# GitHub OIDC tokens are short-lived and single-use; Claude Code re-reads the file
-# whenever it renews its Anthropic token.
-OIDC_REFRESH_SECONDS = 240
+OIDC_REFRESH_SECONDS = 240  # GitHub OIDC tokens are short-lived; Claude Code re-reads the file
+MAX_RESULT_FILE = 2 * 1024 * 1024  # local runs: skip large binaries (HDF5)
 
 
-def render_prompt(mode, sha, branch, base, work):
-    text = (HERE / "test_analysis_prompt.md").read_text(encoding="utf-8")
-    if text.startswith("<!--"):
-        text = text.split("-->", 1)[1].lstrip("\n")
-    return Template(text).substitute(MODE=mode, MODE_NOTE=MODE_NOTES[mode], SHA=sha,
-                                     BRANCH=branch, BASE=base, WORK=work)
+def render_prompt(mode, sha, branch, base):
+    text = (HERE / "test_analysis_prompt.md").read_text(encoding="utf-8").split("-->", 1)[-1].lstrip()
+    return Template(text).substitute(CONTEXT=CONTEXT[mode], SHA=sha, BRANCH=branch, BASE=base, WORK=WORK)
 
 
-def schema_json():
-    return json.dumps(SCHEMA, separators=(",", ":"))
+def summary(text):
+    if os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+            f.write(text + "\n")
 
 
-def run_claude(prompt, model, out_file, env=None):
-    """Run Claude Code headless; return (result JSON, structured review) or exit."""
+def fail(msg):
+    summary(f"**Test analysis failed:** {msg}")
+    sys.exit(msg)
+
+
+def run_claude(prompt, model, env=None):
     cmd = ["claude", "-p", prompt, "--model", model, "--max-turns", str(MAX_TURNS),
-           "--allowedTools", ALLOWED_TOOLS, "--json-schema", schema_json(),
+           "--allowedTools", ALLOWED_TOOLS, "--json-schema", json.dumps(SCHEMA, separators=(",", ":")),
            "--output-format", "json"]
     res = subprocess.run(cmd, capture_output=True, text=True, env=env)
-    out_file.write_text(res.stdout)
+    (WORK / "claude-output.json").write_text(res.stdout)
     try:
         out = json.loads(res.stdout)
     except ValueError:
-        sys.exit(f"claude did not return JSON (exit {res.returncode}):\n{res.stderr or res.stdout}")
+        fail(f"claude did not return JSON (exit {res.returncode}): {res.stderr or res.stdout}")
     review = out.get("structured_output")
     if out.get("is_error") or not isinstance(review, dict):
-        sys.exit(f"No report: subtype={out.get('subtype')} result={str(out.get('result'))[:500]}")
+        fail(f"no report: {str(out.get('result'))[:500]}")
     cost = out.get("total_cost_usd")
-    print(f"Status: {review['status']}\n{review['headline']}")
-    print(f"Turns: {out.get('num_turns')}" + (f", cost: ${cost:.2f}" if cost is not None else ""))
-    return out, review
+    print(f"{review['status']}: {review['headline']}\nTurns: {out.get('num_turns')}"
+          + (f", cost: ${cost:.2f}" if cost is not None else ""))
+    return review
 
+
+def write_outputs(review, meta, source):
+    meta = {**meta, "status": review["status"], "headline": review["headline"],
+            "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}
+    report = (f"# Test run review: {review['status']}\n\n{source} · tested `{meta['commit'][:8]}` "
+              f"against `{meta['base'][:8]}`\n\n**{review['headline']}**\n\n{review['report']}\n")
+    (WORK / "review.md").write_text(review["report"])
+    (WORK / "meta.json").write_text(json.dumps(meta, indent=2))
+    (WORK / "report.md").write_text(report)
+    summary(report)
+
+
+# --- Workload identity federation (CI) -------------------------------------------
 
 def github_oidc_token():
     url, token = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL"), os.environ.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
     if not url or not token:
-        sys.exit("No GitHub OIDC token available: the job needs `permissions: id-token: write`.")
+        fail("no GitHub OIDC token: the job needs `permissions: id-token: write`")
     req = urllib.request.Request(f"{url}&audience={urllib.parse.quote(OIDC_AUDIENCE, safe='')}",
                                  headers={"Authorization": f"bearer {token}"})
     with urllib.request.urlopen(req, timeout=30) as r:
@@ -97,142 +111,119 @@ def github_oidc_token():
     return value
 
 
-def start_identity_token_file(path):
-    """Write a GitHub OIDC token to path and keep it fresh; returns a stop() function."""
-    def write():
-        path.write_text(github_oidc_token())
-        path.chmod(0o600)
+def print_claims(jwt):
+    """The claims a federation rule matches on (never the token)."""
+    payload = jwt.split(".")[1]
+    claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+    print("GitHub OIDC claims (compare with the federation rule):")
+    for k in ("iss", "aud", "sub", "repository", "ref", "event_name", "workflow_ref", "environment", "actor"):
+        if k in claims:
+            print(f"  {k}: {claims[k]}")
 
+
+def start_identity_token_file(path):
+    """Write a GitHub OIDC token to path and refresh it in the background; returns stop()."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    write()
+    path.write_text(github_oidc_token())
+    path.chmod(0o600)
+    print_claims(path.read_text())
     stop = threading.Event()
 
     def refresh():
         while not stop.wait(OIDC_REFRESH_SECONDS):
             try:
-                write()
-            except Exception as e:  # keep the old token; the run may still finish
+                path.write_text(github_oidc_token())
+            except Exception as e:
                 print(f"::warning::OIDC token refresh failed: {e}", flush=True)
 
     threading.Thread(target=refresh, daemon=True).start()
+    return lambda: (stop.set(), path.unlink(missing_ok=True))
 
-    def done():
-        stop.set()
-        path.unlink(missing_ok=True)
-    return done
 
+def agent_env(auth):
+    """Environment for Claude Code with only the chosen credentials; returns (env, cleanup)."""
+    env = {k: v for k, v in os.environ.items() if k not in GITHUB_SECRETS and v != ""}
+    if auth == "auto":
+        auth = "federation" if "ANTHROPIC_FEDERATION_RULE_ID" in env else "api_key"
+    if auth == "federation":
+        if not all(k in env for k in FEDERATION_VARS[:2]):
+            fail("auth=federation needs the ANTHROPIC_FEDERATION_RULE_ID and ANTHROPIC_ORGANIZATION_ID variables")
+        env.pop("ANTHROPIC_API_KEY", None)
+        token_file = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "anthropic-wif" / "identity-token"
+        env["ANTHROPIC_IDENTITY_TOKEN_FILE"] = str(token_file)
+        print(f"Anthropic auth: workload identity federation (rule {env['ANTHROPIC_FEDERATION_RULE_ID']})")
+        return env, start_identity_token_file(token_file)
+    if "ANTHROPIC_API_KEY" not in env:
+        fail("no Anthropic credentials: set the ANTHROPIC_FEDERATION_* variables or the ANTHROPIC_API_KEY secret")
+    for k in FEDERATION_VARS:
+        env.pop(k, None)
+    print("Anthropic auth: ANTHROPIC_API_KEY secret")
+    return env, lambda: None
+
+
+# --- Commands --------------------------------------------------------------------
 
 def cmd_review(args):
-    work = Path(args.work)
-    prompt = render_prompt(args.mode, args.sha, args.branch, args.base, args.work)
-    (work / "prompt.md").write_text(prompt)
-    # Credentials come from the environment (ANTHROPIC_API_KEY or ANTHROPIC_FEDERATION_*).
-    # GitHub tokens are not passed to the agent.
-    env = {k: v for k, v in os.environ.items()
-           if k not in ("GH_TOKEN", "GITHUB_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
-                        "ACTIONS_ID_TOKEN_REQUEST_URL")}
-    stop = None
-    if os.environ.get("ANTHROPIC_FEDERATION_RULE_ID"):
-        token_file = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "anthropic-wif" / "identity-token"
-        stop = start_identity_token_file(token_file)
-        env["ANTHROPIC_IDENTITY_TOKEN_FILE"] = str(token_file)
-        print(f"Workload identity federation: rule {os.environ['ANTHROPIC_FEDERATION_RULE_ID']}")
+    e = os.environ
+    (WORK / "results").mkdir(parents=True, exist_ok=True)
+    run = json.loads((WORK / "run.json").read_text())
+    (WORK / "context.md").write_text(briefing(WORK / "results", e["BASE"], e["SHA"], run, WORK / "failed-jobs.log"))
+    env, cleanup = agent_env(args.auth)
     try:
         print(f"Running Claude Code ({args.model}, up to {MAX_TURNS} turns)...", flush=True)
-        _, review = run_claude(prompt, args.model, work / "claude-output.json", env)
+        review = run_claude(render_prompt("review", e["SHA"], e["BRANCH"], e["BASE"]), args.model, env)
     finally:
-        if stop:
-            stop()
-    (work / "review.json").write_text(json.dumps(review))
+        cleanup()
+    repo = f"{e['GITHUB_SERVER_URL']}/{e['GITHUB_REPOSITORY']}"
+    meta = {"repo_url": repo, "run_url": f"{repo}/actions/runs/{e['RUN_ID']}",
+            "analysis_url": f"{repo}/actions/runs/{e['GITHUB_RUN_ID']}",
+            "commit": e["SHA"], "base": e["BASE"], "branch": e["BRANCH"], "model": args.model}
+    write_outputs(review, meta, f"Run analyzed: {meta['run_url']}")
 
 
-def git(*a, check=True):
+def git(*a):
     res = subprocess.run(["git", *a], capture_output=True, text=True)
-    if check and res.returncode:
-        sys.exit(f"git {' '.join(a)} failed: {res.stderr.strip()}")
     return res.stdout.strip() if res.returncode == 0 else ""
 
 
-def default_base(head):
-    for ref in ("origin/main", "main"):
-        mb = git("merge-base", ref, head, check=False)
-        if mb and mb != git("rev-parse", head):
-            return mb
-    return git("rev-parse", f"{head}^", check=False) or git("rev-parse", head)
-
-
-def copy_results(src, dst):
-    copied = skipped = 0
-    for f in src.rglob("*"):
-        if not f.is_file():
-            continue
-        if f.stat().st_size > MAX_RESULT_FILE:
-            skipped += 1
-            continue
-        out = dst / f.relative_to(src)
-        out.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(f, out)
-        copied += 1
-    return copied, skipped
-
-
 def cmd_local(args):
-    root = Path(git("rev-parse", "--show-toplevel"))
-    os.chdir(root)
+    os.chdir(git("rev-parse", "--show-toplevel") or ".")
     results = Path(args.results).expanduser().resolve()
     if not results.is_dir():
         sys.exit(f"Not a directory: {results}")
     head = git("rev-parse", args.head)
-    base = git("rev-parse", args.base) if args.base else default_base(head)
+    base = git("rev-parse", args.base) if args.base else git("merge-base", "origin/main", head)
+    if not base or base == head:
+        base = git("rev-parse", f"{head}^") or head
     branch = git("rev-parse", "--abbrev-ref", "HEAD") or "?"
-    model = args.model or DEFAULT_MODEL
 
-    work = root / ".test-analysis"
-    shutil.rmtree(work, ignore_errors=True)
-    (work / "results").mkdir(parents=True)
-    (work / ".gitignore").write_text("*\n")
-    copied, skipped = copy_results(results, work / "results")
-    print(f"Results: {results} ({copied} files copied, {skipped} large files skipped)")
-
-    run = {"url": "local run", "headSha": head, "headBranch": branch,
-           "conclusion": "n/a (local)",
-           "pipeline": {"mode": "local", "image": "n/a (local results)",
-                        "image_build": "not part of this run"},
-           "jobs": []}
-    (work / "run.json").write_text(json.dumps(run, indent=2))
-    subprocess.run([sys.executable, str(HERE / "test_analysis_context.py"),
-                    "--results", str(work / "results"), "--base", base, "--head", head,
-                    "--run-json", str(work / "run.json"), "--out", str(work / "context.md")],
-                   check=True)
-
-    prompt = render_prompt("local", head, branch, base, ".test-analysis")
-    (work / "prompt.md").write_text(prompt)
-    print(f"Comparing {base[:8]}..{head[:8]} on {branch}; model {model}")
-    print(f"Briefing: {work / 'context.md'}\nPrompt:   {work / 'prompt.md'}")
+    shutil.rmtree(WORK, ignore_errors=True)
+    (WORK / "results").mkdir(parents=True)
+    (WORK / ".gitignore").write_text("*\n")
+    files = [f for f in results.rglob("*") if f.is_file() and f.stat().st_size <= MAX_RESULT_FILE]
+    for f in files:
+        (WORK / "results" / f.relative_to(results)).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(f, WORK / "results" / f.relative_to(results))
+    run = {"url": "local run", "headBranch": branch, "conclusion": "n/a (local)"}
+    (WORK / "context.md").write_text(briefing(WORK / "results", base, head, run))
+    prompt = render_prompt("local", head, branch, base)
+    (WORK / "prompt.md").write_text(prompt)
+    print(f"{len(files)} result files from {results}; comparing {base[:8]}..{head[:8]} on {branch}")
+    print(f"Briefing: {WORK / 'context.md'}, prompt: {WORK / 'prompt.md'}")
     if args.dry_run:
-        print("Dry run: not calling the model.")
         return
 
     print("Running Claude Code (this can take several minutes)...")
-    _, review = run_claude(prompt, model, work / "claude-output.json")
-
-    (work / "review.md").write_text(review["report"])
-    report = (f"# Pipeline review: {review['status']}\n\n"
-              f"Local results `{results}` · tested `{head[:8]}` against `{base[:8]}`\n\n"
-              f"**{review['headline']}**\n\n{review['report']}\n")
-    (work / "report.md").write_text(report)
-    print(f"Report: {work / 'report.md'}")
-
+    review = run_claude(prompt, args.model)
+    meta = {"repo_url": "", "run_url": "", "analysis_url": "", "commit": head, "base": base,
+            "branch": branch, "model": args.model}
+    write_outputs(review, meta, f"Local results `{results}`")
+    print(f"Report: {WORK / 'report.md'}")
     if args.preview:
-        meta = {"status": review["status"], "headline": review["headline"],
-                "repo_url": "", "run_url": "", "analysis_url": "", "commit": head,
-                "base": base, "branch": branch, "model": model,
-                "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC") + " (local)"}
-        (work / "meta.json").write_text(json.dumps(meta, indent=2))
-        site = work / "site" / "dev"
+        site = WORK / "site" / "dev"
         site.mkdir(parents=True)
         subprocess.run([sys.executable, str(HERE / "review_page.py"), str(site),
-                        str(work / "review.md"), str(work / "meta.json")], check=True)
+                        str(WORK / "review.md"), str(WORK / "meta.json")], check=True)
         print(f"Preview: {site / 'review' / 'index.html'}")
 
 
@@ -240,18 +231,17 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     rv = sub.add_parser("review", help="run the agent in CI")
-    for name in ("mode", "sha", "branch", "base", "work"):
-        rv.add_argument(f"--{name}", required=True)
+    rv.add_argument("--auth", choices=("auto", "federation", "api_key"), default="auto")
     rv.add_argument("--model", default=DEFAULT_MODEL)
     lo = sub.add_parser("local", help="review a local results directory")
-    lo.add_argument("--results", required=True, help="FlashTest results (an invocation dir or any parent)")
-    lo.add_argument("--base", help="commit to compare against (default: merge-base with main)")
-    lo.add_argument("--head", default="HEAD", help="tested commit (default: HEAD)")
-    lo.add_argument("--model", help=f"Claude model (default: {DEFAULT_MODEL})")
+    lo.add_argument("--results", required=True, help="FlashTest results directory")
+    lo.add_argument("--base", help="commit to compare against (default: merge-base with origin/main)")
+    lo.add_argument("--head", default="HEAD")
+    lo.add_argument("--model", default=DEFAULT_MODEL)
     lo.add_argument("--preview", action="store_true", help="also render the website page")
-    lo.add_argument("--dry-run", action="store_true", help="build briefing and prompt only")
+    lo.add_argument("--dry-run", action="store_true", help="write briefing and prompt only")
     args = ap.parse_args()
-    {"review": cmd_review, "local": cmd_local}[args.cmd](args)
+    (cmd_review if args.cmd == "review" else cmd_local)(args)
 
 
 if __name__ == "__main__":

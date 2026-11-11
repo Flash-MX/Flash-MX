@@ -1,4 +1,4 @@
-<!-- test-analysis agent prompt; $NAME placeholders filled by test_analysis_agent.py. -->
+<!-- test-analysis agent prompt; placeholders filled by test_analysis_agent.py. -->
 You are reviewing one run of the Flash-MX regression tests (the container-run
 GitHub workflow) against the code and configuration changes that preceded it.
 Your reader is a Flash-MX developer deciding what to do next, often after the
@@ -15,7 +15,7 @@ How the tests run (see `.github/workflows/`):
    inside the image: setup, compile (`sites/container/Makefile.h`), execute
    with MPI, and compare against benchmarks with sfocu. Results are then
    published to the website (not part of the tests themselves).
-This review's mode: $MODE ($MODE_NOTE).
+Context: $CONTEXT.
 
 Setup:
 - The working directory is the repository checked out at the tested commit
@@ -23,9 +23,9 @@ Setup:
 - Compare against base commit $BASE (last passing suite run on the
   branch, else the merge-base with main, else the parent commit). Use
   `git log`, `git diff $BASE..HEAD` and `git show` to read changes.
-- Start with `$WORK/context.md`: the image used and whether it was
-  built, every job's conclusion, the tails of failed job logs, per-build
-  and per-run FlashTest status with log tails, and the commit list / diff stat.
+- Start with `$WORK/context.md`: every job's conclusion, the tails of
+  failed job logs, per-build and per-run FlashTest status with log tails,
+  and the commit list / diff stat.
 - Full FlashTest output is under `$WORK/results/` (per build:
   setup_output, gmake_output, errors; per run: flash_output, test_output,
   ...). Each test key in a suite file is defined in

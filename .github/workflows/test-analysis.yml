@@ -48,204 +48,69 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
-      actions: read     # read runs, job logs and artifacts of container-run
-      id-token: write   # request a GitHub OIDC token (workload identity federation only)
+      actions: read     # container-run's jobs, logs and artifacts
+      id-token: write   # GitHub OIDC token for workload identity federation
     env:
       GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
-      TESTED_WORKFLOW: container-run.yml
-      # Inside the checkout so the agent can read it.
-      WORK: ${{ github.workspace }}/.test-analysis
+      WORK: .test-analysis
       MODEL: ${{ inputs.model || 'claude-opus-5-5' }}
     steps:
-      - name: Check Anthropic credentials
-        id: auth
-        env:
-          AUTH: ${{ inputs.auth || 'auto' }}
-          RULE: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
-          ORG: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
-          SVAC: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
-          KEY_SET: ${{ secrets.ANTHROPIC_API_KEY != '' }}
-        run: |
-          if [ "$AUTH" = auto ]; then
-            if [ -n "$RULE" ]; then AUTH=federation
-            elif [ "$KEY_SET" = true ]; then AUTH=api_key
-            else echo "::error::No Anthropic credentials: set the ANTHROPIC_FEDERATION_* variables or the ANTHROPIC_API_KEY secret."; exit 1
-            fi
-          fi
-          case "$AUTH" in
-            federation)
-              [ -n "$RULE" ] && [ -n "$ORG" ] && [ -n "$SVAC" ] || {
-                echo "::error::auth=federation needs the variables ANTHROPIC_FEDERATION_RULE_ID, ANTHROPIC_ORGANIZATION_ID and ANTHROPIC_SERVICE_ACCOUNT_ID."; exit 1; }
-              echo "Anthropic auth: workload identity federation (rule $RULE)." ;;
-            api_key)
-              [ "$KEY_SET" = true ] || { echo "::error::auth=api_key needs the secret ANTHROPIC_API_KEY."; exit 1; }
-              echo "Anthropic auth: ANTHROPIC_API_KEY secret." ;;
-          esac
-          echo "auth=$AUTH" >> "$GITHUB_OUTPUT"
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Resolve run and base commit
-        id: run
+      - name: Resolve run and check out tested commit
         env:
           RUN_ID: ${{ inputs.run_id }}
           BASE: ${{ inputs.base }}
-          OWNER: ${{ github.repository_owner }}
         run: |
+          id=${RUN_ID:-$(gh run list --workflow container-run.yml --branch "$GITHUB_REF_NAME" \
+                           --status completed --limit 1 --json databaseId --jq '.[0].databaseId // ""')}
+          [ -n "$id" ] || { echo "::error::No completed container-run run on $GITHUB_REF_NAME; pass run_id."; exit 1; }
           mkdir -p "$WORK"
-          id="$RUN_ID"
-          if [ -z "$id" ]; then
-            id=$(gh run list --workflow "$TESTED_WORKFLOW" --branch "$GITHUB_REF_NAME" \
-                   --status completed --limit 1 --json databaseId --jq '.[0].databaseId // ""')
-          fi
-          [ -n "$id" ] || { echo "::error::No completed container-run run on $GITHUB_REF_NAME; run the tests first or pass run_id."; exit 1; }
+          gh run view "$id" --json url,headSha,headBranch,conclusion,createdAt,workflowName,jobs \
+            --jq '{url, headSha, headBranch, conclusion, createdAt, workflowName,
+                   jobs: [.jobs[] | {name, conclusion}]}' > "$WORK/run.json"
+          [ "$(jq -r .workflowName "$WORK/run.json")" = container-run ] || { echo "::error::Run $id is not container-run."; exit 1; }
+          read -r sha branch created < <(jq -r '"\(.headSha) \(.headBranch) \(.createdAt)"' "$WORK/run.json")
+          { gh run view "$id" --log-failed || true; } | tail -n 400 > "$WORK/failed-jobs.log"
 
-          gh run view "$id" --json url,headSha,headBranch,conclusion,createdAt,workflowName > "$WORK/target.json"
-          [ "$(jq -r .workflowName "$WORK/target.json")" = "container-run" ] \
-            || { echo "::error::Run $id is not a container-run run."; exit 1; }
-          sha=$(jq -r .headSha "$WORK/target.json")
-          branch=$(jq -r .headBranch "$WORK/target.json")
-          created=$(jq -r .createdAt "$WORK/target.json")
-          echo "Reviewing $(jq -r .url "$WORK/target.json") ($branch @ ${sha::8}, started $created)"
-
-          # Jobs of that run, with log tails of the failed ones.
-          gh api --paginate "repos/$GH_REPO/actions/runs/$id/jobs?per_page=100" --jq '.jobs[]' \
-            | jq -s '[.[] | {id, name, conclusion}]' > "$WORK/jobs.json"
-          : > "$WORK/failed-jobs.log"
-          jq -r '.[] | select(.conclusion == "failure") | "\(.id)\t\(.name)"' "$WORK/jobs.json" \
-          | while IFS=$'\t' read -r jid jname; do
-              echo "===== job: $jname" >> "$WORK/failed-jobs.log"
-              gh api "repos/$GH_REPO/actions/jobs/$jid/logs" 2>/dev/null | tail -n 150 >> "$WORK/failed-jobs.log" || true
-            done
-
-          jq -n --slurpfile jobs "$WORK/jobs.json" --slurpfile t "$WORK/target.json" \
-                --arg image "ghcr.io/${OWNER,,}/flashx-container:latest (as pulled by that run)" \
-                '{url: $t[0].url, headSha: $t[0].headSha, headBranch: $t[0].headBranch,
-                  conclusion: $t[0].conclusion,
-                  pipeline: {mode: "review", image: $image, image_build: "not part of container-run"},
-                  jobs: $jobs[0]}' > "$WORK/run.json"
-          cat "$WORK/run.json"
-
-          # Base: last passing container-run on the branch before this one.
-          if [ -z "$BASE" ]; then
-            BASE=$(gh run list --workflow "$TESTED_WORKFLOW" --branch "$branch" --status success \
-                     --limit 100 --json databaseId,headSha,createdAt \
-                   | jq -r --argjson id "$id" --arg created "$created" \
-                       '[.[] | select(.databaseId != $id and .createdAt < $created)][0].headSha // ""')
-          fi
-
-          {
-            echo "id=$id"
-            echo "sha=$sha"
-            echo "branch=$branch"
-            echo "base=$BASE"
-          } >> "$GITHUB_OUTPUT"
-
-      # Keep this branch's scripts, then check out the tested commit.
-      - name: Check out tested commit
-        env:
-          SHA: ${{ steps.run.outputs.sha }}
-          BASE: ${{ steps.run.outputs.base }}
-          BRANCH: ${{ steps.run.outputs.branch }}
-        run: |
-          cp -r .github/scripts "$RUNNER_TEMP/scripts"
-          git checkout -q --detach "$SHA"
-          if [ -n "$BASE" ] && ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
-            echo "Base $BASE not found."
-            BASE=""
-          fi
-          if [ -z "$BASE" ] && [ "$BRANCH" != main ]; then
-            mb=$(git merge-base origin/main "$SHA" 2>/dev/null || true)
-            [ -n "$mb" ] && [ "$mb" != "$SHA" ] && BASE="$mb"
-          fi
-          [ -n "$BASE" ] || BASE=$(git rev-parse "${SHA}^" 2>/dev/null || echo "$SHA")
-          echo "BASE=$BASE" >> "$GITHUB_ENV"
-          echo "Comparing $BASE..$SHA"
+          # Base: last passing container-run on the branch before this one,
+          # else the merge-base with main, else the parent commit.
+          [ -n "$BASE" ] || BASE=$(gh run list --workflow container-run.yml --branch "$branch" --status success \
+                                     --limit 100 --json databaseId,headSha,createdAt \
+            | jq -r --argjson id "$id" --arg c "$created" '[.[] | select(.databaseId != $id and .createdAt < $c)][0].headSha // ""')
+          cp -r .github/scripts "$RUNNER_TEMP/scripts"   # this branch's scripts, not the tested commit's
+          git checkout -q --detach "$sha"
+          git cat-file -e "${BASE}^{commit}" 2>/dev/null || BASE=$(git merge-base origin/main "$sha" || true)
+          { [ -n "$BASE" ] && [ "$BASE" != "$sha" ]; } || BASE=$(git rev-parse "$sha^" 2>/dev/null || echo "$sha")
+          printf 'RUN_ID=%s\nSHA=%s\nBRANCH=%s\nBASE=%s\n' "$id" "$sha" "$branch" "$BASE" >> "$GITHUB_ENV"
+          echo "Reviewing $(jq -r .url "$WORK/run.json") ($branch, $BASE..$sha)"
 
       - name: Download test results
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          run-id: ${{ steps.run.outputs.id }}
+          run-id: ${{ env.RUN_ID }}
           github-token: ${{ github.token }}
           pattern: TestResults-*
           path: ${{ env.WORK }}/results
 
-      - name: Build briefing
-        env:
-          SHA: ${{ steps.run.outputs.sha }}
-        run: |
-          mkdir -p "$WORK/results"
-          python3 "$RUNNER_TEMP/scripts/test_analysis_context.py" \
-            --results "$WORK/results" --base "$BASE" --head "$SHA" \
-            --run-json "$WORK/run.json" --failed-log "$WORK/failed-jobs.log" \
-            --out "$WORK/context.md"
-          wc -c "$WORK/context.md"
-
-      # Same Claude Code version as anthropics/claude-code-action; called directly
-      # because the action does not support push events.
+      # Called directly: anthropics/claude-code-action does not support push events.
       - name: Install Claude Code
-        env:
-          CLAUDE_CODE_VERSION: "2.1.322"
         run: |
-          for i in 1 2 3; do
-            curl -fsSL https://claude.ai/install.sh | bash -s -- "$CLAUDE_CODE_VERSION" && break
-            sleep 10
-          done
+          for i in 1 2 3; do curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.322 && break; sleep 10; done
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Run analysis agent
         env:
-          SHA: ${{ steps.run.outputs.sha }}
-          BRANCH: ${{ steps.run.outputs.branch }}
-          ANTHROPIC_API_KEY: ${{ steps.auth.outputs.auth == 'api_key' && secrets.ANTHROPIC_API_KEY || '' }}
-          ANTHROPIC_FEDERATION_RULE_ID: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_FEDERATION_RULE_ID || '' }}
-          ANTHROPIC_ORGANIZATION_ID: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_ORGANIZATION_ID || '' }}
-          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_SERVICE_ACCOUNT_ID || '' }}
-          ANTHROPIC_WORKSPACE_ID: ${{ steps.auth.outputs.auth == 'federation' && vars.ANTHROPIC_WORKSPACE_ID || '' }}
-        run: |
-          claude --version
-          python3 "$RUNNER_TEMP/scripts/test_analysis_agent.py" review \
-            --mode review --sha "$SHA" --branch "$BRANCH" --base "$BASE" \
-            --work .test-analysis --model "$MODEL"
-
-      - name: Publish report
-        if: always()
-        env:
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ steps.run.outputs.id }}
-          SHA: ${{ steps.run.outputs.sha }}
-          BRANCH: ${{ steps.run.outputs.branch }}
-          ANALYSIS_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          OUTPUT=$(cat "$WORK/review.json" 2>/dev/null || true)
-          if [ -z "$OUTPUT" ]; then
-            echo "The agent produced no report." | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-          {
-            echo "# Test run review: $(jq -r .status <<<"$OUTPUT")"
-            echo ""
-            echo "Run analyzed: $RUN_URL · tested \`${SHA::8}\` against \`${BASE::8}\`"
-            echo ""
-            echo "**$(jq -r .headline <<<"$OUTPUT")**"
-            echo ""
-            jq -r .report <<<"$OUTPUT"
-          } > "$WORK/report.md"
-          cat "$WORK/report.md" >> "$GITHUB_STEP_SUMMARY"
-
-          jq -r .report <<<"$OUTPUT" > "$WORK/review.md"
-          jq -n --argjson out "$OUTPUT" \
-                --arg repo_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
-                --arg run_url "$RUN_URL" --arg analysis_url "$ANALYSIS_URL" \
-                --arg commit "$SHA" --arg base "$BASE" --arg branch "$BRANCH" \
-                --arg model "$MODEL" --arg generated "$(date -u '+%Y-%m-%d %H:%M UTC')" \
-                '{status: $out.status, headline: $out.headline, repo_url: $repo_url,
-                  run_url: $run_url, analysis_url: $analysis_url, commit: $commit,
-                  base: $base, branch: $branch, model: $model, generated: $generated}' \
-                > "$WORK/meta.json"
+          AUTH: ${{ inputs.auth || 'auto' }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          ANTHROPIC_WORKSPACE_ID: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
+        run: python3 "$RUNNER_TEMP/scripts/test_analysis_agent.py" review --auth "$AUTH" --model "$MODEL"
 
       - name: Upload analysis
         if: always()
@@ -253,12 +118,10 @@ jobs:
         with:
           name: test-analysis
           path: |
-            ${{ env.WORK }}/report.md
-            ${{ env.WORK }}/context.md
-            ${{ env.WORK }}/review.md
-            ${{ env.WORK }}/meta.json
-            ${{ env.WORK }}/claude-output.json
+            ${{ env.WORK }}/*.md
+            ${{ env.WORK }}/*.json
           if-no-files-found: ignore
+          include-hidden-files: true   # .test-analysis/ is a dot-directory
 
   # Same concurrency group as container-run's publisher, so pushes never race.
   publish-review:
@@ -273,59 +136,37 @@ jobs:
       cancel-in-progress: false
     env:
       WEBSITE_REPO: Flash-MX/flash-mx.github.io
+      TOKEN: ${{ secrets.WEBSITE_DEPLOY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: .github/scripts
 
-      - name: Download analysis
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: test-analysis
           path: analysis
 
-      - name: Fetch current dev-results branch
-        env:
-          TOKEN: ${{ secrets.WEBSITE_DEPLOY_TOKEN }}
+      # dev-results holds only the website's dev/ pages, as a single orphan commit.
+      - name: Update dev/review on dev-results
         run: |
-          [ -n "$TOKEN" ] || { echo "WEBSITE_DEPLOY_TOKEN is not set"; exit 1; }
-          git init -q devsite
-          cd devsite
+          [ -n "$TOKEN" ] || { echo "::error::WEBSITE_DEPLOY_TOKEN is not set"; exit 1; }
+          git init -q devsite && cd devsite
           git remote add origin "https://x-access-token:${TOKEN}@github.com/${WEBSITE_REPO}.git"
           if git ls-remote --exit-code --heads origin dev-results >/dev/null; then
-            git fetch -q --depth 1 origin dev-results
-            git checkout -q -B dev-results FETCH_HEAD
+            git fetch -q --depth 1 origin dev-results && git checkout -q FETCH_HEAD
           fi
+          mkdir -p dev
+          python3 ../.github/scripts/review_page.py dev ../analysis/review.md ../analysis/meta.json
+          python3 ../.github/scripts/dev_index.py dev
+          git checkout -q --orphan publish && git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Update agent review ($(jq -r '.commit[:8]' ../analysis/meta.json))" \
+            -m "Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          git push -q --force origin publish:dev-results
 
-      - name: Place review
-        run: |
-          mkdir -p devsite/dev
-          python3 .github/scripts/review_page.py devsite/dev analysis/review.md analysis/meta.json
-          python3 .github/scripts/dev_index.py devsite/dev
-
-      - name: Commit and push (history purged)
-        working-directory: devsite
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet && git rev-parse -q --verify HEAD >/dev/null; then
-            echo "dev results already up to date."
-            exit 0
-          fi
-          sha=$(jq -r .commit ../analysis/meta.json)
-          git checkout -q --orphan publish
-          git add -A
-          git commit -q -m "Update agent review (${sha::8})" \
-                     -m "Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          git push --force origin publish:dev-results
-
+      # A push to dev-results does not start the website's deploy workflow.
       - name: Trigger website deploy
-        env:
-          TOKEN: ${{ secrets.WEBSITE_DEPLOY_TOKEN }}
         run: |
-          curl -fsS -X POST \
-            -H "Authorization: Bearer ${TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${WEBSITE_REPO}/actions/workflows/deploy.yml/dispatches" \
-            -d '{"ref":"main"}'
+          curl -fsS -X POST -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${WEBSITE_REPO}/actions/workflows/deploy.yml/dispatches" -d '{"ref":"main"}'
