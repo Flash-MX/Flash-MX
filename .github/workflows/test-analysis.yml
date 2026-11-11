@@ -2,9 +2,8 @@
 # the latest on the selected branch) against the changes since the last passing
 # run. Runs no tests. Publishes to the website's "Agent review" tab (dev/review/).
 #
-# Auth ("auth" input): workload identity federation via the ANTHROPIC_FEDERATION_*
-# repository variables, or the ANTHROPIC_API_KEY secret. Publishing needs
-# WEBSITE_DEPLOY_TOKEN. Agent settings: .github/scripts/analyze.py.
+# Auth: the ANTHROPIC_API_KEY secret. Publishing needs WEBSITE_DEPLOY_TOKEN.
+# Agent settings: .github/scripts/analyze.py.
 name: test-analysis
 
 on:
@@ -26,15 +25,6 @@ on:
         description: 'Claude model ID (blank: claude-opus-5-5, Claude Opus 5.5)'
         required: false
         default: 'claude-opus-5-5'
-      auth:
-        description: 'Anthropic authentication (auto: federation if its variables are set, else the API key secret)'
-        type: choice
-        required: false
-        default: auto
-        options:
-          - auto
-          - federation
-          - api_key
       publish:
         description: 'Publish the review to the website (Dev > Agent review)'
         type: boolean
@@ -53,7 +43,6 @@ jobs:
     permissions:
       contents: read
       actions: read     # container-run's jobs, logs and artifacts
-      id-token: write   # GitHub OIDC token for workload identity federation
     env:
       GH_TOKEN: ${{ github.token }}
       WORK: .test-analysis
@@ -108,14 +97,9 @@ jobs:
 
       - name: Run analysis agent
         env:
-          AUTH: ${{ inputs.auth || 'auto' }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          ANTHROPIC_FEDERATION_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
-          ANTHROPIC_ORGANIZATION_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
-          ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
-          ANTHROPIC_WORKSPACE_ID: ${{ vars.ANTHROPIC_WORKSPACE_ID }}
           PROMPT: ${{ inputs.prompt }}
-        run: python3 "$RUNNER_TEMP/scripts/analyze.py" review --auth "$AUTH" --model "$MODEL"
+        run: python3 "$RUNNER_TEMP/scripts/analyze.py" review --auth api_key --model "$MODEL"
 
       - name: Upload analysis
         if: always()

@@ -8,15 +8,11 @@
 Example: analyze.py local --results DIR [--base REF] [--preview] [--dry-run]
 """
 import argparse
-import base64
 import json
 import os
 import shutil
 import subprocess
 import sys
-import threading
-import urllib.parse
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from string import Template
@@ -43,11 +39,7 @@ CONTEXT = {
     "local": "a local review of FlashTest results from this machine; there are no GitHub job "
              "results, and the working tree may contain uncommitted changes (see git status/diff)",
 }
-FEDERATION_VARS = ("ANTHROPIC_FEDERATION_RULE_ID", "ANTHROPIC_ORGANIZATION_ID",
-                   "ANTHROPIC_SERVICE_ACCOUNT_ID", "ANTHROPIC_WORKSPACE_ID")
 GITHUB_SECRETS = ("GH_TOKEN", "GITHUB_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_URL")
-OIDC_AUDIENCE = "https://api.anthropic.com"
-OIDC_REFRESH_SECONDS = 240  # GitHub OIDC tokens are short-lived; Claude Code re-reads the file
 MAX_RESULT_FILE = 2 * 1024 * 1024  # local runs: skip large binaries (HDF5)
 
 
@@ -107,66 +99,13 @@ def write_outputs(review, meta, source):
     summary(report)
 
 
-# --- Workload identity federation (CI) -------------------------------------------
-
-def github_oidc_token():
-    url, token = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL"), os.environ.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
-    if not url or not token:
-        fail("no GitHub OIDC token: the job needs `permissions: id-token: write`")
-    req = urllib.request.Request(f"{url}&audience={urllib.parse.quote(OIDC_AUDIENCE, safe='')}",
-                                 headers={"Authorization": f"bearer {token}"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        value = json.load(r)["value"]
-    print(f"::add-mask::{value}", flush=True)
-    return value
-
-
-def print_claims(jwt):
-    """The claims a federation rule matches on (never the token)."""
-    payload = jwt.split(".")[1]
-    claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
-    print("GitHub OIDC claims (compare with the federation rule):")
-    for k in ("iss", "aud", "sub", "repository", "ref", "event_name", "workflow_ref", "environment", "actor"):
-        if k in claims:
-            print(f"  {k}: {claims[k]}")
-
-
-def start_identity_token_file(path):
-    """Write a GitHub OIDC token to path and refresh it in the background; returns stop()."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(github_oidc_token())
-    path.chmod(0o600)
-    print_claims(path.read_text())
-    stop = threading.Event()
-
-    def refresh():
-        while not stop.wait(OIDC_REFRESH_SECONDS):
-            try:
-                path.write_text(github_oidc_token())
-            except Exception as e:
-                print(f"::warning::OIDC token refresh failed: {e}", flush=True)
-
-    threading.Thread(target=refresh, daemon=True).start()
-    return lambda: (stop.set(), path.unlink(missing_ok=True))
-
+# --- Credentials (CI) -----------------------------------------------------------
 
 def agent_env(auth):
     """Environment for Claude Code with only the chosen credentials; returns (env, cleanup)."""
     env = {k: v for k, v in os.environ.items() if k not in GITHUB_SECRETS and v != ""}
-    if auth == "auto":
-        auth = "federation" if "ANTHROPIC_FEDERATION_RULE_ID" in env else "api_key"
-    if auth == "federation":
-        if not all(k in env for k in FEDERATION_VARS[:2]):
-            fail("auth=federation needs the ANTHROPIC_FEDERATION_RULE_ID and ANTHROPIC_ORGANIZATION_ID variables")
-        env.pop("ANTHROPIC_API_KEY", None)
-        token_file = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "anthropic-wif" / "identity-token"
-        env["ANTHROPIC_IDENTITY_TOKEN_FILE"] = str(token_file)
-        print(f"Anthropic auth: workload identity federation (rule {env['ANTHROPIC_FEDERATION_RULE_ID']})")
-        return env, start_identity_token_file(token_file)
     if "ANTHROPIC_API_KEY" not in env:
-        fail("no Anthropic credentials: set the ANTHROPIC_FEDERATION_* variables or the ANTHROPIC_API_KEY secret")
-    for k in FEDERATION_VARS:
-        env.pop(k, None)
+        fail("no Anthropic credentials: set the ANTHROPIC_API_KEY secret")
     print("Anthropic auth: ANTHROPIC_API_KEY secret")
     return env, lambda: None
 
@@ -245,7 +184,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     rv = sub.add_parser("review", help="run the agent in CI")
-    rv.add_argument("--auth", choices=("auto", "federation", "api_key"), default="auto")
+    rv.add_argument("--auth", choices=("api_key",), default="api_key")
     rv.add_argument("--model", default=DEFAULT_MODEL)
     rv.add_argument("--prompt", help="override the agent prompt text")
     rv.add_argument("--prompt-file", help="read the agent prompt from a file")
