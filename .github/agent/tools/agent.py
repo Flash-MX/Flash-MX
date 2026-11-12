@@ -396,7 +396,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     rn = sub.add_parser("run", help="run the open-ended agent")
     rn.add_argument("--auth", choices=("api_key",), default="api_key")
-    rn.add_argument("--model", default=DEFAULT_MODEL)
+    rn.add_argument("--model", default=os.environ.get("MODEL", DEFAULT_MODEL))
     rn.add_argument("--objective", help="objective for the agent (paragraph)")
     rn.add_argument("--prompt", help="override the agent prompt text")
     rn.add_argument("--prompt-file", help="read the agent prompt from a file")
@@ -404,7 +404,7 @@ def main():
     rn.add_argument("--base", default=None)
     rv = sub.add_parser("review", help="alias for run")
     rv.add_argument("--auth", choices=("api_key",), default="api_key")
-    rv.add_argument("--model", default=DEFAULT_MODEL)
+    rv.add_argument("--model", default=os.environ.get("MODEL", DEFAULT_MODEL))
     rv.add_argument("--prompt", help="override the agent prompt text")
     rv.add_argument("--prompt-file", help="read the agent prompt from a file")
     lo = sub.add_parser("local", help="review a local results directory")
@@ -414,7 +414,7 @@ def main():
         help="commit to compare against (default: merge-base with origin/main)",
     )
     lo.add_argument("--head", default="HEAD")
-    lo.add_argument("--model", default=DEFAULT_MODEL)
+    lo.add_argument("--model", default=os.environ.get("MODEL", DEFAULT_MODEL))
     lo.add_argument(
         "--preview", action="store_true", help="also render the website page"
     )
