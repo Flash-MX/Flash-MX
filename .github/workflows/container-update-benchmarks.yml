@@ -102,11 +102,13 @@ jobs:
       # with cp -r so that multiple archives sharing the same date directory are
       # combined rather than one overwriting the other.
       - name: Download existing benchmark archives
+        env:
+          ARCHIVE_URLS: ${{ vars.BENCHMARK_ARCHIVE_URLS }}
         run: |
           mkdir -p "${{ github.workspace }}/LocalArchive/container"
-          ARCHIVE_URLS="${{ vars.BENCHMARK_ARCHIVE_URLS }}"
-          if [ -n "$ARCHIVE_URLS" ]; then
-            for url in $ARCHIVE_URLS; do
+          URLS=$(printf '%s' "$ARCHIVE_URLS" | tr -s '[:space:]' ' ')
+          if [ -n "$URLS" ]; then
+            for url in $URLS; do
               archive=$(mktemp)
               echo "Downloading: $url"
               curl -fsSL -o "$archive" "$url"
@@ -140,6 +142,14 @@ jobs:
             "$IMAGE" \
             bash -lc '
               set -e
+              # Clear any stale results/main-archive from a previous (possibly
+              # same-day) run so FlashTest does not create a suffixed invocation
+              # directory (e.g. 2026-..-.._3) instead of overwriting today cache.
+              rm -rf /home/mount/FlashX/TestResults /home/mount/FlashX/MainArchive
+              # Remove todays stale LocalArchive entries so regenerated baselines
+              # overwrite instead of being skipped.
+              rm -rf /home/mount/FlashX/LocalArchive/container/"$BENCH_DATE" \
+                     /home/mount/FlashX/LocalArchive/container/"${BENCH_DATE}_2"
               flashxtest init -z /home/mount/FlashX -s container \
                 -m /home/mount/FlashX/MainArchive \
                 -a /home/mount/FlashX/LocalArchive \
