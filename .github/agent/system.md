@@ -35,7 +35,6 @@ represents, and where to look — rather than re-listing pass/fail or diff hunks
   status with log tails, commit list / diff stat.
 - Full FlashTest output is under `$WORK/results/`.
 - Each test key lives in `source/Simulation/SimulationMain/<setup>/tests/tests.yaml`.
-- Helper tools are available under `.github/agent/tools/` (see its README).
 
 ## What not to do
 

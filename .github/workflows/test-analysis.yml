@@ -3,7 +3,7 @@
 # run. Runs no tests. Publishes to the website's "Agent review" tab (dev/review/).
 #
 # Auth: the ANTHROPIC_API_KEY secret. Publishing needs WEBSITE_DEPLOY_TOKEN.
-# Agent settings: .github/agent/agent.py.
+# Agent settings: .github/agent/tools/agent.py.
 name: test-analysis
 
 on:
@@ -159,7 +159,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PROMPT: ${{ inputs.prompt }}
-        run: python3 "$RUNNER_TEMP/agent/agent.py" review --auth api_key --model "$MODEL"
+        run: python3 "$RUNNER_TEMP/agent/tools/agent.py" review --auth api_key --model "$MODEL"
 
       - name: Upload analysis
         if: always()

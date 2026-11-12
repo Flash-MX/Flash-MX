@@ -17,8 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from string import Template
 
-from agent_context import briefing
-
+from briefing import briefing
 HERE = Path(__file__).resolve().parent
 WORK = Path(".test-analysis")
 DEFAULT_MODEL = "claude-opus-5-5"
@@ -26,7 +25,6 @@ MAX_TURNS = 60
 ALLOWED_TOOLS = ",".join(
     ["Read", "Glob", "Grep"]
     + [f"Bash(git {c}:*)" for c in ("log", "diff", "show", "blame", "status")]
-    + ["Bash(.github/agent/tools/*)"]
 )
 SCHEMA = {
     "type": "object",
@@ -83,7 +81,7 @@ def render_prompt(
     elif os.environ.get("PROMPT"):
         raw = os.environ["PROMPT"]
     else:
-        raw = (HERE / "system.md").read_text(encoding="utf-8")
+        raw = (HERE.parent / "system.md").read_text(encoding="utf-8")
     text = raw.split("-->", 1)[-1].lstrip() if "-->" in raw else raw
     out = Template(text).safe_substitute(
         CONTEXT=CONTEXT[mode], SHA=sha, BRANCH=branch, BASE=base, WORK=WORK, GROUP=group
@@ -171,10 +169,6 @@ def agent_env(auth):
 # --- Commands --------------------------------------------------------------------
 
 
-def _slug(g):
-    return g.lower().replace(" ", "-")
-
-
 def cmd_review(args):
     e = os.environ
     (WORK / "results").mkdir(parents=True, exist_ok=True)
@@ -200,61 +194,19 @@ def cmd_review(args):
 
     env, cleanup = agent_env(args.auth)
     try:
-        group_reports = {}
-        for g in GROUPS:
-            gdir = WORK / "groups" / _slug(g)
-            gdir.mkdir(parents=True, exist_ok=True)
-            gtext = briefing(
-                WORK / "results",
-                e["BASE"],
-                e["SHA"],
-                run,
-                WORK / "failed-jobs.log",
-                group=g,
-            )
-            (WORK / "context.md").write_text(gtext)
-            (gdir / "context.md").write_text(gtext)
-            append_libs(WORK / "context.md")
-            append_libs(gdir / "context.md")
-            print(f"Running Claude Code for group '{g}' ({args.model})...", flush=True)
-            review = run_claude(
-                render_prompt(
-                    "review",
-                    e["SHA"],
-                    e["BRANCH"],
-                    e["BASE"],
-                    group=g,
-                    prompt=getattr(args, "prompt", None),
-                    prompt_file=getattr(args, "prompt_file", None),
-                ),
-                args.model,
-                env,
-            )
-            (gdir / "review.md").write_text(review["report"])
-            group_reports[g] = review["report"]
-            print(f"  {g}: {review['status']} — {review['headline']}", flush=True)
-
-        # Full context for synthesis
         (WORK / "context.md").write_text(
-            briefing(
-                WORK / "results", e["BASE"], e["SHA"], run, WORK / "failed-jobs.log"
-            )
+            briefing(WORK / "results", e["BASE"], e["SHA"], run, WORK / "failed-jobs.log")
         )
         append_libs(WORK / "context.md")
-        synth_ctx = WORK / "synthesis_context.md"
-        parts = [(WORK / "context.md").read_text(encoding="utf-8")]
-        for g in GROUPS:
-            parts.append(f"\n\n## Group report: {g}\n\n" + group_reports[g])
-        synth_ctx.write_text("\n".join(parts))
 
-        print(f"Running synthesis pass ({args.model})...", flush=True)
+        print(f"Running Claude Code ({args.model})...", flush=True)
         review = run_claude(
             render_prompt(
                 "review",
                 e["SHA"],
                 e["BRANCH"],
                 e["BASE"],
-                group="synthesis (all groups)",
+                group="all groups",
                 prompt=getattr(args, "prompt", None),
                 prompt_file=getattr(args, "prompt_file", None),
             ),
@@ -330,48 +282,15 @@ def cmd_local(args):
         return
 
     try:
-        group_reports = {}
-        for g in GROUPS:
-            gdir = WORK / "groups" / _slug(g)
-            gdir.mkdir(parents=True, exist_ok=True)
-            gtext = briefing(WORK / "results", base, head, run, group=g)
-            (WORK / "context.md").write_text(gtext)
-            (gdir / "context.md").write_text(gtext)
-            print(f"Running Claude Code for group '{g}' ({args.model})...", flush=True)
-            review = run_claude(
-                render_prompt(
-                    "local",
-                    head,
-                    branch,
-                    base,
-                    group=g,
-                    prompt=getattr(args, "prompt", None),
-                    prompt_file=getattr(args, "prompt_file", None),
-                ),
-                args.model,
-            )
-            (gdir / "review.md").write_text(review["report"])
-            group_reports[g] = review["report"]
-            print(f"  {g}: {review['status']} — {review['headline']}", flush=True)
-
         (WORK / "context.md").write_text(briefing(WORK / "results", base, head, run))
-        synth_parts = [(WORK / "context.md").read_text(encoding="utf-8")]
-        for g in GROUPS:
-            synth_parts.append(f"\n\n## Group report: {g}\n\n" + group_reports[g])
-        (WORK / "synthesis_context.md").write_text("\n".join(synth_parts))
-        # point context.md to synthesis for final pass
-        (WORK / "context.md").write_text(
-            (WORK / "synthesis_context.md").read_text(encoding="utf-8")
-        )
-
-        print("Running synthesis pass...", flush=True)
+        print(f"Running Claude Code ({args.model})...", flush=True)
         review = run_claude(
             render_prompt(
                 "local",
                 head,
                 branch,
                 base,
-                group="synthesis (all groups)",
+                group="all groups",
                 prompt=getattr(args, "prompt", None),
                 prompt_file=getattr(args, "prompt_file", None),
             ),
@@ -397,7 +316,7 @@ def cmd_local(args):
         subprocess.run(
             [
                 sys.executable,
-                str(HERE / "pages.py"),
+                str(HERE.parent.parent / "workflows" / "pages.py"),
                 "review",
                 str(site),
                 str(WORK / "review.md"),

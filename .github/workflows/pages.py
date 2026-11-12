@@ -34,7 +34,7 @@ EXTRA_CSS = """
 .badge{display:inline-block;padding:.1rem .6rem;border-radius:4px;font-weight:600;margin-right:.5rem}
 .badge.green{background:var(--green)} .badge.yellow,.badge.incomplete{background:var(--yellow)}
 .badge.red{background:var(--red)}
-.report{margin-top:1rem;overflow-wrap:break-word} .report table{width:max-content;min-width:100%;border-collapse:collapse;margin:.5rem 0} .report th,.report td{overflow-wrap:normal;word-break:keep-all;white-space:nowrap;padding:.3rem .7rem} .report td:first-child,.report th:first-child{white-space:normal}
+.report{margin-top:1rem;overflow-wrap:break-word;overflow-x:auto} .report table{width:max-content;min-width:100%;border-collapse:collapse;margin:.5rem 0} .report th,.report td{overflow-wrap:normal;word-break:keep-all;white-space:nowrap;padding:.3rem .7rem} .report td:first-child,.report th:first-child{white-space:normal}
 pre{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:.6rem;overflow-x:auto;white-space:pre-wrap}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
 /* review page: keep site chrome (sans-serif, site bg) but give the report a readable column */

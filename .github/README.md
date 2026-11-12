@@ -20,16 +20,15 @@ Helper code invoked by the workflows (and runnable locally).
 | Path | Used by | Purpose |
 |---|---|---|
 | `workflows/pages.py` | `container-run`, `test-analysis` | Build the website's `dev/index.html` and `dev/review/index.html` |
-| `agent/agent.py` | `test-analysis` | Drive the Claude Code review agent (CI + local) |
-| `agent/agent_context.py` | `agent/agent.py` | Gather git/test context for the review prompt |
-| `agent/system.md` | `agent/agent.py` | Review prompt template |
-| `agent/tools/` | `agent/agent.py` | Helper scripts invoked by the agent via Bash |
+| `agent/tools/agent.py` | `test-analysis` | Drive the Claude Code review agent (CI + local) |
+| `agent/tools/briefing.py` | `agent/tools/agent.py` | Gather git/test context for the review prompt |
+| `agent/system.md` | `agent/tools/agent.py` | Review prompt template |
 
 ## Local runs
 
 ```sh
 # Review a local results directory with the local `claude` CLI:
-python3 .github/agent/agent.py local --results <dir>
+python3 .github/agent/tools/agent.py local --results <dir>
 
 # Rebuild the dev index page:
 python3 .github/workflows/pages.py dev <dev-dir>
