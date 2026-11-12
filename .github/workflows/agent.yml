@@ -4,7 +4,7 @@
 #
 # Auth: the ANTHROPIC_API_KEY secret. Publishing needs WEBSITE_DEPLOY_TOKEN.
 # Agent settings: .github/agent/tools/agent.py.
-name: test-analysis
+name: agent
 
 on:
 

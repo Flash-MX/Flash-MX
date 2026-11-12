@@ -6,7 +6,7 @@
 # run-suite invocation (flashxtest recreates test.info from them and flags any
 # duplicate/conflicting entries), so adding a new .suite file is enough to get
 # its tests run without editing this workflow.
-name: container-run
+name: container
 
 on:
   workflow_dispatch:
@@ -14,7 +14,6 @@ on:
   push:
     branches:
       - main
-      - staged
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -171,7 +170,7 @@ jobs:
     if: >-
       always()
       && github.event_name != 'pull_request'
-      && (github.ref_name == 'main' || github.ref_name == 'staged')
+      && (github.ref_name == 'main' || github.ref_name == 'staged' || github.ref_type == 'tag')
       && needs.container-run.result != 'skipped'
       && needs.container-run.result != 'cancelled'
     runs-on: ubuntu-latest
@@ -317,3 +316,34 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${WEBSITE_REPO}/actions/workflows/deploy.yml/dispatches" \
             -d '{"ref":"main"}'
+  # Report pass/fail as a commit status so the commit history on main/staged
+  # shows which commits had the test suite run (and whether it passed), matching
+  # the results published to the website.
+  report-status:
+    name: "Report test suite status"
+    needs: [container-run]
+    if: >-
+      always()
+      && needs.container-run.result != 'skipped'
+      && needs.container-run.result != 'cancelled'
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - name: Post commit status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          result="${{ needs.container-run.result }}"
+          if [ "$result" = "success" ]; then
+            state=success
+            desc="Test suite passed on ${{ github.ref_name }}"
+          else
+            state=failure
+            desc="Test suite failed on ${{ github.ref_name }}"
+          fi
+          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state="$state" \
+            -f context="${{ github.workflow }}" \
+            -f description="$desc" \
+            -f "target_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
