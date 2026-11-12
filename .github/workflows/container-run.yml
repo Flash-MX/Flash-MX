@@ -111,11 +111,13 @@ jobs:
       # /home/mount/FlashX/LocalArchive).  Tests resolve -cbase/-rbase entries
       # from LocalArchive via the -a flag passed to flashxtest init.
       - name: Download benchmark archives
+        env:
+          ARCHIVE_URLS: ${{ vars.BENCHMARK_ARCHIVE_URLS }}
         run: |
           mkdir -p "${{ github.workspace }}/LocalArchive/container"
-          ARCHIVE_URLS=$(printf '%s' "${{ vars.BENCHMARK_ARCHIVE_URLS }}" | tr -d '\r')
-          if [ -n "$ARCHIVE_URLS" ]; then
-            for url in $ARCHIVE_URLS; do
+          URLS=$(printf '%s' "$ARCHIVE_URLS" | tr -s '[:space:]' ' ')
+          if [ -n "$URLS" ]; then
+            for url in $URLS; do
               tmp=$(mktemp)
               echo "Downloading: $url"
               curl -fsSL -o "$tmp" "$url"
