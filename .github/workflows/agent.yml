@@ -1,91 +1,36 @@
-# On-request Claude Code review of a completed container-run run (run_id, or
-# the latest on the selected branch) against the changes since the last passing
-# run. Runs no tests. Publishes to the website's "Agent review" tab (dev/review/).
-#
-# Auth: the ANTHROPIC_API_KEY secret. Publishing needs WEBSITE_DEPLOY_TOKEN.
-# Agent settings: .github/agent/tools/agent.py.
+# On-demand open-ended analysis agent for Flash-MX.
 name: agent
 
 on:
-
   workflow_dispatch:
     inputs:
-      run_id:
-        description: 'container-run run ID to review (blank: latest completed run on the selected branch)'
-        required: false
-        default: ''
-      base:
-        description: 'Commit to compare against (blank: last passing container-run on the branch, else merge-base with main, else parent)'
-        required: false
-        default: ''
+      objective:
+        description: 'Objective for the agent (write a paragraph if needed)'
+        required: true
+        type: string
       model:
-        description: 'Claude model ID (blank: claude-opus-5-5, Claude Opus 5.5)'
+        description: 'Claude model ID (blank: claude-opus-5-5)'
         required: false
         default: 'claude-opus-5-5'
-      publish:
-        description: 'Publish the review to the website (Dev > Agent review)'
-        type: boolean
-        required: false
-        default: true
-      prompt:
-        description: 'Optional override prompt for the agent (blank: default prompt)'
-        required: false
-        default: ''
 
 jobs:
   analyze:
-    name: "Analyze test run"
+    name: "Analyze"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: read
-      actions: read     # container-run's jobs, logs and artifacts
-      packages: read    # pull flashx-container from GHCR
+      actions: read
+      packages: read
     env:
       GH_TOKEN: ${{ github.token }}
-      WORK: .test-analysis
+      WORK: .analysis
       MODEL: ${{ inputs.model || 'claude-opus-5-5' }}
+      OBJECTIVE: ${{ inputs.objective }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Resolve run and check out tested commit
-        env:
-          RUN_ID: ${{ inputs.run_id }}
-          BASE: ${{ inputs.base }}
-        run: |
-          id=${RUN_ID:-$(gh run list --workflow ci.yml --branch "$GITHUB_REF_NAME" \
-                           --status completed --limit 1 --json databaseId --jq '.[0].databaseId // ""')}
-          [ -n "$id" ] || { echo "::error::No completed container-run run on $GITHUB_REF_NAME; pass run_id."; exit 1; }
-          mkdir -p "$WORK"
-          gh run view "$id" --json url,headSha,headBranch,conclusion,createdAt,workflowName,jobs \
-            --jq '{url, headSha, headBranch, conclusion, createdAt, workflowName,
-                   jobs: [.jobs[] | {name, conclusion}]}' > "$WORK/run.json"
-          [ "$(jq -r .workflowName "$WORK/run.json")" = ci ] || { echo "::error::Run $id is not ci."; exit 1; }
-          read -r sha branch created < <(jq -r '"\(.headSha) \(.headBranch) \(.createdAt)"' "$WORK/run.json")
-          { gh run view "$id" --log-failed || true; } | tail -n 400 > "$WORK/failed-jobs.log"
-
-          # Base: last passing container-run on the branch before this one,
-          # else the merge-base with main, else the parent commit.
-          [ -n "$BASE" ] || BASE=$(gh run list --workflow ci.yml --branch "$branch" --status success \
-                                     --limit 100 --json databaseId,headSha,createdAt \
-            | jq -r --argjson id "$id" --arg c "$created" '[.[] | select(.databaseId != $id and .createdAt < $c)][0].headSha // ""')
-          cp -r .github/agent "$RUNNER_TEMP/agent"       # agent tooling lives under .github/agent now
-          git checkout -q --detach "$sha"
-          git cat-file -e "${BASE}^{commit}" 2>/dev/null || BASE=$(git merge-base origin/main "$sha" || true)
-          { [ -n "$BASE" ] && [ "$BASE" != "$sha" ]; } || BASE=$(git rev-parse "$sha^" 2>/dev/null || echo "$sha")
-          printf 'RUN_ID=%s\nSHA=%s\nBRANCH=%s\nBASE=%s\n' "$id" "$sha" "$branch" "$BASE" >> "$GITHUB_ENV"
-          echo "Reviewing $(jq -r .url "$WORK/run.json") ($branch, $BASE..$sha)"
-
-      - name: Download test results
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          run-id: ${{ env.RUN_ID }}
-          github-token: ${{ github.token }}
-          pattern: TestResults*
-          path: ${{ env.WORK }}/results
 
       - name: Log in to GHCR
         run: |
@@ -99,126 +44,47 @@ jobs:
       - name: Pull image
         run: docker pull "$IMAGE"
 
-      - name: Capture installed library versions
+      - name: Download latest test results (best effort)
         continue-on-error: true
         run: |
-          docker run --rm "$IMAGE" bash -lc '
-            echo "## flashxtest"; (flashxtest --version 2>&1 || true)
-            echo "## MPI"; (mpirun --version 2>&1 | head -5 || true)
-            echo "## Compilers"; (g++ --version 2>&1 | head -1 || true); (gfortran --version 2>&1 | head -1 || true)
-            echo "## AMReX/HYPRE (files)"; find / -path /proc -prune -o \( -iname "*amrex*" -o -iname "*hypre*" \) -print 2>/dev/null | grep -v "^/proc" | head -40
-          ' > "$WORK/libraries.txt" || true
-          echo "--- captured ---"; cat "$WORK/libraries.txt" 2>/dev/null || true
+          id=$(gh run list --workflow ci.yml --branch "$GITHUB_REF_NAME" --status completed --limit 1 --json databaseId --jq '.[0].databaseId // ""')
+          if [ -n "$id" ]; then
+            mkdir -p "$WORK/results"
+            gh run download "$id" --name TestResults --dir "$WORK/results" 2>/dev/null || true
+          fi
 
-      - name: Merge suite results
-        continue-on-error: true
-        run: |
-          shopt -s nullglob
-          found=0
-          for inv in $(find "$WORK/results" -type d -regextype posix-extended \
-                         -regex '.*/[0-9]{4}-[0-9]{2}-[0-9]{2}' | sort); do
-            site=$(basename "$(dirname "$inv")")
-            dst="$WORK/merged/$site/$(basename "$inv")"
-            mkdir -p "$dst"
-            for f in errors flash_test.log; do
-              [ -f "$inv/$f" ] && cat "$inv/$f" >> "$dst/$f"
-            done
-            cp -a --no-clobber "$inv/." "$dst/"
-            found=1
-          done
-          [ "$found" = 1 ] || echo "No test results to merge."
-
-      - name: Package webview
-        if: hashFiles(format('{0}/merged/**', env.WORK)) != ''
+      - name: Run agent inside container
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           docker run --rm \
             --user flashx \
             -e HOME=/home/flashx \
+            -e ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+            -e OBJECTIVE="$OBJECTIVE" \
+            -e MODEL="$MODEL" \
+            -e SHA="$GITHUB_SHA" \
+            -e BRANCH="$GITHUB_REF_NAME" \
             -v "${{ github.workspace }}:/home/mount/FlashX" \
-            -w /home/mount/FlashX/sites/container \
+            -w /home/mount/FlashX \
             "$IMAGE" \
-            bash -lc '
-              flashxtest init -z /home/mount/FlashX -s container \
-                -a /home/mount/FlashX/LocalArchive \
-                -o /home/mount/FlashX/TestResults \
-                -mpi=mpirun -make="make -j" &&
-              flashxtest webview --outdir /home/mount/FlashX/'"$WORK"'/webview \
-                --results /home/mount/FlashX/'"$WORK"'/merged
-            '
+            bash -lc 'curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.322 && export PATH="$$HOME/.local/bin:$$PATH" && python3 .github/agent/tools/agent.py run --auth api_key --model "$$MODEL" --objective "$$OBJECTIVE"'
 
-      # Called directly: anthropics/claude-code-action does not support push events.
-      - name: Install Claude Code
+      - name: Publish summary to workflow page
+        if: always()
         run: |
-          for i in 1 2 3; do curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.322 && break; sleep 10; done
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Run analysis agent
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          PROMPT: ${{ inputs.prompt }}
-        run: python3 "$RUNNER_TEMP/agent/tools/agent.py" review --auth api_key --model "$MODEL"
+          if [ -f .analysis/report.md ]; then
+            cat .analysis/report.md >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f .analysis/review.md ]; then
+            cat .analysis/review.md >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload analysis
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-analysis
+          name: agent-analysis
           path: |
-            ${{ env.WORK }}/*.md
-            ${{ env.WORK }}/*.json
-            ${{ env.WORK }}/webview
+            .analysis/*.md
+            .analysis/*.json
           if-no-files-found: ignore
-          include-hidden-files: true   # .test-analysis/ is a dot-directory
-
-  # Same concurrency group as container-run's publisher, so pushes never race.
-  publish-review:
-    name: "Publish review to website"
-    needs: analyze
-    if: inputs.publish || github.event_name == 'push'   # TEMPORARY: revert before merging
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    concurrency:
-      group: publish-website
-      cancel-in-progress: false
-    env:
-      WEBSITE_REPO: Flash-MX/flash-mx.github.io
-      TOKEN: ${{ secrets.WEBSITE_DEPLOY_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github/workflows
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: test-analysis
-          path: analysis
-
-      # dev-results holds only the website's dev/ pages, as a single orphan commit.
-      - name: Update dev/review on dev-results
-        run: |
-          [ -n "$TOKEN" ] || { echo "::error::WEBSITE_DEPLOY_TOKEN is not set"; exit 1; }
-          git init -q devsite && cd devsite
-          git remote add origin "https://x-access-token:${TOKEN}@github.com/${WEBSITE_REPO}.git"
-          if git ls-remote --exit-code --heads origin dev-results >/dev/null; then
-            git fetch -q --depth 1 origin dev-results && git checkout -q FETCH_HEAD
-          fi
-          mkdir -p dev
-          WV=$(find ../analysis -type f -path '*webview*' -name 'index.html' | head -1)
-          if [ -n "$WV" ]; then
-            mkdir -p dev/review/webview
-            cp -a "$(dirname "$WV")"/. dev/review/webview/
-          fi
-          python3 ../.github/workflows/pages.py review dev ../analysis/review.md ../analysis/meta.json
-          python3 ../.github/workflows/pages.py dev dev
-          git checkout -q --orphan publish && git add -A
-          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -q -m "Update agent review ($(jq -r '.commit[:8]' ../analysis/meta.json))" \
-            -m "Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          git push -q --force origin publish:dev-results
-
-      # A push to dev-results does not start the website's deploy workflow.
-      - name: Trigger website deploy
-        run: |
-          curl -fsS -X POST -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${WEBSITE_REPO}/actions/workflows/deploy.yml/dispatches" -d '{"ref":"main"}'

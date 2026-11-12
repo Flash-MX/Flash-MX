@@ -2,7 +2,7 @@
 """Test-analysis agent: prompt, tools, schema and limits shared by CI and local runs.
 
   review  CI (agent.yml): reads RUN_ID, SHA, BRANCH, BASE from the environment
-          and the run's files in .test-analysis/; writes report.md, review.md, meta.json
+          and the run's files in .analysis/; writes report.md, review.md, meta.json
   local   review a local FlashTest results directory with the local `claude` CLI
 
 Example: analyze.py local --results DIR [--base REF] [--preview] [--dry-run]
@@ -19,13 +19,10 @@ from string import Template
 
 from briefing import briefing
 HERE = Path(__file__).resolve().parent
-WORK = Path(".test-analysis")
+WORK = Path(".analysis")
 DEFAULT_MODEL = "claude-opus-5-5"
 MAX_TURNS = 60
-ALLOWED_TOOLS = ",".join(
-    ["Read", "Glob", "Grep"]
-    + [f"Bash(git {c}:*)" for c in ("log", "diff", "show", "blame", "status")]
-)
+ALLOWED_TOOLS = "Read,Glob,Grep,Bash"
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -37,9 +34,9 @@ SCHEMA = {
     "additionalProperties": False,
 }
 CONTEXT = {
+    "run": "an open-ended analysis run inside the Flash-MX container",
     "review": "a completed container-run run on GitHub Actions",
-    "local": "a local review of FlashTest results from this machine; there are no GitHub job "
-    "results, and the working tree may contain uncommitted changes (see git status/diff)",
+    "local": "a local analysis of the Flash-MX repo on this machine",
 }
 GITHUB_SECRETS = (
     "GH_TOKEN",
@@ -70,7 +67,7 @@ GROUP_FOCUS = {
 
 
 def render_prompt(
-    mode, sha, branch, base, group="all groups", prompt=None, prompt_file=None
+    mode, sha, branch, base, group="all groups", prompt=None, prompt_file=None, objective=None
 ):
     if prompt_file:
         raw = Path(prompt_file).read_text(encoding="utf-8")
@@ -80,11 +77,15 @@ def render_prompt(
         raw = Path(os.environ["PROMPT_FILE"]).read_text(encoding="utf-8")
     elif os.environ.get("PROMPT"):
         raw = os.environ["PROMPT"]
+    elif os.environ.get("OBJECTIVE"):
+        raw = (HERE.parent / "system.md").read_text(encoding="utf-8")
     else:
         raw = (HERE.parent / "system.md").read_text(encoding="utf-8")
     text = raw.split("-->", 1)[-1].lstrip() if "-->" in raw else raw
+    obj = objective or os.environ.get("OBJECTIVE") or os.environ.get("PROMPT") or "Answer the user's open-ended question about this repository."
     out = Template(text).safe_substitute(
-        CONTEXT=CONTEXT[mode], SHA=sha, BRANCH=branch, BASE=base, WORK=WORK, GROUP=group
+        CONTEXT=CONTEXT.get(mode, mode), SHA=sha, BRANCH=branch, BASE=base, WORK=WORK,
+        GROUP=group, OBJECTIVE=obj
     )
     if group in GROUP_FOCUS:
         out += "\n\nGroup focus: " + GROUP_FOCUS[group]
@@ -169,7 +170,68 @@ def agent_env(auth):
 # --- Commands --------------------------------------------------------------------
 
 
+def cmd_run(args):
+    e = os.environ
+    (WORK / "results").mkdir(parents=True, exist_ok=True)
+    os.chdir(git("rev-parse", "--show-toplevel") or ".") if False else None
+    try:
+        os.chdir(git("rev-parse", "--show-toplevel"))
+    except Exception:
+        pass
+
+    sha = e.get("SHA") or git("rev-parse", getattr(args, "head", "HEAD") or "HEAD")
+    base = e.get("BASE")
+    if not base:
+        base = git("rev-parse", getattr(args, "base", None)) if getattr(args, "base", None) else ""
+    if not base:
+        base = git("merge-base", "origin/main", sha) if sha else ""
+    if not base or base == sha:
+        base = git("rev-parse", f"{sha}^") or sha
+    branch = e.get("BRANCH") or git("rev-parse", "--abbrev-ref", "HEAD") or "?"
+    objective = getattr(args, "objective", None) or e.get("OBJECTIVE") or e.get("PROMPT")
+
+    env, cleanup = agent_env(args.auth) if getattr(args, "auth", None) else (None, lambda: None)
+    # ensure env
+    if env is None:
+        env = {k: v for k, v in os.environ.items() if k not in GITHUB_SECRETS and v != ""}
+    try:
+        print(f"Running Claude Code ({args.model})...", flush=True)
+        review = run_claude(
+            render_prompt(
+                "run",
+                sha,
+                branch,
+                base,
+                group="all groups",
+                prompt=getattr(args, "prompt", None),
+                prompt_file=getattr(args, "prompt_file", None),
+                objective=objective,
+            ),
+            args.model,
+            env,
+        )
+    finally:
+        cleanup()
+
+    meta = {
+        "repo_url": f"{e.get('GITHUB_SERVER_URL','')}/{e.get('GITHUB_REPOSITORY','')}".strip("/"),
+        "run_url": e.get("RUN_URL", ""),
+        "analysis_url": e.get("ANALYSIS_URL", ""),
+        "commit": sha,
+        "base": base,
+        "branch": branch,
+        "model": args.model,
+        "objective": objective or "",
+    }
+    write_outputs(review, meta, f"Objective: {objective or '(none)'}")
+    print(f"Report: {WORK / 'report.md'}")
+
+
+
 def cmd_review(args):
+    return cmd_run(args)
+
+def _cmd_review_unused(args):
     e = os.environ
     (WORK / "results").mkdir(parents=True, exist_ok=True)
     run = json.loads((WORK / "run.json").read_text())
@@ -332,7 +394,15 @@ def main():
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     sub = ap.add_subparsers(dest="cmd", required=True)
-    rv = sub.add_parser("review", help="run the agent in CI")
+    rn = sub.add_parser("run", help="run the open-ended agent")
+    rn.add_argument("--auth", choices=("api_key",), default="api_key")
+    rn.add_argument("--model", default=DEFAULT_MODEL)
+    rn.add_argument("--objective", help="objective for the agent (paragraph)")
+    rn.add_argument("--prompt", help="override the agent prompt text")
+    rn.add_argument("--prompt-file", help="read the agent prompt from a file")
+    rn.add_argument("--head", default="HEAD")
+    rn.add_argument("--base", default=None)
+    rv = sub.add_parser("review", help="alias for run")
     rv.add_argument("--auth", choices=("api_key",), default="api_key")
     rv.add_argument("--model", default=DEFAULT_MODEL)
     rv.add_argument("--prompt", help="override the agent prompt text")
@@ -354,7 +424,12 @@ def main():
     lo.add_argument("--prompt", help="override the agent prompt text")
     lo.add_argument("--prompt-file", help="read the agent prompt from a file")
     args = ap.parse_args()
-    (cmd_review if args.cmd == "review" else cmd_local)(args)
+    if args.cmd == "local":
+        cmd_local(args)
+    elif args.cmd == "review":
+        cmd_review(args)
+    else:
+        cmd_run(args)
 
 
 if __name__ == "__main__":
