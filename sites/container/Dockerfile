@@ -60,4 +60,8 @@ ENV USER=flashx
 ENV LOGNAME=flashx
 RUN adduser --uid 1001 --disabled-password --gecos "" $USER
 USER $USER
+ENV HOME=/home/flashx
+# Install Claude Code into the image so the agent does not fetch it at runtime.
+RUN curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.322
+ENV PATH="/home/flashx/.local/bin:${PATH}"
 WORKDIR /home/flashx
