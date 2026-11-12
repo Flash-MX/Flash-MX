@@ -6,7 +6,7 @@
 # run-suite invocation (flashxtest recreates test.info from them and flags any
 # duplicate/conflicting entries), so adding a new .suite file is enough to get
 # its tests run without editing this workflow.
-name: container
+name: ci
 
 on:
   workflow_dispatch:
