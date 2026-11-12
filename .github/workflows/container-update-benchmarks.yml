@@ -12,7 +12,7 @@
 # (e.g. "gridsolver"), or a comma-separated list of suite names (e.g.
 # "gridsolver,incomp"). New suite files are automatically included when "all" is
 # selected without any changes to this workflow.
-name: container-update-benchmarks
+name: container
 
 on:
   workflow_dispatch:
@@ -30,6 +30,7 @@ jobs:
       contents: write
       packages: read
       pull-requests: write
+      statuses: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -255,6 +256,7 @@ jobs:
               baselines from pass 1) and `-rbase` = `${{ steps.date.outputs.date }}_2` (restart
               baselines from the same-day pass 2 archive).
             - Baseline tarball uploaded as workflow artifact `container-${{ steps.suite.outputs.label }}-${{ steps.date.outputs.date }}`.
+              Download link: ${{ steps.upload-tarball.outputs.artifact-url }}
               The tarball contains the date as its top-level directory, so extracting it into
               `LocalArchive/` on the runner produces `LocalArchive/${{ steps.date.outputs.date }}/...`.
 
@@ -266,3 +268,25 @@ jobs:
                `LocalArchive/` at runtime.
             3. Merge this PR — no image rebuild required; `container-run.yml` downloads all
                listed archives into `LocalArchive/` at runtime.
+
+      - name: Mark commit benchmarks status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          result="${{ job.status }}"
+          if [ "$result" = "success" ]; then
+            state=success
+            desc="Benchmarks created (${{ steps.suite.outputs.label }}, ${{ steps.date.outputs.date }})"
+            url="${{ steps.upload-tarball.outputs.artifact-url }}"
+          else
+            state=failure
+            desc="Benchmark generation failed (${{ steps.suite.outputs.label }})"
+            url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi
+          [ -n "$url" ] || url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -f state="$state" \
+            -f context="${{ github.workflow }}" \
+            -f description="$desc" \
+            -f "target_url=$url"
