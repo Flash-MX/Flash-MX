@@ -8,7 +8,7 @@ on:
 # Container jobs
 jobs:
   pull-request-from-staged:
-    name: "pull-request-from-staged"
+    name: "Pull request from staged"
     runs-on: ubuntu-latest
     steps:
     - name: Check if head branch is staged
