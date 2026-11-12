@@ -12,7 +12,7 @@
 # (e.g. "gridsolver"), or a comma-separated list of suite names (e.g.
 # "gridsolver,incomp"). New suite files are automatically included when "all" is
 # selected without any changes to this workflow.
-name: container
+name: benchmarks
 
 on:
   workflow_dispatch:

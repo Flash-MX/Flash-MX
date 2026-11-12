@@ -5,7 +5,7 @@
 # Dockerfile changes on a push to main/staged, or on manual dispatch.
 # container-run.yml waits for any in-progress run of this workflow before
 # pulling the image.
-name: container
+name: image
 
 on:
   workflow_dispatch:
