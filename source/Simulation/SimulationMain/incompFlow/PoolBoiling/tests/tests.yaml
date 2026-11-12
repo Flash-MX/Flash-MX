@@ -11,6 +11,11 @@ Comparison/incompFlow/PoolBoiling/2d/AMReX:
   parfiles: test_single_bubble.par
   transfers: source/Simulation/SimulationMain/incompFlow/PoolBoiling/tests/single_bubble_hdf5_htr_0001
 
+Comparison/incompFlow/PoolBoiling/2d/AMReXGCFill:
+  setupOptions: -auto -maxblocks=100 +amrex +parallelIO +incomp -2d -nxb=16 -nyb=16
+  parfiles: test_gcfill.par
+  transfers: source/Simulation/SimulationMain/incompFlow/PoolBoiling/tests/single_bubble_hdf5_htr_0001
+
 Comparison/incompFlow/PoolBoiling/3d/AMReX:
   setupOptions: -auto -maxblocks=100 +amrex +parallelIO +incomp -3d -nxb=16 -nyb=16 -nzb=16 -tomlfile=tests/test_3d.toml --with-unitmods
   parfiles: <defaultParfile>

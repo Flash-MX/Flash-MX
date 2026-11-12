@@ -102,11 +102,13 @@ jobs:
       # with cp -r so that multiple archives sharing the same date directory are
       # combined rather than one overwriting the other.
       - name: Download existing benchmark archives
+        env:
+          ARCHIVE_URLS: ${{ vars.BENCHMARK_ARCHIVE_URLS }}
         run: |
           mkdir -p "${{ github.workspace }}/LocalArchive/container"
-          ARCHIVE_URLS="${{ vars.BENCHMARK_ARCHIVE_URLS }}"
-          if [ -n "$ARCHIVE_URLS" ]; then
-            for url in $ARCHIVE_URLS; do
+          URLS=$(printf '%s' "$ARCHIVE_URLS" | tr -s '[:space:]' ' ')
+          if [ -n "$URLS" ]; then
+            for url in $URLS; do
               archive=$(mktemp)
               echo "Downloading: $url"
               curl -fsSL -o "$archive" "$url"

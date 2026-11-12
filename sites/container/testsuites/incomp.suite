@@ -31,6 +31,7 @@ incompFlow/ChannelFlow  -t "Comparison/incompFlow/ChanneFlow/AMReX/2d" -np 4 -cb
 incompFlow/RisingBubble -t "Comparison/RisingBubble/AMReX/2d" -np 3 -cbase 2026-06-20
 incompFlow/RisingBubble -t "Comparison/RisingBubble/AMReXGCFill/2d" -np 3 -cbase 2026-06-20
 incompFlow/PoolBoiling  -t "Comparison/incompFlow/PoolBoiling/2d/AMReX" -np 4 -cbase 2026-06-20
+incompFlow/PoolBoiling  -t "Comparison/incompFlow/PoolBoiling/2d/AMReXGCFill" -np 4 -cbase 2026-11-12
 incompFlow/FlowBoiling  -t "Comparison/incompFlow/FlowBoiling/2d/AMReX" -np 4 -cbase 2026-06-20
 
 # Composite tests (assert divergence interpolation works across grid refinement)
