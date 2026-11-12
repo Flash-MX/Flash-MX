@@ -34,7 +34,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      IMAGE_WORKFLOW: container-update-image.yml
+      IMAGE_WORKFLOW: image.yml
     steps:
       - name: Wait for in-progress image builds
         run: |

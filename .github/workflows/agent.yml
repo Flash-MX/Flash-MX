@@ -55,20 +55,20 @@ jobs:
           RUN_ID: ${{ inputs.run_id }}
           BASE: ${{ inputs.base }}
         run: |
-          id=${RUN_ID:-$(gh run list --workflow container-run.yml --branch "$GITHUB_REF_NAME" \
+          id=${RUN_ID:-$(gh run list --workflow ci.yml --branch "$GITHUB_REF_NAME" \
                            --status completed --limit 1 --json databaseId --jq '.[0].databaseId // ""')}
           [ -n "$id" ] || { echo "::error::No completed container-run run on $GITHUB_REF_NAME; pass run_id."; exit 1; }
           mkdir -p "$WORK"
           gh run view "$id" --json url,headSha,headBranch,conclusion,createdAt,workflowName,jobs \
             --jq '{url, headSha, headBranch, conclusion, createdAt, workflowName,
                    jobs: [.jobs[] | {name, conclusion}]}' > "$WORK/run.json"
-          [ "$(jq -r .workflowName "$WORK/run.json")" = container-run ] || { echo "::error::Run $id is not container-run."; exit 1; }
+          [ "$(jq -r .workflowName "$WORK/run.json")" = ci ] || { echo "::error::Run $id is not ci."; exit 1; }
           read -r sha branch created < <(jq -r '"\(.headSha) \(.headBranch) \(.createdAt)"' "$WORK/run.json")
           { gh run view "$id" --log-failed || true; } | tail -n 400 > "$WORK/failed-jobs.log"
 
           # Base: last passing container-run on the branch before this one,
           # else the merge-base with main, else the parent commit.
-          [ -n "$BASE" ] || BASE=$(gh run list --workflow container-run.yml --branch "$branch" --status success \
+          [ -n "$BASE" ] || BASE=$(gh run list --workflow ci.yml --branch "$branch" --status success \
                                      --limit 100 --json databaseId,headSha,createdAt \
             | jq -r --argjson id "$id" --arg c "$created" '[.[] | select(.databaseId != $id and .createdAt < $c)][0].headSha // ""')
           cp -r .github/agent "$RUNNER_TEMP/agent"       # agent tooling lives under .github/agent now

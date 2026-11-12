@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Test-analysis agent: prompt, tools, schema and limits shared by CI and local runs.
 
-  review  CI (test-analysis.yml): reads RUN_ID, SHA, BRANCH, BASE from the environment
+  review  CI (agent.yml): reads RUN_ID, SHA, BRANCH, BASE from the environment
           and the run's files in .test-analysis/; writes report.md, review.md, meta.json
   local   review a local FlashTest results directory with the local `claude` CLI
 
