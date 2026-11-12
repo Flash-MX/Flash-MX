@@ -49,8 +49,8 @@ RUN ./configure --prefix=/home/lib/amrex/3D --dim=3 && make -j"$(nproc)" && make
 RUN git clone https://github.com/hypre-space/hypre.git --branch v2.22.0 /Hypre
 WORKDIR /Hypre
 RUN cd src && ./configure --enable-shared --enable-fortran --with-MPI --prefix=/home/lib/hypre && make install
-ENV LD_LIBRARY_PATH=/home/lib/hypre/lib:$LD_LIBRARY_PATH
-ENV DYLD_LIBRARY_PATH=/home/lib/hypre/lib:$DYLD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH="/home/lib/hypre/lib:${LD_LIBRARY_PATH:-}"
+ENV DYLD_LIBRARY_PATH="/home/lib/hypre/lib:${DYLD_LIBRARY_PATH:-}"
 
 
 # Run container as a non-root user. flashxtest refuses to run as root.
@@ -63,5 +63,5 @@ USER $USER
 ENV HOME=/home/flashx
 # Install Claude Code into the image so the agent does not fetch it at runtime.
 RUN curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.322
-ENV PATH="/home/flashx/.local/bin:${PATH}"
+ENV PATH="/home/flashx/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 WORKDIR /home/flashx
