@@ -13,25 +13,26 @@ trigger conditions.
 | `test-analysis.yml` | On-request Claude Code review of a `container-run` run |
 | `checks.yml` | Guard: PRs to `main` must come from `staged` |
 
-## `scripts/`
+## Helper code
 
 Helper code invoked by the workflows (and runnable locally).
 
 | Path | Used by | Purpose |
 |---|---|---|
-| `ci/pages.py` | `container-run`, `test-analysis` | Build the website's `dev/index.html` and `dev/review/index.html` |
+| `workflows/pages.py` | `container-run`, `test-analysis` | Build the website's `dev/index.html` and `dev/review/index.html` |
 | `agent/agent.py` | `test-analysis` | Drive the Claude Code review agent (CI + local) |
 | `agent/agent_context.py` | `agent/agent.py` | Gather git/test context for the review prompt |
-| `agent/agent_prompt.md` | `agent/agent.py` | Review prompt template |
+| `agent/system.md` | `agent/agent.py` | Review prompt template |
+| `agent/tools/` | `agent/agent.py` | Helper scripts invoked by the agent via Bash |
 
 ## Local runs
 
 ```sh
 # Review a local results directory with the local `claude` CLI:
-python3 .github/scripts/agent/agent.py local --results <dir>
+python3 .github/agent/agent.py local --results <dir>
 
 # Rebuild the dev index page:
-python3 .github/scripts/ci/pages.py dev <dev-dir>
+python3 .github/workflows/pages.py dev <dev-dir>
 ```
 
 ## Notes

@@ -14,4 +14,4 @@ inside a Docker container that has AMReX and HYPRE preinstalled, using the
 - **`test-analysis.yml`** — on request (manual dispatch): a Claude Code agent reviews the latest
   `container-run` run on the branch (or `run_id`) against the changes since the last passing run, and
   publishes the review to https://flash-mx.github.io/dev/review/. Auth: the `ANTHROPIC_API_KEY`
-  secret. Local run: `python3 .github/scripts/agent/agent.py local --results <dir>`.
+  secret. Local run: `python3 .github/agent/agent.py local --results <dir>`.

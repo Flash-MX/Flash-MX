@@ -3,7 +3,7 @@
 # run. Runs no tests. Publishes to the website's "Agent review" tab (dev/review/).
 #
 # Auth: the ANTHROPIC_API_KEY secret. Publishing needs WEBSITE_DEPLOY_TOKEN.
-# Agent settings: .github/scripts/agent/agent.py.
+# Agent settings: .github/agent/agent.py.
 name: test-analysis
 
 on:
@@ -74,7 +74,7 @@ jobs:
           [ -n "$BASE" ] || BASE=$(gh run list --workflow container-run.yml --branch "$branch" --status success \
                                      --limit 100 --json databaseId,headSha,createdAt \
             | jq -r --argjson id "$id" --arg c "$created" '[.[] | select(.databaseId != $id and .createdAt < $c)][0].headSha // ""')
-          cp -r .github/scripts "$RUNNER_TEMP/scripts"   # this branch's scripts, not the tested commit's
+          cp -r .github/agent "$RUNNER_TEMP/agent"       # agent tooling lives under .github/agent now
           git checkout -q --detach "$sha"
           git cat-file -e "${BASE}^{commit}" 2>/dev/null || BASE=$(git merge-base origin/main "$sha" || true)
           { [ -n "$BASE" ] && [ "$BASE" != "$sha" ]; } || BASE=$(git rev-parse "$sha^" 2>/dev/null || echo "$sha")
@@ -159,7 +159,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PROMPT: ${{ inputs.prompt }}
-        run: python3 "$RUNNER_TEMP/scripts/agent/agent.py" review --auth api_key --model "$MODEL"
+        run: python3 "$RUNNER_TEMP/agent/agent.py" review --auth api_key --model "$MODEL"
 
       - name: Upload analysis
         if: always()
@@ -190,7 +190,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: .github/scripts
+          sparse-checkout: .github/workflows
 
       - uses: actions/download-artifact@v4
         with:
@@ -212,8 +212,8 @@ jobs:
             mkdir -p dev/review/webview
             cp -a "$(dirname "$WV")"/. dev/review/webview/
           fi
-          python3 ../.github/scripts/ci/pages.py review dev ../analysis/review.md ../analysis/meta.json
-          python3 ../.github/scripts/ci/pages.py dev dev
+          python3 ../.github/workflows/pages.py review dev ../analysis/review.md ../analysis/meta.json
+          python3 ../.github/workflows/pages.py dev dev
           git checkout -q --orphan publish && git add -A
           git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit -q -m "Update agent review ($(jq -r '.commit[:8]' ../analysis/meta.json))" \

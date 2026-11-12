@@ -89,7 +89,18 @@ def describe_build(b, msg, stage):
     return "\n\n".join(d)
 
 
-def describe_results(results):
+def _group_of(build_name):
+    n = build_name.lower()
+    if n.startswith("unittest"):
+        return "Unit tests"
+    if n.startswith("comparison"):
+        return "Comparison tests"
+    if n.startswith("composite"):
+        return "Composite tests"
+    return "Pipeline and infrastructure"
+
+
+def describe_results(results, group=None):
     invocations = sorted(p for p in results.rglob("*") if p.is_dir() and INVOCATION_RE.match(p.name))
     if not invocations:
         return ["**No FlashTest results were found.** The suite probably never ran; "
@@ -102,23 +113,28 @@ def describe_results(results):
             out.append("flash_test.log errors/warnings:\n" + fence("\n".join(notable[-40:])))
         rows, details = ["\n| Build | Status | Detail |\n|---|---|---|"], []
         for b in sorted(p.parent for p in inv.glob("*/errors")):
+            if group and _group_of(b.name) != group:
+                continue
             colour, msg, stage = build_status(b / "errors")
             counts[colour] += 1
             rows.append(f"| `{b.name}` | {colour} | {msg} |")
             if colour != "green":
                 details.append(describe_build(b, msg, stage))
-        out += rows + [""] + details if details or len(rows) > 1 else ["_No build directories found._"]
+        if len(rows) == 1:
+            continue
+        out += rows + [""] + details
     summary = f"Builds: {counts['green']} green, {counts['yellow']} yellow (known failures), {counts['red']} red\n"
     return [summary] + out
 
 
-def briefing(results, base, head, run, failed_log=None):
+def briefing(results, base, head, run, failed_log=None, group=None):
     doc = ["# Test analysis briefing\n", "## Run\n",
            f"- Run: {run.get('url')}\n- Branch: `{run.get('headBranch')}`\n"
-           f"- Commit tested: `{head}`\n- Conclusion: **{run.get('conclusion')}**\n"]
+           f"- Commit tested: `{head}`\n- Conclusion: **{run.get('conclusion')}**\n"
+           + (f"- Group scope: **{group}**\n" if group else "")]
     if run.get("jobs"):
         doc += ["| Job | Conclusion |\n|---|---|"] + [f"| {j['name']} | {j['conclusion']} |" for j in run["jobs"]] + [""]
-    doc += ["## Test results\n"] + describe_results(results)
+    doc += ["## Test results\n"] + describe_results(results, group=group)
     if failed_log and (t := tail(failed_log, 400)):
         doc.append("\n## Failed job logs (tail)\n" + fence(t))
     doc.append(f"\n## Code changes\n\nRange: `{base}..{head}`\n")
@@ -133,7 +149,9 @@ def briefing(results, base, head, run, failed_log=None):
                    "which 'result changed' is judged.")
         log = git("log", "--no-merges", "--format=%h %an %ad %s", "--date=short", f"{base}..{head}")
         files = git("diff", "--name-only", f"{base}..{head}")
+        src_files = "\n".join(f for f in files.splitlines() if f.startswith(("source/", "bin/")))
         doc += ["Commits:\n" + fence(log or "<none>"),
                 "Changed files:\n" + fence(files or "<none>"),
+                "Changed source/bin files (highest priority):\n" + fence(src_files or "<none>"),
                 "Diff stat:\n" + fence(git("diff", "--stat=120", f"{base}..{head}") or "<none>")]
     return "\n".join(doc) + "\n"

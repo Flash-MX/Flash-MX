@@ -37,6 +37,13 @@ EXTRA_CSS = """
 .report{margin-top:1rem;overflow-wrap:break-word} .report table{width:max-content;min-width:100%;border-collapse:collapse;margin:.5rem 0} .report th,.report td{overflow-wrap:normal;word-break:keep-all;white-space:nowrap;padding:.3rem .7rem} .report td:first-child,.report th:first-child{white-space:normal}
 pre{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:.6rem;overflow-x:auto;white-space:pre-wrap}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
+/* review page: keep site chrome (sans-serif, site bg) but give the report a readable column */
+body{max-width:52rem;margin:0 auto;padding:2rem 1.5rem 4rem}
+h1{font-size:1.6rem} h2{font-size:1.2rem;margin-top:1.6rem} h3{font-size:1rem;color:var(--muted)}
+.report{line-height:1.65} .report p{margin:.6rem 0}
+details{{margin:1rem 0;border:1px solid var(--border);border-radius:6px;padding:.6rem 1rem;background:var(--surface)}}
+summary{{cursor:pointer;font-weight:600;font-family:-apple-system,"Segoe UI","Helvetica Neue",Arial,sans-serif}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem 1.5rem}
 """
 
 MARKED = "https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"
@@ -216,7 +223,24 @@ It can be wrong: treat it as a starting point and verify before acting.</p>
 <script>
 try {{
   const md = JSON.parse(document.getElementById("report-md").textContent);
-  document.getElementById("report").innerHTML = DOMPurify.sanitize(marked.parse(md));
+  const root = document.getElementById("report");
+  root.innerHTML = DOMPurify.sanitize(marked.parse(md));
+  // Wrap each top-level (h2) section in a collapsible block.
+  const headings = Array.from(root.querySelectorAll("h2"));
+  headings.forEach((h, i) => {{
+    const details = document.createElement("details");
+    if (i === 0) details.open = true;
+    const summary = document.createElement("summary");
+    summary.textContent = h.textContent;
+    details.appendChild(summary);
+    h.replaceWith(details);
+    let node = details.nextSibling;
+    while (node && !(node.nodeType === 1 && node.tagName === "H2")) {{
+      const next = node.nextSibling;
+      details.appendChild(node);
+      node = next;
+    }}
+  }});
 }} catch (e) {{ /* keep the plain-text fallback */ }}
 </script>
 </body></html>
