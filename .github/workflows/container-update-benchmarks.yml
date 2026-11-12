@@ -146,7 +146,7 @@ jobs:
               # same-day) run so FlashTest does not create a suffixed invocation
               # directory (e.g. 2026-..-.._3) instead of overwriting today cache.
               rm -rf /home/mount/FlashX/TestResults /home/mount/FlashX/MainArchive
-              # Remove today's stale LocalArchive entries so regenerated baselines
+              # Remove todays stale LocalArchive entries so regenerated baselines
               # overwrite instead of being skipped.
               rm -rf /home/mount/FlashX/LocalArchive/container/"$BENCH_DATE" \
                      /home/mount/FlashX/LocalArchive/container/"${BENCH_DATE}_2"
