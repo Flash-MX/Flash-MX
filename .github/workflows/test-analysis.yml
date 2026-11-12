@@ -7,9 +7,6 @@
 name: test-analysis
 
 on:
-  # TEMPORARY (branch test before merge): revert this commit before merging.
-  push:
-    branches: [adhruv/dev]
 
   workflow_dispatch:
     inputs:
