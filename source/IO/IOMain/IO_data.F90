@@ -156,6 +156,10 @@ module IO_data
 
   integer, save :: io_plotVar(io_maxPlotVars), io_nPlotVars
   integer, save :: io_plotGridVar(io_maxPlotGridVars), io_nPlotGridVars
+  ! plot_var_X names of the face velocity components, which are also their plotfile dataset names.
+  ! Must stay 4 characters: io_h5write_unknowns passes the label to C as char[5].
+  character (len=4), parameter :: io_faceVelocityLabels(MDIM) = (/ 'fv_x', 'fv_y', 'fv_z' /)
+  logical, save :: io_plotFaceVelocity(MDIM)
 
   logical, save :: io_unkActive(UNK_VARS_BEGIN:UNK_VARS_END)
   integer, save :: io_unkToGlobal(UNK_VARS_BEGIN:UNK_VARS_END) ! stores for each unk the corresponding index into io_unklabelsGlobal, or 0 if unk is inactive

@@ -75,7 +75,7 @@ subroutine io_writeData(fileID)
    use iso_c_binding, ONLY: c_loc, c_char
 #endif
 
-   use IO_data, ONLY: io_globalMe, io_globalNumProcs, io_globalComm, &
+   use IO_data, ONLY: io_globalMe, io_globalNumProcs, io_globalComm, io_plotFaceVelocity, io_faceVelocityLabels, &
                       io_realParmNames, io_realParmValues, io_numRealParms, &
                       io_intParmNames, io_intParmValues, io_numIntParms, &
                       io_logParmNames, io_logParmValues, io_numLogParms, &
@@ -148,6 +148,7 @@ subroutine io_writeData(fileID)
    integer :: localNumBlocks, blockID
    integer :: i, lb, j, u, AllocateStatus
    integer :: dowrite, compression_type, compression_type_plt
+   integer :: axis
    real, save :: compression_val, compression_val2
 
    real, save :: compression_val_plt, compression_val2_plt
@@ -889,6 +890,14 @@ subroutine io_writeData(fileID)
       deallocate (globalFaceZMin)
       deallocate (globalFaceZMax)
 #endif
+
+   else
+#ifdef VELC_FACE_VAR
+      ! Save the velocity faces to plot files to verify divergence.
+      do axis = IAXIS, NDIM
+         if (io_plotFaceVelocity(axis)) call writeFaceVelocity(axis)
+      end do
+#endif
    end if
 #endif
 
@@ -899,5 +908,50 @@ subroutine io_writeData(fileID)
    end if
 
    return
+
+#ifdef VELC_FACE_VAR
+contains
+
+   ! Writes one face velocity component, in double precision unlike the rest of the plotfile.
+   subroutine writeFaceVelocity(axis)
+      integer, intent(in) :: axis
+      integer, parameter :: faceTypes(MDIM) = (/FACEX, FACEY, FACEZ/)
+      real :: faceMin(NFACE_VARS), faceMax(NFACE_VARS)
+      real, allocatable :: faceBuf(:, :, :, :, :)
+      real, pointer :: faceData(:, :, :, :)
+      type(Grid_iterator_t) :: faceItor
+      type(Grid_tile_t) :: faceTile
+      integer :: faceCounts(MDIM), faceLo(MDIM), faceHi(MDIM), blockIndex
+
+      call io_getVarExtrema(NFACE_VARS, faceMin, faceMax, faceTypes(axis))
+
+      faceCounts = (/NXB, NYB, NZB/)
+      faceCounts(axis) = faceCounts(axis) + 1
+      allocate (faceBuf(1, faceCounts(IAXIS), faceCounts(JAXIS), faceCounts(KAXIS), localNumBlocks))
+      faceBuf = 0.0
+
+      call Grid_getTileIterator(faceItor, ALL_BLKS, tiling=.FALSE.); blockIndex = 1
+      do while (faceItor%isValid())
+         call faceItor%currentTile(faceTile)
+         call faceTile%getDataPtr(faceData, faceTypes(axis))
+         faceLo = faceTile%limits(LOW, :)
+         faceHi = faceTile%limits(HIGH, :)
+         faceHi(axis) = faceHi(axis) + 1
+         faceBuf(1, :, :, :, blockIndex) = faceData(faceLo(IAXIS):faceHi(IAXIS), &
+                                                    faceLo(JAXIS):faceHi(JAXIS), &
+                                                    faceLo(KAXIS):faceHi(KAXIS), VELC_FACE_VAR)
+         call faceTile%releaseDataPtr(faceData, faceTypes(axis))
+         call faceItor%next(); blockIndex = blockIndex + 1
+      end do
+      call Grid_releaseTileIterator(faceItor)
+
+      call io_h5write_unknowns(io_globalMe, fileID, &
+                               faceCounts(IAXIS), faceCounts(JAXIS), faceCounts(KAXIS), faceBuf, &
+                               faceMin(VELC_FACE_VAR), faceMax(VELC_FACE_VAR), io_faceVelocityLabels(axis), &
+                               localNumBlocks, io_splitNumBlks, localOffset, &
+                               compression_type_plt, compression_val_plt, compression_val2_plt, dowrite)
+      deallocate (faceBuf)
+   end subroutine writeFaceVelocity
+#endif
 
 end subroutine io_writeData
