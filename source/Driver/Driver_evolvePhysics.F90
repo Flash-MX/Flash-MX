@@ -17,7 +17,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Driver_evolvePhysics()
+!!  call Driver_evolvePhysics(logical(out) :: endRunPl)
 !!
 !! DESCRIPTION
 !!
@@ -26,9 +26,12 @@
 !!  Driver_evolveAll. Real implementations override this in driver-specific
 !!  subdirectories (e.g., DriverMain/Incomp/).
 !!
-!!  The routine has the same signature as Driver_evolveAll (no arguments).
 !!  It is called once per timestep from within the evolution loop in
 !!  Driver_evolveAll.
+!!
+!! ARGUMENTS
+!!
+!!  endRunPl : true when the plotfile output asks the run to end
 !!
 !!***
 
@@ -36,11 +39,14 @@
 #define DEBUG_DRIVER
 #endif
 
-subroutine Driver_evolvePhysics()
+subroutine Driver_evolvePhysics(endRunPl)
 
    implicit none
 
+   logical, intent(out) :: endRunPl
+
    ! Stub: does nothing. Override in DriverMain subdirectories.
+   endRunPl = .false.
    return
 
 end subroutine Driver_evolvePhysics
