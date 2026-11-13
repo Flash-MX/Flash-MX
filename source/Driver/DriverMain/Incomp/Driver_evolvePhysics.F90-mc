@@ -18,7 +18,7 @@
 !!
 !! SYNOPSIS
 !!
-!!  call Driver_evolvePhysics()
+!!  call Driver_evolvePhysics(logical(out) :: endRunPl)
 !!
 !! DESCRIPTION
 !!
@@ -32,13 +32,18 @@
 !!  - Physics unit calls (IncompNS, Multiphase, HeatAD, Heater, Outlet)
 !!  - Predictor-corrector velocity solve
 !!  - Pressure Poisson solve
+!!  - Plotfile output, after the velocity correction
 !!  - Grid refinement and housekeeping
 !!  - Timestep (dt) computation for next step
 !!
 !!  Does NOT contain:
 !!  - The timestep loop itself (stays in Driver_evolveAll)
-!!  - IO output calls (plotfile/checkpoint - stay in Driver_evolveAll)
+!!  - Checkpoint output (stays in Driver_evolveAll)
 !!  - Termination checks (stay in Driver_evolveAll)
+!!
+!! ARGUMENTS
+!!
+!!  endRunPl : true when the plotfile output asks the run to end
 !!
 !! NOTES
 !!
@@ -56,13 +61,14 @@
 #define DEBUG_DRIVER
 #endif
 
-subroutine Driver_evolvePhysics()
+subroutine Driver_evolvePhysics(endRunPl)
 
    use Driver_data, ONLY: dr_globalMe, dr_nbegin, dr_dt, &
                           dr_simTime, dr_nstep, dr_dtOld, dr_dtNew, &
                           dr_simGeneration
    use Driver_interface, ONLY: Driver_computeDt, Driver_abort
    use Timers_interface, ONLY: Timers_start, Timers_stop
+   use IO_interface, ONLY: IO_output
 
    use Grid_interface, ONLY: Grid_updateRefinement, Grid_setInterpValsGcell, &
                              Grid_fillGuardCells, Grid_getTileIterator, &
@@ -108,6 +114,8 @@ subroutine Driver_evolvePhysics()
 #endif
 
    implicit none
+
+   logical, intent(out) :: endRunPl
 
    ! Local variables
    logical :: gridChanged
@@ -534,6 +542,18 @@ subroutine Driver_evolvePhysics()
    call Grid_setInterpValsGcell(.false.)
    !------------------------------------------------------------
 
+   ! Write the plotfile with the corrected velocity, before the heat and
+   ! level set updates of this step
+   ! In your Simulation Config set REQUIRES physics/IncompNS/IncompNSExtras
+   ! Note this will add velocity and vorticity variables to your CENTER data structure.
+   ! Average Velocities and Vorticity to cell-centers
+   call IncompNS_velomgToCenter()
+
+   call Timers_start("IO_output")
+   call IO_output(dr_simTime, &
+                  dr_dt, dr_nstep+1, dr_nbegin, endRunPl, PLOTFILE_AND_PARTICLEFILE)
+   call Timers_stop("IO_output")
+
 #ifdef HEATAD_MAIN
    ! Fill GuardCells for temperature
    gcMask(:) = .FALSE.
@@ -611,11 +631,6 @@ subroutine Driver_evolvePhysics()
    !------------------------------------------------------------
    !- End Physics Sequence
    !------------------------------------------------------------
-   ! Velocities and Omg to Center variables
-   ! In your Simulation Config set REQUIRES physics/IncompNS/IncompNSExtras
-   ! Note this will add velocity and vorticity variables to your CENTER data structure.
-   ! Average Velocities and Vorticity to cell-centers
-   call IncompNS_velomgToCenter()
 
    ! Call indicators methods to show information includes
    ! MPI all reduce operations
