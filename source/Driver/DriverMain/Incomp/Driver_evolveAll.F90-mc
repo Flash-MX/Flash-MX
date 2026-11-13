@@ -72,9 +72,9 @@ subroutine Driver_evolveAll()
 
    implicit none
 
-   ! Interface for Driver_evolvePhysics (same signature as Driver_evolveAll)
    interface
-      subroutine Driver_evolvePhysics()
+      subroutine Driver_evolvePhysics(endRunPl)
+         logical, intent(out) :: endRunPl
       end subroutine Driver_evolvePhysics
    end interface
 
@@ -84,7 +84,7 @@ subroutine Driver_evolveAll()
 
    ! Termination flags
    logical :: endRunPl      ! End run based on plotfile IO conditions
-   logical :: endRun        ! End run based on checkpoint IO conditions
+   logical :: endRun       ! End run based on checkpoint IO conditions
    logical :: endRunWallClock ! End run based on wall clock time
 
    ! Variables for unitTest
@@ -145,17 +145,10 @@ subroutine Driver_evolveAll()
       end if
 
       !----------------------------------------------------------------------
-      ! Call per-timestep physics (extracted into Driver_evolvePhysics)
+      ! Call per-timestep physics (extracted into Driver_evolvePhysics), which
+      ! also writes the plotfile after the velocity correction (produces endRunPl flag)
       !----------------------------------------------------------------------
-      call Driver_evolvePhysics()
-
-      !----------------------------------------------------------------------
-      ! IO Output: plotfile (produces endRunPl flag)
-      !----------------------------------------------------------------------
-      call Timers_start("IO_output")
-      call IO_output(dr_simTime, &
-                     dr_dt, dr_nstep+1, dr_nbegin, endRunPl, PLOTFILE_AND_PARTICLEFILE)
-      call Timers_stop("IO_output")
+      call Driver_evolvePhysics(endRunPl)
 
       !----------------------------------------------------------------------
       ! IO Output: checkpoint (produces endRun flag)
