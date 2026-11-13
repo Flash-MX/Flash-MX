@@ -2,7 +2,10 @@ name: checks
 
 on:
   pull_request:
-    branches: 
+    types:
+      - opened
+      - reopened
+    branches:
       - main
 
 # Container jobs
