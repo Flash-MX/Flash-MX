@@ -127,17 +127,21 @@ def describe_results(results, group=None):
     return [summary] + out
 
 
-def briefing(results, base, head, run, failed_log=None, group=None):
-    doc = ["# Test analysis briefing\n", "## Run\n",
+def briefing(results, base, head, run, failed_log=None, group=None, repo_url=None):
+    doc = ["# Analysis briefing\n", "## Run\n",
            f"- Run: {run.get('url')}\n- Branch: `{run.get('headBranch')}`\n"
-           f"- Commit tested: `{head}`\n- Conclusion: **{run.get('conclusion')}**\n"
+           f"- Commit (anchor): `{head}`\n- Conclusion: **{run.get('conclusion')}**\n"
            + (f"- Group scope: **{group}**\n" if group else "")]
+    if repo_url:
+        doc.append(f"- Repo URL: {repo_url}\n- Code link base: {repo_url}/blob/{head}/ (append `path#Lline`)\n")
     if run.get("jobs"):
         doc += ["| Job | Conclusion |\n|---|---|"] + [f"| {j['name']} | {j['conclusion']} |" for j in run["jobs"]] + [""]
     doc += ["## Test results\n"] + describe_results(results, group=group)
     if failed_log and (t := tail(failed_log, 400)):
         doc.append("\n## Failed job logs (tail)\n" + fence(t))
-    doc.append(f"\n## Code changes\n\nRange: `{base}..{head}`\n")
+    doc.append(f"\n## Recent changes (reference only)\n\nRange: `{base}..{head}`\n"
+               "Primary subject remains the source on the branch at the commit above; "
+               "this range is context, not the subject.\n")
     if base == head:
         doc.append("**No code changes in range** (tested commit = base). Differences in outcome point to "
                    "the environment (image, benchmarks, runner) or flakiness. "

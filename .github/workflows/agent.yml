@@ -68,7 +68,7 @@ jobs:
             -v "${{ github.workspace }}:/home/mount/FlashX" \
             -w /home/mount/FlashX \
             "$IMAGE" \
-            bash -lc 'curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.322 && export PATH="$$HOME/.local/bin:$$PATH" && python3 .github/agent/tools/agent.py run --auth api_key --model "$$MODEL" --objective "$$OBJECTIVE"'
+            bash -c 'export PATH="/home/flashx/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" && /usr/bin/python3 .github/agent/tools/agent.py run --auth api_key'
 
       - name: Publish summary to workflow page
         if: always()

@@ -21,8 +21,8 @@ from briefing import briefing
 HERE = Path(__file__).resolve().parent
 WORK = Path(".analysis")
 DEFAULT_MODEL = "claude-opus-5-5"
-MAX_TURNS = 60
-ALLOWED_TOOLS = "Read,Glob,Grep,Bash"
+MAX_TURNS = 80
+ALLOWED_TOOLS = "Read,Glob,Grep,Bash,WebFetch,WebSearch,Agent"
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -190,6 +190,22 @@ def cmd_run(args):
     branch = e.get("BRANCH") or git("rev-parse", "--abbrev-ref", "HEAD") or "?"
     objective = getattr(args, "objective", None) or e.get("OBJECTIVE") or e.get("PROMPT")
 
+    repo_url = (e.get("GITHUB_SERVER_URL","") + "/" + e.get("GITHUB_REPOSITORY","")).strip("/")
+    if not repo_url or repo_url == "/":
+        remote = git("config", "--get", "remote.origin.url")
+        if remote.startswith("git@"):
+            remote = remote.replace(":", "/", 1).replace("git@", "https://", 1)
+        repo_url = remote[:-4] if remote.endswith(".git") else remote
+    try:
+        (WORK / "context.md").write_text(
+            briefing(WORK / "results", base, sha, {"url": e.get("RUN_URL", "local run"), "headBranch": branch, "conclusion": "n/a"}, None, group=None, repo_url=repo_url)
+            + "\n\n## Repository\n- repo_url: " + repo_url + "\n- commit: " + sha + "\n"
+            + "- code link base: " + repo_url + "/blob/" + sha + "/\n"
+        )
+    except Exception as ex:
+        (WORK / "context.md").write_text(f"# Context unavailable: {ex}\n")
+    print(f"Context: {WORK / 'context.md'}")
+
     env, cleanup = agent_env(args.auth) if getattr(args, "auth", None) else (None, lambda: None)
     # ensure env
     if env is None:
@@ -295,6 +311,14 @@ def git(*a):
     return res.stdout.strip() if res.returncode == 0 else ""
 
 
+
+def repo_url_from_git():
+    remote = git("config", "--get", "remote.origin.url")
+    if remote.startswith("git@"):
+        remote = remote.replace(":", "/", 1).replace("git@", "https://", 1)
+    return remote[:-4] if remote.endswith(".git") else remote
+
+
 def cmd_local(args):
     os.chdir(git("rev-parse", "--show-toplevel") or ".")
     results = Path(args.results).expanduser().resolve()
@@ -326,7 +350,7 @@ def cmd_local(args):
     run = {"url": "local run", "headBranch": branch, "conclusion": "n/a (local)"}
 
     if args.dry_run:
-        (WORK / "context.md").write_text(briefing(WORK / "results", base, head, run))
+        (WORK / "context.md").write_text(briefing(WORK / "results", base, head, run, repo_url=repo_url_from_git()))
         prompt = render_prompt(
             "local",
             head,
@@ -344,7 +368,7 @@ def cmd_local(args):
         return
 
     try:
-        (WORK / "context.md").write_text(briefing(WORK / "results", base, head, run))
+        (WORK / "context.md").write_text(briefing(WORK / "results", base, head, run, repo_url=repo_url_from_git()))
         print(f"Running Claude Code ({args.model})...", flush=True)
         review = run_claude(
             render_prompt(
@@ -396,7 +420,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     rn = sub.add_parser("run", help="run the open-ended agent")
     rn.add_argument("--auth", choices=("api_key",), default="api_key")
-    rn.add_argument("--model", default=DEFAULT_MODEL)
+    rn.add_argument("--model", default=os.environ.get("MODEL", DEFAULT_MODEL))
     rn.add_argument("--objective", help="objective for the agent (paragraph)")
     rn.add_argument("--prompt", help="override the agent prompt text")
     rn.add_argument("--prompt-file", help="read the agent prompt from a file")
@@ -404,7 +428,7 @@ def main():
     rn.add_argument("--base", default=None)
     rv = sub.add_parser("review", help="alias for run")
     rv.add_argument("--auth", choices=("api_key",), default="api_key")
-    rv.add_argument("--model", default=DEFAULT_MODEL)
+    rv.add_argument("--model", default=os.environ.get("MODEL", DEFAULT_MODEL))
     rv.add_argument("--prompt", help="override the agent prompt text")
     rv.add_argument("--prompt-file", help="read the agent prompt from a file")
     lo = sub.add_parser("local", help="review a local results directory")
@@ -414,7 +438,7 @@ def main():
         help="commit to compare against (default: merge-base with origin/main)",
     )
     lo.add_argument("--head", default="HEAD")
-    lo.add_argument("--model", default=DEFAULT_MODEL)
+    lo.add_argument("--model", default=os.environ.get("MODEL", DEFAULT_MODEL))
     lo.add_argument(
         "--preview", action="store_true", help="also render the website page"
     )
