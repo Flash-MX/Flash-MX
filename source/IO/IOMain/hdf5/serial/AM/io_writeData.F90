@@ -68,7 +68,7 @@ subroutine io_writeData(fileID)
 
    use io_typeInterface, ONLY: io_xfer_tree_data
 
-   use IO_data, ONLY: io_globalMe, io_globalNumProcs, io_globalComm, &
+   use IO_data, ONLY: io_globalMe, io_globalNumProcs, io_globalComm, io_plotFaceVelocity, io_faceVelocityLabels, &
                       io_realParmNames, io_realParmValues, io_numRealParms, &
                       io_intParmNames, io_intParmValues, io_numIntParms, &
                       io_logParmNames, io_logParmValues, io_numLogParms, &
@@ -932,8 +932,21 @@ subroutine io_writeData(fileID)
                   end if !2d
 
                else !we're outputing a plot file
-                  !Plotfile output not implemented at this point for facevars.
-
+#ifdef VELC_FACE_VAR
+                  ! Save the velocity faces to plot files to verify divergence.
+                  ! Written in double precision, unlike the rest of the plotfile.
+                  if (i == VELC_FACE_VAR) then
+                     if (io_plotFaceVelocity(IAXIS)) &
+                        call writeFaceVelocity(IAXIS, faceXt(:, :, :, 1:localNumBlockst), &
+                                               globalVarMinFaceX(i), globalVarMaxFaceX(i))
+                     if (NDIM > 1 .and. io_plotFaceVelocity(JAXIS)) &
+                        call writeFaceVelocity(JAXIS, faceYt(:, :, :, 1:localNumBlockst), &
+                                               globalVarMinFaceY(i), globalVarMaxFaceY(i))
+                     if (NDIM > 2 .and. io_plotFaceVelocity(KAXIS)) &
+                        call writeFaceVelocity(KAXIS, faceZt(:, :, :, 1:localNumBlockst), &
+                                               globalVarMinFaceZ(i), globalVarMaxFaceZ(i))
+                  end if !if (i == VELC_FACE_VAR)
+#endif
                end if !end for if(io_doublePrecision)
 
                deallocate (facext)
@@ -956,4 +969,20 @@ subroutine io_writeData(fileID)
    call MPI_BARRIER(io_globalComm, ierr)
 
    return
+
+#ifdef VELC_FACE_VAR
+contains
+
+   subroutine writeFaceVelocity(axis, faceBuf, faceMin, faceMax)
+      integer, intent(in) :: axis
+      real, intent(in) :: faceBuf(:, :, :, :)
+      real, intent(in) :: faceMin, faceMax
+
+      call io_h5write_unknowns(io_globalMe, fileID, &
+                               size(faceBuf, 1), size(faceBuf, 2), size(faceBuf, 3), faceBuf, &
+                               faceMin, faceMax, io_faceVelocityLabels(axis), &
+                               localNumBlockst, gr_globalNumBlocks, offset)
+   end subroutine writeFaceVelocity
+#endif
+
 end subroutine io_writeData
