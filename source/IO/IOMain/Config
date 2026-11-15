@@ -157,9 +157,9 @@ PARAMETER plotFileNumber      INTEGER 0
 #D &	"none" then no variable will be saved.
 #D &     The parameter should have the same name as the variable corresponding to it.
 #D &     For exampe, if a variable is declared VARIABLE pres, to write that variable to a plotfile
-#D &     a parameter should be declared as PARAMETER plot_var_X STRING "pres"
+#D &     a parameter should be declared as PARAMETER plot_var_X STRING "pres".
 #D &     The components of the face velocity, FACEVAR velc, can be named vlfx, vlfy
-#D &     and vlfz; each is written as a face centered dataset of that name (AMReX hdf5 IO only)
+#D &     and vlfz. Each is written as a face centered dataset. 
 PARAMETER plot_var_1 STRING "none"
 PARAMETER plot_var_2 STRING "none"
 PARAMETER plot_var_3 STRING "none"

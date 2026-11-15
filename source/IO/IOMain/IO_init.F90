@@ -299,12 +299,18 @@ call RuntimeParameters_get('sz_norm_plt', io_sz_norm_plt)
         j = j + 1
         if (j < i) io_plotVarStr(j) =  io_plotVarStr(i)
         call Simulation_mapStrToInt(trim(io_plotVarStr(j)), io_plotVar(j), MAPBLOCK_UNK)
-#if defined(VELC_FACE_VAR) && defined(FLASH_GRID_AMREX)
+#ifdef VELC_FACE_VAR
      else if (any(io_plotVarStr(i) == io_faceVelocityLabels(1:NDIM))) then
-        ! Not counted in io_nPlotVars, since the face velocity is written from
-        ! the face data rather than as a cell centered variable. Only the AMReX
-        ! (AM) writers write it, so other grids report it as unrecognized.
+#ifdef FLASH_GRID_AMREX
+        ! Face velocities are not counted in io_nPlotVars, since the face velocity 
+        ! is written from the face data rather than as a cell centered variable.
         io_plotFaceVelocity = io_plotFaceVelocity .or. (io_plotVarStr(i) == io_faceVelocityLabels)
+#else
+        ! Only the AMReX (AM) writers support the face-centered velocities.
+        call Driver_abort('[IO_init] plot variable ' // trim(io_plotVarStr(i)) // &
+                          ': writing the face velocity to plotfiles is not supported yet' // &
+                          ' with Paramesh or UG IO. Only with AMReX is supported')
+#endif
 #endif
      else                       ! Not a recognized name? Then do not count it.
         if (io_plotVarStr(i) .NE. "none") &
