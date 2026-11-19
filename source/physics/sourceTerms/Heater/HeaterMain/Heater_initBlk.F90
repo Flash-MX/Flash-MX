@@ -18,6 +18,7 @@ subroutine Heater_initBlk(xcell, ycell, zcell, ix1, ix2, jy1, jy2, kz1, kz2, tem
 
    use Heater_type, ONLY: Heater_type_t
    use Heater_data, ONLY: htr_numHeaters, htr_heaterInfo, htr_yMin, htr_yMax
+   use Heater_data, ONLY: htr_lumpedFlg
 
    implicit none
    real, dimension(:, :, :), intent(inout) :: temp
@@ -28,6 +29,7 @@ subroutine Heater_initBlk(xcell, ycell, zcell, ix1, ix2, jy1, jy2, kz1, kz2, tem
    type(Heater_type_t), pointer  :: heater
    integer :: i, j, k, htr, isite
    real    :: idfun, iseedY, iseedX, iseedZ, iradius, iheight
+   real    :: amp
 
    do k = kz1, kz2
       do j = jy1, jy2
@@ -35,6 +37,11 @@ subroutine Heater_initBlk(xcell, ycell, zcell, ix1, ix2, jy1, jy2, kz1, kz2, tem
             do htr = 1, htr_numHeaters
 
                heater => htr_heaterInfo(htr)
+
+               ! lumped heater: the initial thermal layer tops out at the heater temperature,
+               ! not at T = 1, so the wall does not start by absorbing heat from hotter liquid
+               amp = 1.0
+               if (htr_lumpedFlg) amp = heater%wallTemp
 
                if (present(phi)) then
                   do isite = 1, heater%numSitesAll
@@ -57,13 +64,15 @@ subroutine Heater_initBlk(xcell, ycell, zcell, ix1, ix2, jy1, jy2, kz1, kz2, tem
                         xcell(i) .le. heater%xMax .and. &
                         ycell(j) .le. (htr_yMin+heater%tblThickness) .and. &
                         zcell(k) .ge. heater%zMin .and. &
-                        zcell(k) .le. heater%zMax) temp(i, j, k) = (htr_yMin + heater%tblThickness-ycell(j))/heater%tblThickness
+                        zcell(k) .le. heater%zMax) temp(i, j, k) = &
+                           amp*(htr_yMin + heater%tblThickness-ycell(j))/heater%tblThickness
                else 
                         if (xcell(i) .ge. heater%xMin .and. &
                         xcell(i) .le. heater%xMax .and. &
                         ycell(j) .ge. (htr_yMax-heater%tblThickness) .and. &
                         zcell(k) .ge. heater%zMin .and. &
-                        zcell(k) .le. heater%zMax) temp(i, j, k) = (ycell(j)-(htr_yMax - heater%tblThickness))/heater%tblThickness
+                        zcell(k) .le. heater%zMax) temp(i, j, k) = &
+                           amp*(ycell(j)-(htr_yMax - heater%tblThickness))/heater%tblThickness
                end if 
             end do
          end do

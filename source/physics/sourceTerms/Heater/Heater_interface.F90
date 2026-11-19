@@ -88,6 +88,17 @@ module Heater_interface
    end interface
 
    interface
+      subroutine Heater_updateLumped(dt, stime)
+         real, intent(in) :: dt, stime
+      end subroutine Heater_updateLumped
+   end interface
+
+   interface
+      subroutine Heater_readCheckpoint()
+      end subroutine Heater_readCheckpoint
+   end interface
+
+   interface
       subroutine Heater_mapSitesToProc(initial, gridChanged)
          implicit none
          logical, intent(in), optional :: initial

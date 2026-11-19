@@ -7,4 +7,6 @@ Heater += Heater_interface.o \
           Heater_checkSites.o \
           Heater_applyBCToRegion.o \
           Heater_tagSites.o \
-          Heater_mapSitesToProc.o
+          Heater_mapSitesToProc.o \
+          Heater_updateLumped.o \
+          Heater_readCheckpoint.o

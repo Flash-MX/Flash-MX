@@ -46,4 +46,9 @@ module Heater_data
 
    real, save :: htr_xMin, htr_xMax, htr_yMin, htr_yMax, htr_zMin, htr_zMax
 
+   ! lumped-capacitance heater (Heater_updateLumped)
+   logical, save :: htr_lumpedFlg
+   real, save    :: htr_lumpedCapacity, htr_lumpedWallTemp, htr_thcoGas
+   integer, save :: htr_meshComm
+
 end module Heater_data

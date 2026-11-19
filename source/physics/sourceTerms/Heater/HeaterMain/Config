@@ -27,4 +27,17 @@ PARAMETER htr_showInfo BOOLEAN FALSE
 D htr_annQueries Number of queries for approximate nearest neighbor search
 PARAMETER htr_annQueries INTEGER 3
 
+D htr_lumpedFlg Lumped-capacitance (isothermal) heater: the heater wallTemp evolves each step from
+D & the balance between the imposed heatFlux and the flux the fluid removes (Heater_updateLumped).
+D & Forces heatFluxFlg = varTempFlg = false (Dirichlet wall at the uniform wallTemp).
+PARAMETER htr_lumpedFlg BOOLEAN FALSE
+
+D htr_lumpedCapacity heat capacity per unit area of the lumped heater, nondimensional:
+D & (rho c delta)_heater lc / (k_l tc). Physical copper heaters are ~1e4; smaller values relax faster.
+PARAMETER htr_lumpedCapacity REAL 100.0
+
+D htr_lumpedWallTemp if > -1e29, replaces the heater file's wallTemp at startup and the value
+D & stored in a checkpoint on restart
+PARAMETER htr_lumpedWallTemp REAL -1.0e30
+
 PPDEFINE HTR_MAX_NUMSITES 150

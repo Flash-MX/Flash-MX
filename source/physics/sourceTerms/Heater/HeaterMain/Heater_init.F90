@@ -22,6 +22,7 @@ subroutine Heater_init()
 
    use Heater_data
    use Driver_interface, ONLY: Driver_getMype
+   use Driver_interface, ONLY: Driver_getComm
    use RuntimeParameters_interface, ONLY: RuntimeParameters_get
    use htr_interface, ONLY: htr_read
 
@@ -30,11 +31,16 @@ subroutine Heater_init()
    integer           :: heater
 
    call Driver_getMype(MESH_COMM, htr_meshMe)
+   call Driver_getComm(MESH_COMM, htr_meshComm)
 
    call RuntimeParameters_get('htr_numHeaters', htr_numHeaters)
    call RuntimeParameters_get('htr_nucSeedRadius', htr_nucSeedRadius)
    call RuntimeParameters_get('htr_heaterName', htr_heaterName)
    call RuntimeParameters_get('htr_showInfo', htr_showInfo)
+   call RuntimeParameters_get('htr_lumpedFlg', htr_lumpedFlg)
+   call RuntimeParameters_get('htr_lumpedCapacity', htr_lumpedCapacity)
+   call RuntimeParameters_get('htr_lumpedWallTemp', htr_lumpedWallTemp)
+   call RuntimeParameters_get('mph_thcoGas', htr_thcoGas)
 #ifdef HEATER_ANN_SEARCH
    call RuntimeParameters_get("htr_annQueries", htr_annQueries)
 #endif
@@ -66,5 +72,18 @@ subroutine Heater_init()
       write (heaterFile, "(A,A,I4.4)") trim(htr_heaterName), '_hdf5_htr_', heater
       call htr_read(heater, heaterFile)
    end do
+
+   ! lumped-capacitance heater: Dirichlet wall at the (evolving) uniform wallTemp
+   if (htr_lumpedFlg) then
+      do heater = 1, htr_numHeaters
+         htr_heaterInfo(heater)%heatFluxFlg = .FALSE.
+         htr_heaterInfo(heater)%varTempFlg = .FALSE.
+         if (htr_lumpedWallTemp .gt. -1.0e29) htr_heaterInfo(heater)%wallTemp = htr_lumpedWallTemp
+         if (htr_meshMe .eq. MASTER_PE) &
+            write (*, '(A,I2,A,g14.6,A,g14.6,A,g14.6)') ' Lumped heater', heater, &
+            ': initial Twall=', htr_heaterInfo(heater)%wallTemp, ' heatFlux=', htr_heaterInfo(heater)%heatFlux, &
+            ' capacity=', htr_lumpedCapacity
+      end do
+   end if
 
 end subroutine Heater_init

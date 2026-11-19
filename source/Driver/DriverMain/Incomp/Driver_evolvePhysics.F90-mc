@@ -101,6 +101,7 @@ subroutine Driver_evolvePhysics()
 #ifdef HEATER_MAIN
    use Heater_interface, ONLY: Heater_mapSitesToProc, Heater_checkSites, &
                                Heater_tagSites, Heater_lsReInit
+   use Heater_interface, ONLY: Heater_updateLumped
 #endif
 
 #ifdef OUTLET_MAIN
@@ -197,6 +198,10 @@ subroutine Driver_evolvePhysics()
 
 #ifdef HEATER_MAIN
    ! Apply heater specific forcing
+
+   ! Lumped-capacitance heater: advance the wall temperature from the energy balance
+   !------------------------------------------------------------
+   call Heater_updateLumped(dr_dt, dr_simTime)
 
    ! Check Nucleation Sites
    !------------------------------------------------------------
