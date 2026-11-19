@@ -167,11 +167,10 @@ subroutine Heater_applyBCToRegion(level, ivar, gridDataStruct, regionData, coord
                               end if
                            end if
 
+                           ! guard cell k past the wall is (2k-1)*dy from its mirror, which (offset-2*i) gives,
+                           ! so the level set continues with wall-normal slope cos(theta) through every guard cell
                            regionData(offset-i, j, k, ivar) = regionData(i, j, k, ivar)- &
-                                                              del(axis)*cos(dynamicAngle*acos(-1.0)/180)
-
-                           !regionData(offset - i, j, k, ivar) = regionData(i, j, k, ivar)- &
-                           !                    del(axis)*(offset - 2*i)*cos(dynamicAngle*acos(-1.0)/180)
+                                                              (offset-2*i)*del(axis)*cos(dynamicAngle*acos(-1.0)/180)
 
                         end if
 
@@ -299,10 +298,10 @@ subroutine Heater_applyBCToRegion(level, ivar, gridDataStruct, regionData, coord
                               end if
                            end if
 
+                           ! guard cell k past the wall is (2k-1)*dy from its mirror, which (offset-2*i) gives,
+                           ! so the level set continues with wall-normal slope cos(theta) through every guard cell
                            regionData(i, j, k, ivar) = regionData(offset-i, j, k, ivar)- &
-                                                       del(axis)*cos(dynamicAngle*acos(-1.0)/180)
-                           !   regionData(i, j, k, ivar) = regionData(offset-i, j, k, ivar)- &
-                           !                         del(axis)*(offset-2*i)*cos(dynamicAngle*acos(-1.0)/180)
+                                                       (offset-2*i)*del(axis)*cos(dynamicAngle*acos(-1.0)/180)
 
                         end if
                      end if
