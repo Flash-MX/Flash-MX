@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridSolvers/AmrexMultigridSolver/gr_amrexMultigridData
+!!****if* source/Grid/GridSolvers/Amrex/MultigridSolver/gr_amrexMultigridData
 !! NOTICE
 !!  Copyright 2022 UChicago Argonne, LLC and contributors
 !!
