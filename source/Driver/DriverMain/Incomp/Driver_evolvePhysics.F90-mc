@@ -351,7 +351,28 @@ subroutine Driver_evolvePhysics(endRunPl)
 
 #endif
 
+   !------------------------------------------------------------
+   call Grid_setInterpValsGcell(.true.)
+   !------------------------------------------------------------
+
 #ifdef OUTLET_MAIN
+   ! Fill face-velocity guard cells before the outlet forcing.
+   ! Outlet_setForcing evaluates central velocity gradients on every face
+   ! in [lo, hi+1], so a face shared by two blocks is computed by both, each
+   ! reading its neighbour face from its own guard cells. Those guard cells
+   ! are otherwise last filled before the previous step's predictor and so
+   ! still hold the previous step's velocity. The two copies of a shared face
+   ! then receive different forcing and drift apart, which makes the face
+   ! velocity double-valued at block boundaries inside the outlet buffer.
+   gcMask(:) = .FALSE.
+   gcMask(NUNK_VARS+iVelVar) = .TRUE.
+   gcMask(NUNK_VARS+1*NFACE_VARS+iVelVar) = .TRUE.
+#if NDIM == 3
+   gcMask(NUNK_VARS+2*NFACE_VARS+iVelVar) = .TRUE.
+#endif
+   call Grid_fillGuardCells(CENTER_FACES, ALLDIR, &
+                            maskSize=NUNK_VARS+NDIM*NFACE_VARS, mask=gcMask)
+
    ! Apply outlet specific forcing
    !-------------------------------------------------------------
    call Grid_getTileIterator(itor, nodetype=LEAF)
@@ -376,10 +397,6 @@ subroutine Driver_evolvePhysics(endRunPl)
    call Outlet_consolidate()
    !------------------------------------------------------------
 #endif
-
-   !------------------------------------------------------------
-   call Grid_setInterpValsGcell(.true.)
-   !------------------------------------------------------------
 
    ! Fill GuardCells for the predictor step, velocity,
    ! mass flux and pressure jumps
