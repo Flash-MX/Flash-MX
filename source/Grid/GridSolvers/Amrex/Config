@@ -1,0 +1,9 @@
+# AMReX's Poisson solvers. The multigrid solver is always built.
+# When Flash-X is built with AmrexFFT=True, AMReX's FFT Poisson solver is built. 
+# gr_amrexPoisson_useFFT can select at it runtime.
+REQUIRES Grid/GridSolvers/Amrex/MultigridSolver
+
+USESETUPVARS AmrexFFT
+IF AmrexFFT
+   REQUIRES Grid/GridSolvers/Amrex/FFTSolver
+ENDIF

@@ -2,7 +2,7 @@ D This unit test is meant only for AMReX grid. Do not use any other grid type!
 
 REQUIRES Driver
 REQUIRES Grid/GridMain/AMR/Amrex
-REQUIRES Grid/GridSolvers/AmrexMultigridSolver
+REQUIRES Grid/GridSolvers/Amrex
 
 D rhs  : RHS of the Poisson Problem to be solved
 D nsol : Numerical Solution of Poisson Problem

@@ -12,7 +12,7 @@ Following is a rough algorithm for setting up pressure jumps for the
 constant cofficient Poisson solver implementation in
 physics/IncompNS/IncompNSMain/varDens/presPoisson, which should be the
 primary multiphase implementation given that Grid_solvePoisson is faster
-than Grid_solveLaplacian (for Grid/GridSolvers/AmrexMultigridSolver)
+than Grid_solveLaplacian (for Grid/GridSolvers/Amrex/MultigridSolver)
 
 .. code::
 

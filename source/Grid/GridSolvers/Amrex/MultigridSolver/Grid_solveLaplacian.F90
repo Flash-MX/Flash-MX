@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridSolvers/AmrexMultigridSolver/Grid_solveLaplacian
+!!****if* source/Grid/GridSolvers/Amrex/MultigridSolver/Grid_solveLaplacian
 !! NOTICE
 !!  Copyright 2022 UChicago Argonne, LLC and contributors
 !!
@@ -90,7 +90,7 @@ subroutine Grid_solveLaplacian (iSoln, iSrc, iCoeff, bcTypes, bcValues, poisfact
     logical                :: nodal(1:MDIM)
 
     if (present(iGrad)) then
-      call Driver_abort("[AmrexMultigridSolver/Grid_solveLaplacian] Configuration with iGrad not implemented")
+      call Driver_abort("[Amrex/MultigridSolver/Grid_solveLaplacian] Configuration with iGrad not implemented")
     end if
 
     call Timers_start("Grid_solveLaplacian")
