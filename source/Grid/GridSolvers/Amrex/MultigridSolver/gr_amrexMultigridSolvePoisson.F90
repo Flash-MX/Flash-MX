@@ -1,4 +1,4 @@
-!!****if* source/Grid/GridSolvers/AmrexMultigridSolver/Grid_solvePoisson
+!!****if* source/Grid/GridSolvers/Amrex/MultigridSolver/gr_amrexMultigridSolvePoisson
 !! NOTICE
 !!  Copyright 2022 UChicago Argonne, LLC and contributors
 !!
@@ -13,17 +13,18 @@
 !!
 !!  NAME 
 !!
-!! Grid_solvePoisson
+!! gr_amrexMultigridSolvePoisson
 !!
 !!  SYNOPSIS
 !!
-!!  call Grid_solvePoisson()
+!!  call gr_amrexMultigridSolvePoisson()
 !!
 !!
 !!  DESCRIPTION 
 !! This routine solves the Poisson equation from the 
 !! Amrex Linear Solvers using the variables from Unk multifab
-!! for rhs and unknown phi 
+!! for rhs and unknown phi. Grid_solvePoisson (Grid/GridSolvers/Amrex) calls it
+!! unless gr_amrexPoisson_useFFT selects the FFT solver.
 !!
 !!
 !! ARGUMENTS
@@ -53,7 +54,7 @@
 !!
 !!***
 
-subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact, iGrad)
+subroutine gr_amrexMultigridSolvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact, iGrad)
     use Timers_interface, ONLY : Timers_start, Timers_stop
     use Driver_interface, ONLY : Driver_abort
     use Grid_interface,   ONLY : GRID_PDE_BND_PERIODIC,  &
@@ -86,9 +87,9 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact, iGrad)
 #include "Simulation.h"
 #include "constants.h"   
   
-    call Timers_start("Grid_solvePoisson")
+    call Timers_start("gr_amrexMultigridSolvePoisson")
     if(poisfact .ne. 1) then
-      if(gr_globalMe .eq. MASTER_PE) print*,"[WARNING] [Grid_solvePoisson] Variable poisfact &
+      if(gr_globalMe .eq. MASTER_PE) print*,"[WARNING] [gr_amrexMultigridSolvePoisson] Variable poisfact &
                                                                     was set not 1. It is being ignored and set to 1!!!"
       poisfact =1.
     endif
@@ -203,7 +204,7 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact, iGrad)
          err = gr_amrexMG_multigrid % solve([gr_amrexMG_solution(ilev)], [gr_amrexMG_rhs(ilev)],gr_amrexMG_Tol, 0.0_amrex_real)
 
          if (present(iGrad)) then
-            call Driver_abort("[AmrexMultigridSolver/Grid_solvePoisson] iGrad not implemented for level-by-level")
+            call Driver_abort("[gr_amrexMultigridSolvePoisson] iGrad not implemented for level-by-level")
          end if
 
          if(gr_globalMe .eq. MASTER_PE) print*, err
@@ -232,6 +233,6 @@ subroutine Grid_solvePoisson (iSoln, iSrc, bcTypes, bcValues, poisfact, iGrad)
      end if
     end do
      
-    call Timers_stop("Grid_solvePoisson")
+    call Timers_stop("gr_amrexMultigridSolvePoisson")
 
-end subroutine Grid_solvePoisson
+end subroutine gr_amrexMultigridSolvePoisson

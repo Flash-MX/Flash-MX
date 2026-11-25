@@ -1,0 +1,12 @@
+# AMReX's FFT Poisson solver, on a single level of uniform cells. Grid_solvePoisson
+# (Grid/GridSolvers/Amrex) uses it instead of multigrid when gr_amrexPoisson_useFFT is true, and
+# setup includes it with AmrexFFT=True. AMReX must be 25.00 or later and built with FFT (configure
+# --enable-fft=yes), which gr_amrexFFTPoissonFi.cxx checks at compile time; the site's Makefile.h
+# must define CFLAGS_FFTW and LIB_FFTW.
+
+LIBRARY fftw
+PPDEFINE FLASHX_AMREX_FFT
+
+D gr_amrexPoisson_useFFT Solve Grid_solvePoisson with AMReX's FFT solver rather than multigrid.
+D & It needs a single level, and treats the boundary conditions as homogeneous, as multigrid does.
+PARAMETER gr_amrexPoisson_useFFT BOOLEAN FALSE

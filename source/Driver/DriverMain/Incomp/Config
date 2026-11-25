@@ -22,7 +22,7 @@ ENDIF
 
 # Add dependencies for amrex-native multigrid poisson solver.
 IF Grid == "Amrex"
-    REQUIRES Grid/GridSolvers/AmrexMultigridSolver
+    REQUIRES Grid/GridSolvers/Amrex
 ENDIF
 
 D dr_runUnitTest Run unitests on a simulation. Used

@@ -1,6 +1,6 @@
 USESETUPVARS Grid
 #IF Grid not in ["AMREX"]
-#   SETUPERROR AmrexMultigridSolver must be run with AMReX grid only!!!
+#   SETUPERROR Amrex/MultigridSolver must be run with AMReX grid only!!!
 #ENDIF
 
 D Params for amrex multigrid solve
