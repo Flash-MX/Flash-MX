@@ -101,6 +101,7 @@ subroutine Heater_mapSitesToProc(initial, gridChanged)
                heater%xSiteProc(numSitesProc) = heater%xSiteInit(isite)
                heater%ySiteProc(numSitesProc) = heater%ySiteInit(isite)
                heater%zSiteProc(numSitesProc) = heater%zSiteInit(isite)
+               heater%siteGlobalIndex(numSitesProc) = isite
 
                ! Increment numSitesBlk and update the site map
                ! on the current processor

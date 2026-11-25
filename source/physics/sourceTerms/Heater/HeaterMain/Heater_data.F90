@@ -46,4 +46,7 @@ module Heater_data
 
    real, save :: htr_xMin, htr_xMax, htr_yMin, htr_yMax, htr_zMin, htr_zMax
 
+   ! Re-seeding limits, in seed radii (see Heater_checkSites)
+   real, save :: htr_seedClearance, htr_seedPinDepth
+
 end module Heater_data

@@ -45,6 +45,7 @@ subroutine Heater_checkSites(solnData,del,xcell,ycell,zcell,bndBox,logc,higc, lb
               
   real    :: phiSite
   integer :: ix1, ix2, jy1, jy2, kz1, kz2  
+  real    :: seedX, seedY, seedZ, dist, distMin, phiSeed
   
   !----------------------------------------------------------------------------------------
   
@@ -141,6 +142,37 @@ subroutine Heater_checkSites(solnData,del,xcell,ycell,zcell,bndBox,logc,higc, lb
         end do
      end do
 #endif
+
+     ! A site may be re-seeded only if no interface is near the seed centre
+     do isiteblk = 1, heater%numSitesBlk(lblock)
+        isite = heater%siteMapOnProc(lblock, isiteblk)
+
+        seedX = heater%xSiteProc(isite)
+        seedZ = heater%zSiteProc(isite)
+        if (abs(heater%ySiteProc(isite)-htr_yMin) .lt. abs(heater%ySiteProc(isite)-htr_yMax)) then
+           seedY = heater%ySiteProc(isite)+heater%seedHeight
+        else
+           seedY = heater%ySiteProc(isite)-heater%seedHeight
+        end if
+
+        distMin = huge(1.0)
+        phiSeed = 0.0
+        do k = kz1, kz2
+           do j = jy1, jy2
+              do i = ix1, ix2
+                 dist = (xcell(i)-seedX)**2+(ycell(j)-seedY)**2+(zcell(k)-seedZ)**2
+                 if (dist .lt. distMin) then
+                    distMin = dist
+                    phiSeed = solnData(DFUN_VAR, i, j, k)
+                 end if
+              end do
+           end do
+        end do
+
+        heater%siteSeedPhi(isite) = phiSeed
+        heater%siteCanSeed(isite) = (phiSeed .le. -htr_seedClearance*heater%seedRadius) .or. &
+                                    (phiSeed .ge. htr_seedPinDepth*heater%seedRadius)
+     end do
   end do
   call Timers_stop("Heater_checkSites")
   

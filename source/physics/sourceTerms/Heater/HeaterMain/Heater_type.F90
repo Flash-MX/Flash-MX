@@ -64,6 +64,12 @@ module Heater_type
       real, dimension(HTR_MAX_NUMSITES) :: xSiteProc, zSiteProc, ySiteProc, siteTimeStamp, siteTemp
       logical, dimension(HTR_MAX_NUMSITES) :: siteIsAttachedCurr, siteIsAttachedPrev
 
+      ! Re-seeding state
+      logical, dimension(HTR_MAX_NUMSITES) :: siteCanSeed       ! no interface near the seed
+      real, dimension(HTR_MAX_NUMSITES) :: siteSeedPhi          ! level set at the seed centre
+      integer, dimension(HTR_MAX_NUMSITES) :: siteGlobalIndex   ! index into [xyz]SiteInit
+      logical, dimension(:), allocatable :: siteReseed          ! sites to re-seed this step
+
 #ifdef HEATER_ANN_SEARCH
       type(c_ptr) :: kdTree = c_null_ptr
 #endif

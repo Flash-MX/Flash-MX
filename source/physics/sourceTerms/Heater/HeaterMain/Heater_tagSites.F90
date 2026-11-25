@@ -22,12 +22,13 @@ subroutine Heater_tagSites(stime)
    use Timers_interface, ONLY: Timers_start, Timers_stop
    use Heater_type, ONLY: Heater_type_t
    use Heater_data
+   use Driver_interface, ONLY: Driver_getComm
 
    implicit none
    include "Flashx_mpi.h"
    real, intent(in) :: stime
 
-   integer :: htr, ierr, isite
+   integer :: htr, ierr, isite, meshComm
    type(Heater_type_t), pointer :: heater
 
    call Timers_start("Heater_tagSites")
@@ -61,6 +62,22 @@ subroutine Heater_tagSites(stime)
 
       heater%siteIsAttachedPrev = heater%siteIsAttachedCurr
       heater%siteIsAttachedCurr = .false.
+
+      ! Sites to re-seed in this step, shared with all processes
+      heater%siteReseed = .false.
+      do isite = 1, heater%numSitesProc
+         if (((heater%siteTimeStamp(isite)+heater%nucWaitTime) .le. stime) .and. &
+             (heater%siteIsAttachedPrev(isite) .eqv. .false.) .and. &
+             heater%siteCanSeed(isite)) then
+            heater%siteReseed(heater%siteGlobalIndex(isite)) = .true.
+            if (htr_showInfo) write (*, '(A,I2,A,I4,A,F9.4,A,F11.6,A,F8.4)') &
+               ' Heater:', htr, ' re-seeding site', heater%siteGlobalIndex(isite), &
+               ' x=', heater%xSiteProc(isite), ' t=', stime, ' phi=', heater%siteSeedPhi(isite)
+         end if
+      end do
+      call Driver_getComm(MESH_COMM, meshComm)
+      call MPI_Allreduce(MPI_IN_PLACE, heater%siteReseed, heater%numSitesAll, &
+                         FLASH_LOGICAL, MPI_LOR, meshComm, ierr)
 
    end do
 #endif

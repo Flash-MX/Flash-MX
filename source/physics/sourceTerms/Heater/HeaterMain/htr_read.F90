@@ -192,6 +192,11 @@ subroutine htr_read(heaterID, heaterFile)
    heater%zSiteProc = 0.
    heater%siteIsAttachedCurr = .false.
    heater%siteIsAttachedPrev = .false.
+   heater%siteCanSeed = .false.
+   heater%siteSeedPhi = 0.
+   heater%siteGlobalIndex = 0
+   allocate (heater%siteReseed(heater%numSitesAll))
+   heater%siteReseed = .false.
    heater%siteTimeStamp = 0.
    heater%seedRadius = htr_nucSeedRadius
    heater%seedHeight = heater%seedRadius*cos(heater%rcdAngle*acos(-1.0)/180)

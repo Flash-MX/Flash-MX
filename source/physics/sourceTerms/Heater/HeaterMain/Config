@@ -15,6 +15,14 @@ ENDIF
 D htr_nucSeedRadius for re-nucleation
 PARAMETER htr_nucSeedRadius  REAL     0.1
 
+D htr_seedClearance Re-seed a site only if the nearest interface is at least this many
+D & seed radii from the seed centre
+PARAMETER htr_seedClearance  REAL     4.0
+
+D htr_seedPinDepth Also re-seed a site if the seed centre is at least this many seed radii
+D & inside a bubble (re-attaches it). The large default turns this off
+PARAMETER htr_seedPinDepth   REAL     100.0
+
 D htr_numHeaters Total number of heaters
 PARAMETER htr_numHeaters     INTEGER  1
 
