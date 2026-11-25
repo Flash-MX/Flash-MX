@@ -35,6 +35,8 @@ subroutine Heater_init()
    call RuntimeParameters_get('htr_nucSeedRadius', htr_nucSeedRadius)
    call RuntimeParameters_get('htr_heaterName', htr_heaterName)
    call RuntimeParameters_get('htr_showInfo', htr_showInfo)
+   call RuntimeParameters_get('htr_seedClearance', htr_seedClearance)
+   call RuntimeParameters_get('htr_seedPinDepth', htr_seedPinDepth)
 #ifdef HEATER_ANN_SEARCH
    call RuntimeParameters_get("htr_annQueries", htr_annQueries)
 #endif
@@ -51,6 +53,8 @@ subroutine Heater_init()
    if (htr_meshMe .eq. MASTER_PE) then
       write (*, *) 'htr_numHeaters=', htr_numHeaters
       write (*, *) 'htr_nucSeedRadius=', htr_nucSeedRadius
+      write (*, *) 'htr_seedClearance=', htr_seedClearance
+      write (*, *) 'htr_seedPinDepth=', htr_seedPinDepth
 #ifdef HEATER_ANN_SEARCH
       write (*, *) 'htr_annQueries=', htr_annQueries
 #endif

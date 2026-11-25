@@ -36,7 +36,7 @@ subroutine Heater_lsReInit(solnData,xcell,ycell,zcell,boundBox,logc, higc, stime
 !----------------------------------------------------------------------------------------
   type(Heater_type_t), pointer  :: heater
   integer :: ix1, ix2, jy1, jy2, kz1, kz2
-  integer :: i, j, k, htr, isite, annIndex, isiteblk
+  integer :: i, j, k, htr, isite
   real    :: idfun, iseedY, iseedX, iseedZ, iradius
   
   !----------------------------------------------------------------------------------------
@@ -52,41 +52,33 @@ subroutine Heater_lsReInit(solnData,xcell,ycell,zcell,boundBox,logc, higc, stime
   do htr = 1, htr_numHeaters
      
      heater => htr_heaterInfo(htr)
-     
-#if NDIM < MDIM
-     if (boundBox(HIGH, IAXIS) .le. heater%xMin .or. boundBox(LOW, IAXIS) .ge. heater%xMax .or. &
-          boundBox(HIGH, JAXIS) .le. heater%yMin .or. boundBox(LOW, JAXIS) .ge. heater%yMax) cycle
-#else
-     if (boundBox(HIGH, IAXIS) .le. heater%xMin .or. boundBox(LOW, IAXIS) .ge. heater%xMax .or. &
-          boundBox(HIGH, JAXIS) .le. heater%yMin .or. boundBox(LOW, JAXIS) .ge. heater%yMax .or. &
-          boundBox(HIGH, KAXIS) .le. heater%zMin .or. boundBox(LOW, KAXIS) .ge. heater%zMax) cycle
-#endif
-     
-     do k = kz1, kz2
-        do j = jy1, jy2
-           do i = ix1, ix2
-              do isiteblk = 1, heater%numSitesBlk(lblock)
-                 
-                 isite = heater%siteMapOnProc(lblock, isiteblk)
-                 if (isite < 1) call Driver_abort("[Heater_lsReInit] isite < 1")
-                 
-                 if (((heater%siteTimeStamp(isite)+heater%nucWaitTime) .le. stime) .and. &
-                      (heater%siteIsAttachedPrev(isite) .eqv. .false.)) then
-                    iradius = heater%seedRadius
-                    iseedX = heater%xSiteProc(isite)
-                    iseedZ = heater%zSiteProc(isite)
-                    if(  abs(heater%ySiteProc(isite) - htr_yMin) .lt. abs(heater%ySiteProc(isite) - htr_yMax))then
-                       iseedY = heater%ySiteProc(isite)+heater%seedHeight
-                    else
-                       iseedY = heater%ySiteProc(isite)-heater%seedHeight                             
-                    end if
-                    idfun = iradius-sqrt((xcell(i)-iseedX)**2+(ycell(j)-iseedY)**2+(zcell(k)-iseedZ)**2)
-                    solnData(DFUN_VAR,i, j, k) = max(solnData(DFUN_VAR,i, j, k), idfun)
-                 end if
 
+     ! Every block stamps the seeds listed by Heater_tagSites, so seeds
+     ! near a block boundary are not cut off
+     if (.not. any(heater%siteReseed)) cycle
+
+     do isite = 1, heater%numSitesAll
+
+        if (.not. heater%siteReseed(isite)) cycle
+
+        iradius = heater%seedRadius
+        iseedX = heater%xSiteInit(isite)
+        iseedZ = heater%zSiteInit(isite)
+        if (abs(heater%ySiteInit(isite)-htr_yMin) .lt. abs(heater%ySiteInit(isite)-htr_yMax)) then
+           iseedY = heater%ySiteInit(isite)+heater%seedHeight
+        else
+           iseedY = heater%ySiteInit(isite)-heater%seedHeight
+        end if
+
+        do k = kz1, kz2
+           do j = jy1, jy2
+              do i = ix1, ix2
+                 idfun = iradius-sqrt((xcell(i)-iseedX)**2+(ycell(j)-iseedY)**2+(zcell(k)-iseedZ)**2)
+                 solnData(DFUN_VAR,i, j, k) = max(solnData(DFUN_VAR,i, j, k), idfun)
               end do
            end do
         end do
+
      end do
   end do
 
