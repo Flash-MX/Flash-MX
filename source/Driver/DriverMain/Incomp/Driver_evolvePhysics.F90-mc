@@ -351,7 +351,22 @@ subroutine Driver_evolvePhysics(endRunPl)
 
 #endif
 
+   !------------------------------------------------------------
+   call Grid_setInterpValsGcell(.true.)
+   !------------------------------------------------------------
+
 #ifdef OUTLET_MAIN
+   ! Fill face-velocity guard cells so blocks sharing a face
+   ! compute the same outlet forcing on it
+   gcMask(:) = .FALSE.
+   gcMask(NUNK_VARS+iVelVar) = .TRUE.
+   gcMask(NUNK_VARS+1*NFACE_VARS+iVelVar) = .TRUE.
+#if NDIM == 3
+   gcMask(NUNK_VARS+2*NFACE_VARS+iVelVar) = .TRUE.
+#endif
+   call Grid_fillGuardCells(CENTER_FACES, ALLDIR, &
+                            maskSize=NUNK_VARS+NDIM*NFACE_VARS, mask=gcMask)
+
    ! Apply outlet specific forcing
    !-------------------------------------------------------------
    call Grid_getTileIterator(itor, nodetype=LEAF)
@@ -376,10 +391,6 @@ subroutine Driver_evolvePhysics(endRunPl)
    call Outlet_consolidate()
    !------------------------------------------------------------
 #endif
-
-   !------------------------------------------------------------
-   call Grid_setInterpValsGcell(.true.)
-   !------------------------------------------------------------
 
    ! Fill GuardCells for the predictor step, velocity,
    ! mass flux and pressure jumps
